@@ -57,7 +57,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function IntegrationsPage({ tab }: { tab?: string }) {
+export default function IntegrationsPage({ tab, action }: { tab?: string, action?: string }) {
   const { user, isAuthenticated } = useAuth();
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -67,6 +67,9 @@ export default function IntegrationsPage({ tab }: { tab?: string }) {
   const [connSuccessDialog, setConnSuccessDialog] = useState(false);
   const [connErrorDialog, setConnErrorDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  
+  // Connect dialog state
+  const [connectDialogOpen, setConnectDialogOpen] = useState(action === 'connect');
 
   // Handle connection status check
   const [checkedConnections, setCheckedConnections] = useState(false);
@@ -246,8 +249,7 @@ export default function IntegrationsPage({ tab }: { tab?: string }) {
     mode: "onChange"
   });
   
-  // Connect dialog state
-  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
+  // This line is no longer needed as we've moved it up (already set with action === 'connect')
   
   // Handle form submission
   const onSubmit = async (data: z.infer<typeof connectionFormSchema>) => {

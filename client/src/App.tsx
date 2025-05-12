@@ -53,9 +53,14 @@ function Router() {
       <Route path="/companies" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
       
-      {/* Integration routes */}
-      <Route path="/integrations" component={() => <ProtectedRoute component={Integrations} roles={["ADMIN"]} />} />
-      <Route path="/integrations/:tab" component={({ params }) => <ProtectedRoute component={Integrations} roles={["ADMIN"]} tab={params.tab} />} />
+      {/* Integration routes - expanded to handle query parameters */}
+      <Route path="/integrations" component={() => {
+        // Extract query parameters directly
+        const searchParams = new URLSearchParams(window.location.search);
+        const tab = searchParams.get('tab') || undefined;
+        const action = searchParams.get('action') || undefined;
+        return <ProtectedRoute component={Integrations} roles={["ADMIN"]} tab={tab} action={action} />;
+      }} />
       
       {/* Tenant-specific routes */}
       <Route path="/tenants/:tenantId/dashboard" component={({ params }) => (
