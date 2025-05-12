@@ -44,6 +44,13 @@ import { TokenCredentialAuthenticationProvider } from "@microsoft/microsoft-grap
 
 // Helper to check if user has access to a tenant
 async function hasTenantAccess(userId: string, tenantId: number): Promise<boolean> {
+  // First check if user is an admin - admins have access to all tenants
+  const user = await storage.getUser(userId);
+  if (user?.role === UserRoles.ADMIN) {
+    return true;
+  }
+  
+  // Otherwise check tenant-specific access
   const tenants = await storage.getTenantsByUserId(userId);
   return tenants.some(tenant => tenant.id === tenantId);
 }
