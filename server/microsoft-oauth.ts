@@ -269,29 +269,94 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
  * Get tenant information using access token
  */
 export async function getTenantInfo(accessToken: string): Promise<TenantInfo> {
-  const graphUrl = 'https://graph.microsoft.com/v1.0/organization';
-  
-  const response = await fetch(graphUrl, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`
+  // First try to get organization information
+  try {
+    console.log("Fetching organization information from Microsoft Graph API");
+    const graphUrl = 'https://graph.microsoft.com/v1.0/organization';
+    
+    const response = await fetch(graphUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    
+    console.log("Organization API response status:", response.status);
+    
+    const data = await response.json();
+    console.log("Organization API response received");
+    
+    if (response.ok && data.value && data.value.length > 0) {
+      console.log("Organization data found:", data.value[0].displayName);
+      
+      const domains = Array.isArray(data.value[0].verifiedDomains) 
+        ? data.value[0].verifiedDomains.map((d: any) => d.name)
+        : [];
+        
+      return {
+        id: data.value[0].id,
+        displayName: data.value[0].displayName,
+        domains: domains
+      };
     }
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch tenant information');
+    
+    console.log("No organization data found, falling back to /me endpoint");
+  } catch (error) {
+    console.error("Error fetching organization data:", error);
+    console.log("Falling back to /me endpoint");
   }
   
-  const data = await response.json();
-  
-  if (!data.value || data.value.length === 0) {
-    throw new Error('No organization data returned');
+  // Fall back to getting info from the /me endpoint
+  try {
+    console.log("Fetching user information from Microsoft Graph API");
+    const meUrl = 'https://graph.microsoft.com/v1.0/me';
+    
+    const meResponse = await fetch(meUrl, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    
+    console.log("Me API response status:", meResponse.status);
+    
+    if (!meResponse.ok) {
+      console.error("Failed to fetch user information");
+      throw new Error('Failed to fetch tenant information');
+    }
+    
+    const meData = await meResponse.json();
+    console.log("User data found:", meData.displayName);
+    
+    // Extract tenant ID from the user's identity provider
+    let tenantId = '';
+    if (meData.identities) {
+      const azureAdIdentity = meData.identities.find((i: any) => i.signInType === 'federated');
+      if (azureAdIdentity && azureAdIdentity.issuer) {
+        tenantId = azureAdIdentity.issuer;
+      }
+    }
+    
+    // If we still don't have a tenant ID, try to extract it from the user principal name
+    if (!tenantId && meData.userPrincipalName) {
+      const domain = meData.userPrincipalName.split('@')[1];
+      if (domain) {
+        tenantId = domain;
+      }
+    }
+    
+    // Last resort: use a timestamp as a unique identifier
+    if (!tenantId) {
+      tenantId = `tenant-${Date.now()}`;
+    }
+    
+    return {
+      id: tenantId,
+      displayName: meData.displayName || 'Microsoft 365 Tenant',
+      domains: meData.mail ? [meData.mail.split('@')[1]] : []
+    };
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    throw new Error('Failed to fetch tenant information. Please check your permissions and try again.');
   }
-  
-  return {
-    id: data.value[0].id,
-    displayName: data.value[0].displayName,
-    domains: data.value[0].verifiedDomains.map((d: any) => d.name)
-  };
 }
 
 /**
