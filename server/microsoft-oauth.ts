@@ -208,10 +208,20 @@ export async function exchangeCodeForToken(
   });
   
   if (!response.ok) {
-    const errorData = await response.json();
+    // Check if response can be parsed as JSON
+    let errorData: any;
+    try {
+      errorData = await response.json();
+    } catch (e) {
+      // If JSON parsing fails, use text response if available
+      const textResponse = await response.text().catch(() => null);
+      console.error("Token exchange failed with status:", response.status);
+      console.error("Error response (not JSON):", textResponse || "No readable response");
+      throw new Error(`Token exchange failed with status ${response.status}: ${textResponse || 'Unknown error'}`);
+    }
     
     console.error("Token exchange failed with status:", response.status);
-    console.error("Error response:", errorData);
+    console.error("Error response:", JSON.stringify(errorData, null, 2));
     
     const errorMessage = errorData.error_description || 
                          errorData.error || 

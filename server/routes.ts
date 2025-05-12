@@ -188,38 +188,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Token exchange successful");
       
-      // Get tenant information
-      console.log("Fetching tenant information using access token");
-      const tenantInfo = await getTenantInfo(tokenResponse.access_token);
-      
-      console.log("Tenant information retrieved successfully:");
-      console.log("- Tenant ID:", tenantInfo.id);
-      console.log("- Tenant Name:", tenantInfo.displayName);
-      console.log("- Primary Domain:", tenantInfo.domains[0] || "unknown");
-      
-      // Store connection in database
-      console.log("Storing OAuth connection in database");
-      await storeOAuthConnection(
-        userId,
-        tenantInfo.id,
-        tenantInfo.displayName,
-        tenantInfo.domains[0] || 'unknown',
-        tokenResponse.access_token,
-        tokenResponse.refresh_token,
-        tokenResponse.expires_in,
-        clientId,
-        clientSecret,
-        companyId
-      );
-      
-      // Create audit log
-      await storage.createAuditLog({
-        userId,
-        action: "create_microsoft365_oauth_connection",
-        details: `Connected to Microsoft 365 tenant via OAuth: ${tenantInfo.displayName || tenantInfo.id}`
-      });
-      
-      console.log("OAuth connection stored successfully");
+      try {
+        // Get tenant information
+        console.log("Fetching tenant information using access token");
+        const tenantInfo = await getTenantInfo(tokenResponse.access_token);
+        
+        console.log("Tenant information retrieved successfully:");
+        console.log("- Tenant ID:", tenantInfo.id);
+        console.log("- Tenant Name:", tenantInfo.displayName);
+        console.log("- Primary Domain:", tenantInfo.domains[0] || "unknown");
+        
+        try {
+          // Store connection in database
+          console.log("Storing OAuth connection in database");
+          await storeOAuthConnection(
+            userId,
+            tenantInfo.id,
+            tenantInfo.displayName,
+            tenantInfo.domains[0] || 'unknown',
+            tokenResponse.access_token,
+            tokenResponse.refresh_token,
+            tokenResponse.expires_in,
+            clientId,
+            clientSecret,
+            companyId
+          );
+          
+          // Create audit log
+          await storage.createAuditLog({
+            userId,
+            action: "create_microsoft365_oauth_connection",
+            details: `Connected to Microsoft 365 tenant via OAuth: ${tenantInfo.displayName || tenantInfo.id}`
+          });
+          
+          console.log("OAuth connection stored successfully");
+        } catch (dbError) {
+          console.error("Error storing OAuth connection:", dbError);
+          throw new Error(`Successfully connected to Microsoft 365, but failed to store the connection: ${dbError instanceof Error ? dbError.message : 'Unknown database error'}`);
+        }
+      } catch (tenantError) {
+        console.error("Error retrieving tenant information:", tenantError);
+        throw new Error(`Connected to Microsoft 365 API, but failed to retrieve tenant information: ${tenantError instanceof Error ? tenantError.message : 'Unknown tenant info error'}`);
+      }
       
       // Redirect to the integrations page with success message
       res.redirect('/integrations?tab=microsoft365&success=true');
