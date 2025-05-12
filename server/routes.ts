@@ -619,13 +619,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Report not found for this tenant" });
     }
     
-    // Extract only the fields we want to update
-    const { summary, recommendations, analystComments } = req.body;
+    // Extract only the analyst comments field to update
+    const { analystComments } = req.body;
     
-    // Update the report
+    // Update the report with only analyst comments
     const updatedReport = await storage.updateReport(reportId, {
-      summary,
-      recommendations,
       analystComments
     });
     
@@ -634,7 +632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       userId,
       tenantId,
       action: "update_report_content",
-      details: `Updated summary and recommendations for ${report.title}`,
+      details: `Updated analyst comments for ${report.title}`,
     });
     
     res.json(updatedReport);
