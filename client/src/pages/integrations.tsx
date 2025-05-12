@@ -440,7 +440,7 @@ export default function IntegrationsPage() {
               Connect Microsoft 365 Tenant
             </DialogTitle>
             <DialogDescription>
-              Enter your Microsoft Graph API credentials and select the company to connect to.
+              Each Microsoft 365 tenant requires its own set of credentials. These are used to connect to the specific tenant and retrieve security information. Please enter your Microsoft Graph API credentials for this tenant and select which company it should be associated with.
             </DialogDescription>
           </DialogHeader>
           
@@ -459,7 +459,7 @@ export default function IntegrationsPage() {
                       />
                     </FormControl>
                     <FormDescription>
-                      The client ID from your Azure app registration
+                      The client ID from your Azure app registration. This is available in the Azure portal under "App registrations".
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -480,7 +480,7 @@ export default function IntegrationsPage() {
                       />
                     </FormControl>
                     <FormDescription>
-                      The client secret from your Azure app registration
+                      The client secret from your Azure app registration. You can create a new client secret in the Azure portal under "App registrations" → "Certificates & secrets".
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -500,7 +500,7 @@ export default function IntegrationsPage() {
                       />
                     </FormControl>
                     <FormDescription>
-                      Must match exactly what's configured in Azure
+                      The redirect URI you configured in Azure. This default value should work in most cases. You must register this exact URL in your Azure app registration under "Authentication" → "Redirect URIs".
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
