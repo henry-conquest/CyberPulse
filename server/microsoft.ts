@@ -1,7 +1,8 @@
-import { Microsoft365Connection } from "@shared/schema";
+import { Microsoft365Connection, Microsoft365OAuthConnection } from "@shared/schema";
 import { Client } from "@microsoft/microsoft-graph-client";
 import { TokenCredentialAuthenticationProvider } from "@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials/index.js";
 import { ClientSecretCredential } from "@azure/identity";
+import { storage } from "./storage";
 
 // Interface for MS Graph secure score data
 interface SecureScore {
@@ -93,7 +94,10 @@ export class MicrosoftGraphService {
   async getSecureScore(): Promise<SecureScore | null> {
     try {
       if (!this.client) {
-        throw new Error("Microsoft Graph client not initialized");
+        this.initializeClient();
+        if (!this.client) {
+          throw new Error("Microsoft Graph client not initialized");
+        }
       }
 
       const response = await this.client
@@ -106,17 +110,43 @@ export class MicrosoftGraphService {
         return response.value[0];
       }
       
+      console.log("No secure scores found for tenant:", this.connection.tenantId);
       return null;
-    } catch (error) {
-      console.error('Error fetching Microsoft 365 Secure Score:', error);
-      throw error;
+    } catch (error: any) {
+      // Check for authentication errors
+      if (error.statusCode === 401 || 
+          (error.message && error.message.includes("authentication")) ||
+          (error.message && error.message.includes("authorized"))) {
+        console.error(`Authentication error in getSecureScore for tenant ${this.connection.tenantId}:`, error.message);
+        
+        // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        throw new Error(`Authentication failed for Microsoft 365 tenant ${this.connection.tenantName}. Please reconnect this tenant.`);
+      }
+      
+      // Handle other errors
+      console.error(`Error fetching Microsoft 365 Secure Score for tenant ${this.connection.tenantId}:`, error);
+      throw new Error(`Failed to fetch security data: ${error.message || "Unknown error"}`);
     }
   }
 
   async getMFAStatus(): Promise<{ enabled: number; disabled: number }> {
     try {
       if (!this.client) {
-        throw new Error("Microsoft Graph client not initialized");
+        this.initializeClient();
+        if (!this.client) {
+          throw new Error("Microsoft Graph client not initialized");
+        }
       }
 
       // Get users with MFA status
@@ -138,9 +168,41 @@ export class MicrosoftGraphService {
       });
 
       return { enabled, disabled };
-    } catch (error) {
-      console.error('Error fetching MFA status:', error);
-      throw error;
+    } catch (error: any) {
+      // Check for authentication errors
+      if (error.statusCode === 401 || 
+          (error.message && error.message.includes("authentication")) ||
+          (error.message && error.message.includes("authorized"))) {
+        console.error(`Authentication error in getMFAStatus for tenant ${this.connection.tenantId}:`, error.message);
+        
+        // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        // Return a default value when authentication fails to prevent UI crashes
+        console.log("Returning default MFA values due to authentication error");
+        return { enabled: 0, disabled: 0 };
+      }
+      
+      // For permissions errors, log but return default values
+      if (error.statusCode === 403 || 
+          (error.message && error.message.includes("permission"))) {
+        console.error(`Permission error in getMFAStatus for tenant ${this.connection.tenantId}:`, error.message);
+        // Return a default value for permission errors
+        return { enabled: 0, disabled: 0 };
+      }
+      
+      // Handle other errors
+      console.error(`Error fetching MFA status for tenant ${this.connection.tenantId}:`, error);
+      return { enabled: 0, disabled: 0 }; // Return default values for other errors too
     }
   }
 
