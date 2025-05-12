@@ -70,6 +70,225 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
+  
+  // Microsoft 365 OAuth authorization
+  app.get('/api/auth/microsoft365/authorize', isAuthenticated, asyncHandler(async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    
+    // Microsoft OAuth configuration
+    const clientId = process.env.MS_GRAPH_CLIENT_ID || "enter-your-client-id";
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/microsoft365/callback`;
+    const scopes = [
+      'https://graph.microsoft.com/.default',
+      'offline_access'
+    ].join(' ');
+    
+    // Generate and store state value to prevent CSRF
+    const state = crypto.randomBytes(16).toString('hex');
+    req.session.oauthState = state;
+    req.session.userId = userId;
+    
+    // Build the authorization URL
+    const authUrl = new URL('https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
+    authUrl.searchParams.append('client_id', clientId);
+    authUrl.searchParams.append('response_type', 'code');
+    authUrl.searchParams.append('redirect_uri', redirectUri);
+    authUrl.searchParams.append('scope', scopes);
+    authUrl.searchParams.append('state', state);
+    authUrl.searchParams.append('response_mode', 'query');
+    
+    res.json({ authUrl: authUrl.toString() });
+  }));
+  
+  // Microsoft 365 OAuth callback
+  app.get('/api/auth/microsoft365/callback', asyncHandler(async (req: Request, res: Response) => {
+    const { code, state, error, error_description } = req.query;
+    const session = (req as any).session;
+    
+    // Handle OAuth errors
+    if (error) {
+      console.error('OAuth error:', error, error_description);
+      return res.redirect(`/settings?error=${encodeURIComponent(error_description as string || 'Authentication failed')}`);
+    }
+    
+    // Validate state to prevent CSRF
+    if (!session.oauthState || session.oauthState !== state) {
+      return res.redirect('/settings?error=Invalid%20OAuth%20state');
+    }
+    
+    try {
+      // Exchange code for tokens
+      const clientId = process.env.MS_GRAPH_CLIENT_ID || "enter-your-client-id";
+      const clientSecret = process.env.MS_GRAPH_CLIENT_SECRET || "enter-your-client-secret";
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/microsoft365/callback`;
+      
+      const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+      
+      const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          code: code as string,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code'
+        }).toString()
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error_description || 'Failed to exchange code for tokens');
+      }
+      
+      const tokenData = await response.json();
+      
+      // Extract tenant info from ID token or access token
+      const accessToken = tokenData.access_token;
+      const refreshToken = tokenData.refresh_token;
+      
+      // Get tenant information
+      const graphUrl = 'https://graph.microsoft.com/v1.0/organization';
+      const graphResponse = await fetch(graphUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+      if (!graphResponse.ok) {
+        throw new Error('Failed to fetch tenant information');
+      }
+      
+      const orgData = await graphResponse.json();
+      const tenantId = orgData.value[0]?.id;
+      const tenantName = orgData.value[0]?.displayName;
+      const tenantDomain = orgData.value[0]?.verifiedDomains[0]?.name;
+      
+      if (!tenantId || !tenantDomain) {
+        throw new Error('Failed to extract tenant information');
+      }
+      
+      // Save the connection to the database
+      const userId = session.userId;
+      
+      // Check if connection already exists for this user and tenant
+      const existingConnections = await storage.getMicrosoft365Connections();
+      const existingConnection = existingConnections.find(c => 
+        c.tenantId === tenantId && c.userId === userId
+      );
+      
+      if (existingConnection) {
+        // Update existing connection
+        await storage.updateMicrosoft365Connection(existingConnection.id, {
+          accessToken,
+          refreshToken,
+          tenantName: tenantName || existingConnection.tenantName,
+          expiresAt: new Date(Date.now() + (tokenData.expires_in * 1000))
+        });
+        
+        // Create audit log
+        await storage.createAuditLog({
+          userId,
+          action: "update_microsoft365_connection",
+          details: `Updated Microsoft 365 connection for tenant: ${tenantName || tenantId}`
+        });
+      } else {
+        // Create new connection
+        await storage.createMicrosoft365Connection({
+          userId,
+          tenantId,
+          tenantName: tenantName || 'Microsoft 365 Tenant',
+          tenantDomain,
+          clientId,
+          clientSecret,
+          accessToken,
+          refreshToken,
+          expiresAt: new Date(Date.now() + (tokenData.expires_in * 1000))
+        });
+        
+        // Create audit log
+        await storage.createAuditLog({
+          userId,
+          action: "create_microsoft365_connection",
+          details: `Connected to Microsoft 365 tenant: ${tenantName || tenantId}`
+        });
+      }
+      
+      // Clear OAuth state
+      delete session.oauthState;
+      delete session.userId;
+      
+      // Redirect to settings page with success message
+      res.redirect('/settings?tab=integrations&success=true');
+      
+    } catch (error) {
+      console.error('Microsoft OAuth Error:', error);
+      res.redirect(`/settings?tab=integrations&error=${encodeURIComponent(error instanceof Error ? error.message : 'Authentication failed')}`);
+    }
+  }));
+  
+  // List Microsoft 365 connections for the authenticated user
+  app.get('/api/connections/microsoft365', isAuthenticated, asyncHandler(async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    
+    try {
+      const connections = await storage.getMicrosoft365ConnectionsByUserId(userId);
+      
+      // Don't return sensitive information
+      const safeConnections = connections.map(conn => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { clientSecret, accessToken, refreshToken, ...safeConn } = conn;
+        return safeConn;
+      });
+      
+      res.json(safeConnections);
+    } catch (error) {
+      console.error('Error fetching Microsoft 365 connections:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch Microsoft 365 connections',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }));
+  
+  // Delete a Microsoft 365 connection
+  app.delete('/api/connections/microsoft365/:id', isAuthenticated, asyncHandler(async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    const connectionId = parseInt(req.params.id);
+    
+    try {
+      // Get the connection to check if it belongs to the user
+      const connection = await storage.getMicrosoft365Connection(connectionId);
+      
+      if (!connection) {
+        return res.status(404).json({ message: 'Microsoft 365 connection not found' });
+      }
+      
+      if (connection.userId !== userId) {
+        return res.status(403).json({ message: 'You do not have permission to delete this connection' });
+      }
+      
+      // Delete the connection
+      await storage.deleteMicrosoft365Connection(connectionId);
+      
+      // Create audit log
+      await storage.createAuditLog({
+        userId,
+        action: "delete_microsoft365_connection",
+        details: `Deleted Microsoft 365 connection for tenant: ${connection.tenantName || connection.tenantId}`
+      });
+      
+      res.json({ success: true, message: 'Microsoft 365 connection deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting Microsoft 365 connection:', error);
+      res.status(500).json({ 
+        message: 'Failed to delete Microsoft 365 connection',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }));
 
   // Admin - User management
   app.get("/api/admin/users", isAuthenticated, isAuthorized([UserRoles.ADMIN]), asyncHandler(async (req, res) => {

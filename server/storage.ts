@@ -56,6 +56,8 @@ export interface IStorage {
   createMicrosoft365Connection(connection: InsertMicrosoft365Connection): Promise<Microsoft365Connection>;
   getMicrosoft365Connection(id: number): Promise<Microsoft365Connection | undefined>;
   getMicrosoft365ConnectionByTenantId(tenantId: number): Promise<Microsoft365Connection | undefined>;
+  getMicrosoft365Connections(): Promise<Microsoft365Connection[]>;
+  getMicrosoft365ConnectionsByUserId(userId: string): Promise<Microsoft365Connection[]>;
   updateMicrosoft365Connection(id: number, connection: Partial<InsertMicrosoft365Connection>): Promise<Microsoft365Connection>;
   deleteMicrosoft365Connection(id: number): Promise<void>;
   
