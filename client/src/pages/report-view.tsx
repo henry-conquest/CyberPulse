@@ -67,6 +67,7 @@ import RiskGauge from "@/components/dashboard/RiskGauge";
 import RiskIndicator from "@/components/dashboard/RiskIndicator";
 import SecurityItem from "@/components/dashboard/SecurityItem";
 import AnalystComments from "@/components/dashboard/AnalystComments";
+import SecureScoreWidget from "@/components/dashboard/SecureScoreWidget";
 
 // Schemas for the forms
 const commentsSchema = z.object({
@@ -331,10 +332,9 @@ export default function ReportView({ id }: ReportViewProps) {
   }
 
   // Get security data from the report
+  // The securityData structure in reports is just the securityData object (not nested)
   const securityData = report.securityData || {};
   console.log("Report security data:", securityData);
-  
-  // Add SecureScoreWidget to the report view using the correct data structure
 
   // Check permissions
   const isAdmin = user?.role === "admin";
@@ -790,19 +790,13 @@ export default function ReportView({ id }: ReportViewProps) {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="p-3 border border-secondary-200 rounded-md flex flex-col">
-                    <span className="text-xs text-secondary-500">Microsoft 365 Secure Score</span>
-                    <div className="mt-2 flex items-center">
-                      <div className="flex-1 bg-secondary-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${securityData?.secureScorePercent > 70 ? 'bg-success' : securityData?.secureScorePercent > 30 ? 'bg-warning' : 'bg-danger'}`} 
-                          style={{ width: `${securityData?.secureScorePercent || 0}%` }}
-                        ></div>
-                      </div>
-                      <span className="ml-2 text-sm font-medium">
-                        {securityData?.secureScorePercent || 0}%
-                      </span>
-                    </div>
+                  <div className="p-3 border border-secondary-200 rounded-md">
+                    <SecureScoreWidget 
+                      currentScore={securityData?.secureScore || 0}
+                      previousScore={securityData?.previousSecureScore}
+                      currentPercent={securityData?.secureScorePercent || 0}
+                      previousPercent={securityData?.previousSecureScorePercent}
+                    />
                   </div>
                 </div>
                 
