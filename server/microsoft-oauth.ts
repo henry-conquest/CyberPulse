@@ -131,7 +131,10 @@ export function getAuthorizationUrl(
   
   // Ensure we have a valid client ID
   if (!finalClientId) {
-    throw new Error("Missing client_id for Microsoft OAuth flow");
+    console.error("Missing client ID for Microsoft OAuth authorization");
+    console.error("- Client ID (provided):", clientId);
+    console.error("- Client ID (environment):", process.env.MS_GRAPH_CLIENT_ID || 'none');
+    throw new Error("Missing client_id for Microsoft OAuth flow. Please ensure you've entered a valid Client ID in the form.");
   }
   
   authUrl.searchParams.append('client_id', finalClientId);
@@ -173,11 +176,17 @@ export async function exchangeCodeForToken(
   
   // Ensure we have a valid client ID and secret
   if (!finalClientId) {
-    throw new Error("Missing client_id for Microsoft OAuth token exchange");
+    console.error("Missing client ID for Microsoft OAuth token exchange");
+    console.error("- Client ID (provided):", clientId);
+    console.error("- Client ID (environment):", process.env.MS_GRAPH_CLIENT_ID || 'none');
+    throw new Error("Missing client_id for Microsoft OAuth token exchange. Please check your Azure app registration.");
   }
   
   if (!finalClientSecret) {
-    throw new Error("Missing client_secret for Microsoft OAuth token exchange");
+    console.error("Missing client secret for Microsoft OAuth token exchange");
+    console.error("- Client Secret provided:", clientSecret ? "Yes" : "No");
+    console.error("- Client Secret in environment:", process.env.MS_GRAPH_CLIENT_SECRET ? "Yes" : "No");
+    throw new Error("Missing client_secret for Microsoft OAuth token exchange. Please check your Azure app secret.");
   }
   
   const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
@@ -200,7 +209,26 @@ export async function exchangeCodeForToken(
   
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.error_description || 'Failed to exchange code for tokens');
+    
+    console.error("Token exchange failed with status:", response.status);
+    console.error("Error response:", errorData);
+    
+    const errorMessage = errorData.error_description || 
+                         errorData.error || 
+                         `Token exchange failed with status ${response.status}`;
+                         
+    // Provide more helpful error message for common issues
+    let userFriendlyError = errorMessage;
+    
+    if (errorMessage.includes('invalid_client')) {
+      userFriendlyError = 'Invalid client credentials. Please check your Client ID and Client Secret are correct.';
+    } else if (errorMessage.includes('invalid_grant')) {
+      userFriendlyError = 'Authorization code is invalid or expired. Please try the connection process again.';
+    } else if (errorMessage.includes('redirect_uri_mismatch')) {
+      userFriendlyError = 'Redirect URI mismatch. The redirect URI must exactly match what you configured in Azure.';
+    }
+    
+    throw new Error(userFriendlyError);
   }
   
   return await response.json();

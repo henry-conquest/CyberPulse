@@ -79,18 +79,29 @@ export default function IntegrationsPage() {
       setActiveTab(tab);
     }
 
-    if (success) {
+    if (success === 'true') {
       setConnSuccessDialog(true);
+      
+      // Clear URL parameters after handling
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
     }
 
     if (error) {
+      console.error("OAuth error from URL:", error);
       setConnErrorDialog(true);
-      setErrorMessage(error);
+      setErrorMessage(decodeURIComponent(error));
+      
+      // Clear URL parameters after handling
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
     }
 
-    // Clean URL after processing params
-    const newUrl = window.location.pathname;
-    window.history.replaceState({}, document.title, newUrl);
+    // Clean URL after processing all params (only if we didn't already clean it)
+    if (!success && !error && tab) {
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
   }, []);
 
   // Fetch Microsoft 365 connections
