@@ -115,6 +115,15 @@ export default function ReportView({ id }: ReportViewProps) {
   const { data: report, isLoading } = useQuery({
     queryKey: [`/api/tenants/${tenantId}/reports/${reportId}`],
     enabled: !!reportId && !!tenantId,
+    onSuccess: (data) => {
+      console.log('Report data loaded:', {
+        id: data?.id,
+        title: data?.title,
+        summary: data?.summary,
+        recommendations: data?.recommendations,
+        analystComments: data?.analystComments
+      });
+    }
   });
 
   // Update comments form when report data is loaded
@@ -471,6 +480,11 @@ export default function ReportView({ id }: ReportViewProps) {
             </CardHeader>
             <CardContent>
               <div className="prose prose-sm max-w-none">
+                {/* Debug info */}
+                <div className="bg-yellow-100 p-2 mb-4 rounded">
+                  <p><strong>Debug: Summary field value:</strong> {JSON.stringify(report?.summary)}</p>
+                </div>
+
                 {report?.summary ? (
                   <div dangerouslySetInnerHTML={{ __html: report.summary.replace(/\n/g, '<br />') }} />
                 ) : (
@@ -499,6 +513,11 @@ export default function ReportView({ id }: ReportViewProps) {
             </CardHeader>
             <CardContent>
               <div className="prose prose-sm max-w-none">
+                {/* Debug info */}
+                <div className="bg-yellow-100 p-2 mb-4 rounded">
+                  <p><strong>Debug: Recommendations field value:</strong> {JSON.stringify(report?.recommendations)}</p>
+                </div>
+
                 {report?.recommendations ? (
                   <div dangerouslySetInnerHTML={{ __html: report.recommendations.replace(/\n/g, '<br />') }} />
                 ) : (
