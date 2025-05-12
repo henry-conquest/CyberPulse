@@ -664,7 +664,7 @@ export default function Settings() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => window.location.href = `${window.location.origin}/integrations?tab=microsoft365`}
+                      onClick={() => window.location.href = `${window.location.origin}/integrations?tab=microsoft365&action=connect`}
                     >
                       <Link2 className="h-4 w-4 mr-2" />
                       Connect
@@ -715,7 +715,10 @@ export default function Settings() {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => window.location.href = `${window.location.origin}/integrations?tab=microsoft365`}
+                        onClick={() => {
+                          // Open the connection dialog on the integrations page
+                          window.location.href = `${window.location.origin}/integrations?tab=microsoft365&action=connect`;
+                        }}
                       >
                         <ExternalLink className="h-3 w-3 mr-1" />
                         Connect Another Tenant

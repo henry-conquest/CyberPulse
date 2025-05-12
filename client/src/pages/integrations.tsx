@@ -74,6 +74,7 @@ export default function IntegrationsPage() {
     const tab = params.get('tab');
     const success = params.get('success');
     const error = params.get('error');
+    const action = params.get('action');
 
     if (tab) {
       setActiveTab(tab);
@@ -84,7 +85,7 @@ export default function IntegrationsPage() {
       
       // Clear URL parameters after handling
       const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl);
+      window.history.replaceState({}, document.title, cleanUrl + (tab ? `?tab=${tab}` : ''));
     }
 
     if (error) {
@@ -94,11 +95,21 @@ export default function IntegrationsPage() {
       
       // Clear URL parameters after handling
       const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl);
+      window.history.replaceState({}, document.title, cleanUrl + (tab ? `?tab=${tab}` : ''));
     }
 
-    // Keep the tab parameter in the URL, just clean success and error if present
-    if (!success && !error && tab) {
+    // Check if we should open the connection dialog based on the action parameter
+    if (action === 'connect' && tab === 'microsoft365') {
+      console.log("Opening connection dialog from URL parameter");
+      setConnectDialogOpen(true);
+      
+      // Update URL to remove the action parameter but keep the tab
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl + (tab ? `?tab=${tab}` : ''));
+    }
+
+    // Keep the tab parameter in the URL, just clean success and error present
+    if (!success && !error && !action && tab) {
       // We want to keep the tab parameter
       // No need to clean the URL in this case
     }
