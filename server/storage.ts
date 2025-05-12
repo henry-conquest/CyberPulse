@@ -289,11 +289,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getReportsByTenantId(tenantId: number): Promise<Report[]> {
-    return await db
+    const reportData = await db
       .select()
       .from(reports)
       .where(eq(reports.tenantId, tenantId))
-      .orderBy(desc(reports.year), desc(reports.quarter));
+      .orderBy(desc(reports.year));
+      
+    // Process reports to ensure all have quarter data
+    return reportData.map(report => {
+      // If report doesn't have quarter but has month, convert month to quarter
+      if (!report.quarter && report.month) {
+        const monthNames = {
+          'January': 1, 'February': 1, 'March': 1, 
+          'April': 2, 'May': 2, 'June': 2,
+          'July': 3, 'August': 3, 'September': 3,
+          'October': 4, 'November': 4, 'December': 4
+        };
+        
+        report.quarter = monthNames[report.month as keyof typeof monthNames] || 1;
+      } else if (!report.quarter) {
+        // Default to Q1 if neither quarter nor month exists
+        report.quarter = 1;
+      }
+      
+      return report;
+    }).sort((a, b) => {
+      // Sort by year descending, then by quarter descending
+      if (a.year !== b.year) return b.year - a.year;
+      return (b.quarter || 1) - (a.quarter || 1);
+    });
   }
 
   async updateReport(id: number, report: Partial<InsertReport>): Promise<Report> {

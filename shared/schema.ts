@@ -88,10 +88,11 @@ export const reports = pgTable("reports", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull().references(() => tenants.id),
   title: varchar("title").notNull(),
-  quarter: integer("quarter").notNull(), // 1, 2, 3, 4
+  quarter: integer("quarter"), // 1, 2, 3, 4
+  month: varchar("month"), // Legacy support for existing data
   year: integer("year").notNull(),
-  startDate: date("start_date").notNull(), // Start of the quarter
-  endDate: date("end_date").notNull(), // End of the quarter
+  startDate: date("start_date"), // Start of the quarter
+  endDate: date("end_date"), // End of the quarter
   overallRiskScore: integer("overall_risk_score").notNull(),
   identityRiskScore: integer("identity_risk_score").notNull(),
   trainingRiskScore: integer("training_risk_score").notNull(),
