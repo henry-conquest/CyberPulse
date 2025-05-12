@@ -173,7 +173,7 @@ Cyber Security and the threats associated are a continuous moving target, howeve
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex flex-col items-center justify-center">
                 <RiskGauge 
-                  value={securityData.overallRiskScore} 
+                  value={securityData?.overallRiskScore || 0} 
                   size="lg" 
                   label="Overall Risk Level" 
                 />
@@ -185,19 +185,19 @@ Cyber Security and the threats associated are a continuous moving target, howeve
               <div className="md:col-span-2">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <RiskIndicator 
-                    value={securityData.identityRiskScore} 
+                    value={securityData?.identityRiskScore || 0} 
                     label="Identity Risk" 
                   />
                   <RiskIndicator 
-                    value={securityData.trainingRiskScore} 
+                    value={securityData?.trainingRiskScore || 0} 
                     label="Training Risk" 
                   />
                   <RiskIndicator 
-                    value={securityData.deviceRiskScore} 
+                    value={securityData?.deviceRiskScore || 0} 
                     label="Device Risk" 
                   />
                   <RiskIndicator 
-                    value={securityData.cloudRiskScore} 
+                    value={securityData?.cloudRiskScore || 0} 
                     label="Cloud Risk" 
                   />
                 </div>

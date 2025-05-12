@@ -427,6 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Calling fetchSecurityDataForTenant...");
       const data = await fetchSecurityDataForTenant(tenantId);
       console.log("Security data fetched:", JSON.stringify(data, null, 2));
+      console.log("Structure of data being sent to client:", Object.keys(data));
       res.json(data);
     } catch (error) {
       console.error("Error fetching security data:", error);

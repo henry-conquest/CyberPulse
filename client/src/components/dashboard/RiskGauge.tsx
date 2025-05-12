@@ -15,8 +15,9 @@ export default function RiskGauge({
   className,
   showLabel = true
 }: RiskGaugeProps) {
-  // Ensure value is between 0 and 100
-  const normalizedValue = Math.max(0, Math.min(100, value));
+  // Ensure value is a valid number between 0 and 100
+  const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
+  const normalizedValue = Math.max(0, Math.min(100, safeValue));
   
   // Calculate the stroke offset based on value
   // For a circle with r=54, the circumference is 2πr = 339.292

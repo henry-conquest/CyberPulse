@@ -13,7 +13,8 @@ export default function RiskIndicator({
   showPercent = true,
   className 
 }: RiskIndicatorProps) {
-  const normalizedValue = Math.max(0, Math.min(100, value));
+  const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
+  const normalizedValue = Math.max(0, Math.min(100, safeValue));
   
   // Determine color based on value
   let ringColor = "";
