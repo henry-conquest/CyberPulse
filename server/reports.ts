@@ -590,13 +590,16 @@ export async function createQuarterlyReport(tenantId: number, quarter: 1 | 2 | 3
       report.quarter === quarter && report.year === year
     );
     
-    if (existingReport && !forceRefresh) {
-      console.log(`Report for Q${quarter} ${year} for tenant ${tenantId} already exists, skipping creation`);
-      return null;
+    if (existingReport) {
+      if (!forceRefresh) {
+        console.log(`Report for Q${quarter} ${year} for tenant ${tenantId} already exists, skipping creation`);
+        return existingReport;
+      } else {
+        console.log(`Refreshing report for Q${quarter} ${year} for tenant ${tenantId}`);
+      }
+    } else {
+      console.log(`Creating new report for Q${quarter} ${year} for tenant ${tenantId}`);
     }
-    
-    const action = existingReport && forceRefresh ? "Refreshing" : "Creating";
-    console.log(`${action} report for Q${quarter} ${year} for tenant ${tenantId}`);
     
     
     // Get tenant information
@@ -629,8 +632,8 @@ export async function createQuarterlyReport(tenantId: number, quarter: 1 | 2 | 3
     // Calculate risk scores
     const riskScores = calculateRiskScores(securityData.securityData);
     
-    // Create new report
-    const newReport = await storage.createReport({
+    // Prepare report data
+    const reportData = {
       tenantId,
       title,
       quarter,
@@ -643,14 +646,31 @@ export async function createQuarterlyReport(tenantId: number, quarter: 1 | 2 | 3
       deviceRiskScore: riskScores.deviceRiskScore,
       cloudRiskScore: riskScores.cloudRiskScore,
       threatRiskScore: riskScores.threatRiskScore,
-      status: "new",
       securityData: securityData.securityData,
-      createdBy: userId
-    });
+    };
     
-    console.log(`Created Q${quarter} ${year} report for tenant ${tenant.name} (ID: ${tenantId})`);
+    let report;
+    if (existingReport && forceRefresh) {
+      // Update existing report
+      report = await storage.updateReport(existingReport.id, {
+        ...reportData,
+        // Don't change the status if we're just refreshing
+        status: existingReport.status,
+        updatedAt: new Date(),
+        updatedBy: userId
+      });
+      console.log(`Updated Q${quarter} ${year} report for tenant ${tenant.name} (ID: ${tenantId})`);
+    } else {
+      // Create new report
+      report = await storage.createReport({
+        ...reportData,
+        status: "new",
+        createdBy: userId
+      });
+      console.log(`Created Q${quarter} ${year} report for tenant ${tenant.name} (ID: ${tenantId})`);
+    }
     
-    return newReport;
+    return report;
   } catch (error) {
     console.error(`Error creating quarterly report for tenant ${tenantId}, Q${quarter} ${year}:`, error);
     return null;
