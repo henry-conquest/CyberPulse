@@ -97,10 +97,10 @@ export default function IntegrationsPage() {
       window.history.replaceState({}, document.title, cleanUrl);
     }
 
-    // Clean URL after processing all params (only if we didn't already clean it)
+    // Keep the tab parameter in the URL, just clean success and error if present
     if (!success && !error && tab) {
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+      // We want to keep the tab parameter
+      // No need to clean the URL in this case
     }
   }, []);
 
