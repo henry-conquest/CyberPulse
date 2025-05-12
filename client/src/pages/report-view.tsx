@@ -119,8 +119,6 @@ export default function ReportView({ id }: ReportViewProps) {
       console.log('Report data loaded:', {
         id: data?.id,
         title: data?.title,
-        summary: data?.summary,
-        recommendations: data?.recommendations,
         analystComments: data?.analystComments
       });
     }
@@ -493,7 +491,7 @@ export default function ReportView({ id }: ReportViewProps) {
                 <DialogHeader>
                   <DialogTitle>Edit Analyst Comments</DialogTitle>
                   <DialogDescription>
-                    Provide your analysis and recommendations for this report.
+                    Provide your analyst comments for this report.
                   </DialogDescription>
                 </DialogHeader>
                 
@@ -508,7 +506,7 @@ export default function ReportView({ id }: ReportViewProps) {
                           <FormControl>
                             <Textarea 
                               {...field} 
-                              placeholder="Add your analysis and recommendations..." 
+                              placeholder="Add your analyst comments..." 
                               rows={12}
                             />
                           </FormControl>
