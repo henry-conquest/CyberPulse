@@ -6,37 +6,34 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useParams } from "wouter";
 
 // Form schemas
 const ms365Schema = z.object({
   tenantName: z.string().min(1, "Tenant name is required"),
   tenantDomain: z.string().min(1, "Tenant domain is required"),
   clientId: z.string().min(1, "Client ID is required"),
-  clientSecret: z.string().min(1, "Client secret is required"),
+  clientSecret: z.string().optional(),
 });
 
 const ninjaOneSchema = z.object({
   instanceUrl: z.string().min(1, "Instance URL is required"),
   clientId: z.string().min(1, "Client ID is required"),
-  clientSecret: z.string().min(1, "Client secret is required"),
+  clientSecret: z.string().optional(),
 });
 
 type MS365FormValues = z.infer<typeof ms365Schema>;
 type NinjaOneFormValues = z.infer<typeof ninjaOneSchema>;
 
 export default function Integrations() {
-  const { id: paramId } = useParams();
-  const tenantId = paramId ? parseInt(paramId) : null;
+  const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
   const [tenants, setTenants] = useState<any[]>([]);
-  const [selectedTenantId, setSelectedTenantId] = useState<number | null>(tenantId);
-  const [ms365Connection, setMs365Connection] = useState<any | null>(null);
-  const [ninjaConnection, setNinjaConnection] = useState<any | null>(null);
+  const [ms365Connection, setMs365Connection] = useState<any>(null);
+  const [ninjaConnection, setNinjaConnection] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -60,16 +57,16 @@ export default function Integrations() {
     },
   });
 
-  // Fetch tenants when component mounts
+  // Fetch tenants on mount
   useEffect(() => {
     const fetchTenants = async () => {
       try {
-        const tenantsData = await apiRequest("/api/tenants", { method: "GET" });
-        setTenants(tenantsData);
+        const response = await fetch("/api/tenants");
+        const data = await response.json();
+        setTenants(data);
         
-        // If no tenant is selected but we have tenants, select the first one
-        if (!selectedTenantId && tenantsData.length > 0) {
-          setSelectedTenantId(tenantsData[0].id);
+        if (data.length > 0) {
+          setSelectedTenantId(data[0].id);
         }
       } catch (error) {
         console.error("Error fetching tenants:", error);
@@ -84,55 +81,36 @@ export default function Integrations() {
     fetchTenants();
   }, [toast]);
 
-  // Fetch connections when a tenant is selected
+  // Fetch existing connections when tenant is selected
   useEffect(() => {
-    if (!selectedTenantId) return;
-
     const fetchConnections = async () => {
+      if (!selectedTenantId) return;
+
       try {
         // Fetch Microsoft 365 connection
-        try {
-          const ms365Data = await apiRequest(`/api/tenants/${selectedTenantId}/microsoft365`, {
-            method: "GET",
-          });
-          
+        const ms365Response = await fetch(`/api/tenants/${selectedTenantId}/microsoft365`);
+        const ms365Data = await ms365Response.json();
+        
+        if (ms365Data) {
           setMs365Connection(ms365Data);
           ms365Form.reset({
-            tenantName: ms365Data.tenantName,
-            tenantDomain: ms365Data.tenantDomain,
-            clientId: ms365Data.clientId,
-            clientSecret: "", // Don't populate secret
-          });
-        } catch (error) {
-          // Connection might not exist
-          setMs365Connection(null);
-          ms365Form.reset({
-            tenantName: "",
-            tenantDomain: "",
-            clientId: "",
-            clientSecret: "",
+            tenantName: ms365Data.tenantName || "",
+            tenantDomain: ms365Data.tenantDomain || "",
+            clientId: ms365Data.clientId || "",
+            clientSecret: "", // Don't expose the secret
           });
         }
 
         // Fetch NinjaOne connection
-        try {
-          const ninjaData = await apiRequest(`/api/tenants/${selectedTenantId}/ninjaone`, {
-            method: "GET",
-          });
-          
+        const ninjaResponse = await fetch(`/api/tenants/${selectedTenantId}/ninjaone`);
+        const ninjaData = await ninjaResponse.json();
+        
+        if (ninjaData) {
           setNinjaConnection(ninjaData);
           ninjaForm.reset({
-            instanceUrl: ninjaData.instanceUrl,
-            clientId: ninjaData.clientId,
-            clientSecret: "", // Don't populate secret
-          });
-        } catch (error) {
-          // Connection might not exist
-          setNinjaConnection(null);
-          ninjaForm.reset({
-            instanceUrl: "",
-            clientId: "",
-            clientSecret: "",
+            instanceUrl: ninjaData.instanceUrl || "",
+            clientId: ninjaData.clientId || "",
+            clientSecret: "", // Don't expose the secret
           });
         }
       } catch (error) {
@@ -154,10 +132,8 @@ export default function Integrations() {
 
     try {
       const method = ms365Connection ? "PATCH" : "POST";
-      const endpoint = `/api/tenants/${selectedTenantId}/microsoft365`;
       
-      await apiRequest(endpoint, {
-        method,
+      await apiRequest(method, `/api/tenants/${selectedTenantId}/microsoft365`, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -166,13 +142,16 @@ export default function Integrations() {
 
       toast({
         title: "Success",
-        description: `Microsoft 365 connection ${ms365Connection ? "updated" : "created"} successfully`,
+        description: ms365Connection 
+          ? "Microsoft 365 connection updated"
+          : "Microsoft 365 connection created",
       });
 
-      // Invalidate queries
-      queryClient.invalidateQueries({ 
-        queryKey: [`/api/tenants/${selectedTenantId}/microsoft365`] 
-      });
+      // Refetch connections
+      queryClient.invalidateQueries([`/api/tenants/${selectedTenantId}/microsoft365`]);
+      
+      // Reset the form
+      ms365Form.reset(data);
     } catch (error) {
       console.error("Error saving Microsoft 365 connection:", error);
       toast({
@@ -189,10 +168,8 @@ export default function Integrations() {
 
     try {
       const method = ninjaConnection ? "PATCH" : "POST";
-      const endpoint = `/api/tenants/${selectedTenantId}/ninjaone`;
       
-      await apiRequest(endpoint, {
-        method,
+      await apiRequest(method, `/api/tenants/${selectedTenantId}/ninjaone`, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -201,13 +178,16 @@ export default function Integrations() {
 
       toast({
         title: "Success",
-        description: `NinjaOne connection ${ninjaConnection ? "updated" : "created"} successfully`,
+        description: ninjaConnection 
+          ? "NinjaOne connection updated"
+          : "NinjaOne connection created",
       });
 
-      // Invalidate queries
-      queryClient.invalidateQueries({ 
-        queryKey: [`/api/tenants/${selectedTenantId}/ninjaone`] 
-      });
+      // Refetch connections
+      queryClient.invalidateQueries([`/api/tenants/${selectedTenantId}/ninjaone`]);
+      
+      // Reset the form
+      ninjaForm.reset(data);
     } catch (error) {
       console.error("Error saving NinjaOne connection:", error);
       toast({
@@ -219,14 +199,13 @@ export default function Integrations() {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Integration Settings</h1>
+    <div className="max-w-7xl mx-auto">
+      <h1 className="text-xl font-bold mb-4">API Integrations</h1>
       
-      {/* Tenant selection */}
-      <div className="mb-8">
-        <FormLabel>Select Tenant</FormLabel>
-        <Select
-          value={selectedTenantId?.toString() || ""}
+      <div className="mb-6">
+        <label className="text-sm font-medium mb-2 block">Select Tenant</label>
+        <Select 
+          value={selectedTenantId?.toString()} 
           onValueChange={(value) => setSelectedTenantId(parseInt(value))}
         >
           <SelectTrigger className="w-full max-w-md">
@@ -259,83 +238,81 @@ export default function Integrations() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Form {...ms365Form}>
-                  <form onSubmit={ms365Form.handleSubmit(onMs365Submit)} className="space-y-4">
-                    <FormField
-                      control={ms365Form.control}
-                      name="tenantName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tenant Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            The display name of your Microsoft 365 tenant
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={ms365Form.control}
-                      name="tenantDomain"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tenant Domain</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Your Azure AD tenant domain (e.g., contoso.onmicrosoft.com)
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={ms365Form.control}
-                      name="clientId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Client ID</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            The application client ID from your Azure app registration
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={ms365Form.control}
-                      name="clientSecret"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Client Secret</FormLabel>
-                          <FormControl>
-                            <Input type="password" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            {ms365Connection 
-                              ? "Leave blank to keep the existing secret" 
-                              : "The application client secret from your Azure app registration"}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button type="submit" className="mt-4">
-                      {ms365Connection ? "Update Connection" : "Create Connection"}
-                    </Button>
-                  </form>
-                </Form>
+                <form onSubmit={ms365Form.handleSubmit(onMs365Submit)} className="space-y-4">
+                  <FormField
+                    control={ms365Form.control}
+                    name="tenantName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tenant Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          The display name of your Microsoft 365 tenant
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={ms365Form.control}
+                    name="tenantDomain"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tenant Domain</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Your Azure AD tenant domain (e.g., contoso.onmicrosoft.com)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={ms365Form.control}
+                    name="clientId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Client ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          The application client ID from your Azure app registration
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={ms365Form.control}
+                    name="clientSecret"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Client Secret</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          {ms365Connection 
+                            ? "Leave blank to keep the existing secret" 
+                            : "The application client secret from your Azure app registration"}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button type="submit" className="mt-4">
+                    {ms365Connection ? "Update Connection" : "Create Connection"}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>
@@ -346,77 +323,76 @@ export default function Integrations() {
               <CardHeader>
                 <CardTitle>NinjaOne Integration</CardTitle>
                 <CardDescription>
-                  Connect to NinjaOne to retrieve device compliance data for risk assessment.
+                  Connect to NinjaOne RMM to retrieve device and compliance data.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Form {...ninjaForm}>
-                  <form onSubmit={ninjaForm.handleSubmit(onNinjaSubmit)} className="space-y-4">
-                    <FormField
-                      control={ninjaForm.control}
-                      name="instanceUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Instance URL</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Your NinjaOne instance URL (e.g., https://app.ninjarmm.com)
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={ninjaForm.control}
-                      name="clientId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Client ID</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            The client ID from your NinjaOne API credentials
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={ninjaForm.control}
-                      name="clientSecret"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Client Secret</FormLabel>
-                          <FormControl>
-                            <Input type="password" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            {ninjaConnection 
-                              ? "Leave blank to keep the existing secret" 
-                              : "The client secret from your NinjaOne API credentials"}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button type="submit" className="mt-4">
-                      {ninjaConnection ? "Update Connection" : "Create Connection"}
-                    </Button>
-                  </form>
-                </Form>
+                <form onSubmit={ninjaForm.handleSubmit(onNinjaSubmit)} className="space-y-4">
+                  <FormField
+                    control={ninjaForm.control}
+                    name="instanceUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Instance URL</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Your NinjaOne instance URL (e.g., https://app.ninjarmm.com)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={ninjaForm.control}
+                    name="clientId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Client ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Your NinjaOne API client ID
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={ninjaForm.control}
+                    name="clientSecret"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Client Secret</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          {ninjaConnection 
+                            ? "Leave blank to keep the existing secret" 
+                            : "Your NinjaOne API client secret"}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button type="submit" className="mt-4">
+                    {ninjaConnection ? "Update Connection" : "Create Connection"}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       ) : (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">Please select a tenant to configure integrations</p>
+        <div className="bg-secondary-50 p-6 rounded-lg text-center">
+          <p className="text-lg text-secondary-600 mb-4">No tenants available</p>
+          <p className="text-secondary-500">Create a tenant first to configure integrations.</p>
         </div>
       )}
     </div>
