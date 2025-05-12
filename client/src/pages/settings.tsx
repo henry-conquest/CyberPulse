@@ -712,17 +712,16 @@ export default function Settings() {
                         <AlertTriangle className="h-4 w-4 inline-block mr-2 text-amber-500" />
                         Disconnecting will remove access to Microsoft 365 security metrics
                       </p>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          // Open the connection dialog on the integrations page
-                          window.location.href = `${window.location.origin}/integrations?tab=microsoft365&action=connect`;
-                        }}
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Connect Another Tenant
-                      </Button>
+                      <a href="/integrations?tab=microsoft365&action=connect">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          type="button"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Connect Another Tenant
+                        </Button>
+                      </a>
                     </div>
                   </div>
                 )}

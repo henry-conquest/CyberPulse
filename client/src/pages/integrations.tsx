@@ -204,8 +204,8 @@ export default function IntegrationsPage() {
     defaultValues: {
       clientId: "",
       clientSecret: "",
-      // Default to the current domain for the redirect URI
-      redirectUri: `${window.location.origin}/api/auth/microsoft365/callback`,
+      // Default to the configured redirect URI
+      redirectUri: "https://conquestwildman.replit.app/api/auth/microsoft365/callback",
       companyId: ""
     },
     // Ensure validation happens on all changes
