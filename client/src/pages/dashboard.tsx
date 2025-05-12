@@ -13,6 +13,7 @@ import RiskIndicator from "@/components/dashboard/RiskIndicator";
 import SecurityItem from "@/components/dashboard/SecurityItem";
 import ThreatTable, { Threat } from "@/components/dashboard/ThreatTable";
 import AnalystComments from "@/components/dashboard/AnalystComments";
+import SecureScoreWidget from "@/components/dashboard/SecureScoreWidget";
 
 interface DashboardProps {
   tenantId?: string;
@@ -284,6 +285,64 @@ Cyber Security and the threats associated are a continuous moving target, howeve
                     )}
                   </ul>
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Microsoft Secure Score Widget */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <Card>
+          <CardContent className="pt-6">
+            <SecureScoreWidget 
+              currentScore={securityData.securityData?.secureScore || 0}
+              previousScore={securityData.securityData?.previousSecureScore}
+              currentPercent={securityData.securityData?.secureScorePercent || 0}
+              previousPercent={securityData.securityData?.previousSecureScorePercent}
+            />
+          </CardContent>
+        </Card>
+        
+        <Card className="md:col-span-2">
+          <CardContent className="pt-6">
+            <h3 className="text-base font-semibold mb-4">Microsoft 365 Secure Score Insights</h3>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600">
+                The Microsoft Secure Score is a measurement of your organization's security posture, with a higher number indicating more improvement actions taken.
+              </p>
+              
+              {securityData.securityData?.previousSecureScorePercent !== undefined && (
+                <div className="bg-gray-50 p-3 rounded-md">
+                  <h4 className="text-sm font-medium mb-2">Quarter-over-Quarter Performance</h4>
+                  <p className="text-sm">
+                    {securityData.securityData.secureScorePercent > (securityData.securityData.previousSecureScorePercent || 0) ? (
+                      <>Your security score has <span className="text-green-600 font-medium">improved</span> compared to last quarter.</>
+                    ) : securityData.securityData.secureScorePercent < (securityData.securityData.previousSecureScorePercent || 0) ? (
+                      <>Your security score has <span className="text-red-600 font-medium">declined</span> compared to last quarter.</>
+                    ) : (
+                      <>Your security score has <span className="text-gray-600 font-medium">remained the same</span> compared to last quarter.</>
+                    )}
+                  </p>
+                </div>
+              )}
+              
+              <div className="bg-blue-50 p-3 rounded-md">
+                <h4 className="text-sm font-medium text-blue-700 mb-2">Recommendations</h4>
+                <ul className="text-sm space-y-2 text-blue-700">
+                  {!securityData.securityData?.identityMetrics?.phishResistantMfa && (
+                    <li>• Enable phishing-resistant MFA for all admin accounts</li>
+                  )}
+                  {!securityData.securityData?.cloudMetrics?.conditionalAccess && (
+                    <li>• Configure conditional access policies</li>
+                  )}
+                  {!securityData.securityData?.deviceMetrics?.diskEncryption && (
+                    <li>• Enforce disk encryption on all devices</li>
+                  )}
+                  {!securityData.securityData?.cloudMetrics?.sensitivityLabels && (
+                    <li>• Implement sensitivity labels for data classification</li>
+                  )}
+                </ul>
               </div>
             </div>
           </CardContent>
