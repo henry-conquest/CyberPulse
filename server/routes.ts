@@ -1265,6 +1265,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Generate current quarterly report
+  // Endpoint to refresh a specific report with the latest data
+  app.post("/api/tenants/:tenantId/reports/:reportId/refresh", isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
+    const tenantId = parseInt(req.params.tenantId);
+    const reportId = parseInt(req.params.reportId);
+    const userId = (req.user as any)?.claims?.sub || null;
+    
+    // Check if user has access to this tenant
+    const hasAccess = await hasTenantAccess(userId, tenantId);
+    if (!hasAccess && (req.user as any)?.role !== UserRoles.ADMIN) {
+      return res.status(403).json({ message: "You don't have access to this tenant" });
+    }
+    
+    // Get the report to check if it exists
+    const report = await storage.getReport(reportId);
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+    
+    // Check if report belongs to the specified tenant
+    if (report.tenantId !== tenantId) {
+      return res.status(403).json({ message: "Report does not belong to this tenant" });
+    }
+    
+    // Refresh the report
+    const refreshedReport = await createQuarterlyReport(
+      tenantId, 
+      report.quarter as 1 | 2 | 3 | 4, 
+      report.year,
+      userId,
+      true // Force refresh
+    );
+    
+    if (!refreshedReport) {
+      return res.status(500).json({ message: "Failed to refresh report" });
+    }
+    
+    res.json({
+      message: "Report refreshed successfully",
+      report: refreshedReport
+    });
+  }));
+  
   app.post("/api/tenants/:id/generate-quarterly-report", isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
     const userId = (req.user as any).claims.sub;
     const tenantId = parseInt(req.params.id);

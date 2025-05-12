@@ -14,10 +14,12 @@ import {
   Calendar as CalendarIcon,
   ChevronDown,
   X,
+  RefreshCw,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Card, 
   CardContent, 
@@ -41,7 +43,6 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 interface Report {
@@ -117,6 +118,10 @@ const isCurrentQuarter = (report: Report): boolean => {
 };
 
 const ReportPeriodCard = ({ report }: { report: Report }) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   const riskScoreColor = report.overallRiskScore >= 75 
     ? "text-red-500" 
     : report.overallRiskScore >= 50 
@@ -124,6 +129,52 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
       : "text-green-500";
   
   const current = isCurrentQuarter(report);
+
+  // Mutation for refreshing a report
+  const refreshReportMutation = useMutation({
+    mutationFn: async () => {
+      setIsRefreshing(true);
+      const response = await fetch(`/api/tenants/${report.tenantId}/reports/${report.id}/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to refresh report');
+      }
+      
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success!",
+        description: "Report has been refreshed with the latest data.",
+        variant: "default",
+      });
+      // Refresh the reports list
+      queryClient.invalidateQueries({ queryKey: [`/api/reports/by-tenant?tenantId=${report.tenantId}`] });
+      // Also invalidate the specific report data
+      queryClient.invalidateQueries({ queryKey: [`/api/tenants/${report.tenantId}/reports/${report.id}`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to refresh report. Please try again later.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsRefreshing(false);
+    }
+  });
+  
+  const handleRefresh = (e: React.MouseEvent) => {
+    e.preventDefault();
+    refreshReportMutation.mutate();
+  };
 
   return (
     <Card className={cn(
@@ -192,13 +243,26 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="pt-2 flex justify-between">
-        <Button variant="outline" size="sm" asChild>
-          <Link href={`/tenants/${report.tenantId}/reports/${report.id}/risk-stats`}>
-            <Eye className="h-4 w-4 mr-2" />
-            View Risk Stats
-          </Link>
-        </Button>
+      <CardFooter className="pt-2 flex flex-wrap gap-2 justify-between">
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/tenants/${report.tenantId}/reports/${report.id}/risk-stats`}>
+              <Eye className="h-4 w-4 mr-2" />
+              View Risk Stats
+            </Link>
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
+            {isRefreshing ? "Refreshing..." : "Refresh Data"}
+          </Button>
+        </div>
+        
         {report.status !== "sent" && (
           <Button size="sm" variant="default" asChild>
             <Link href={`/tenants/${report.tenantId}/reports/${report.id}/edit`}>
