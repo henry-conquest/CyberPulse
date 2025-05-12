@@ -164,6 +164,8 @@ export const auditLogs = pgTable("audit_logs", {
   tenantId: integer("tenant_id").references(() => tenants.id),
   action: varchar("action").notNull(),
   details: text("details"),
+  entityType: varchar("entity_type"),
+  entityId: varchar("entity_id"),
   timestamp: timestamp("timestamp").defaultNow(),
 });
 

@@ -536,22 +536,73 @@ export async function storeOAuthConnection(
  */
 export async function getValidAccessToken(tenantId: string): Promise<string | null> {
   try {
+    if (!tenantId) {
+      console.error("Cannot get valid access token: Tenant ID is required");
+      return null;
+    }
+    
     console.log(`Getting valid access token for tenant ID: ${tenantId}`);
-    const connection = await storage.getMicrosoft365OAuthConnectionByTenantId(tenantId);
+    
+    // First check if connection exists
+    let connection: Microsoft365OAuthConnection | undefined;
+    try {
+      connection = await storage.getMicrosoft365OAuthConnectionByTenantId(tenantId);
+    } catch (fetchError) {
+      console.error(`Database error when fetching OAuth connection for tenant ${tenantId}:`, fetchError);
+      return null;
+    }
     
     if (!connection) {
       console.error(`No OAuth connection found for tenant ID: ${tenantId}`);
       return null;
     }
     
+    // Check if connection is flagged as needing reconnection
+    if (connection.needsReconnection) {
+      console.error(`OAuth connection for tenant ${tenantId} requires reconnection. User must go through OAuth flow again.`);
+      return null;
+    }
+    
+    // Check if token exists
+    if (!connection.accessToken) {
+      console.error(`No access token found for tenant ${tenantId}`);
+      // Flag connection as needing reconnection
+      try {
+        await storage.updateMicrosoft365OAuthConnection(connection.id, { needsReconnection: true });
+        console.log(`Marked connection as needing reconnection due to missing access token for tenant ID: ${tenantId}`);
+      } catch (updateError) {
+        console.error("Failed to mark connection as needing reconnection:", updateError);
+      }
+      return null;
+    }
+    
     // Check if token is expired
     const now = new Date();
-    if (connection.expiresAt && connection.expiresAt > now) {
+    const tokenValidityBuffer = 300; // 5 minutes buffer to handle clock skew or processing time
+    
+    // If token expires in more than 5 minutes, use existing token
+    if (connection.expiresAt && 
+        connection.expiresAt > now && 
+        (connection.expiresAt.getTime() - now.getTime()) > (tokenValidityBuffer * 1000)) {
+      
       console.log(`Using existing access token for tenant ID: ${tenantId} (expires in ${Math.floor((connection.expiresAt.getTime() - now.getTime()) / 1000)} seconds)`);
       return connection.accessToken;
     }
     
-    console.log(`Access token expired for tenant ID: ${tenantId}, refreshing token`);
+    console.log(`Access token expired or close to expiry for tenant ID: ${tenantId}, refreshing token`);
+    
+    // Check if refresh token exists
+    if (!connection.refreshToken) {
+      console.error(`No refresh token found for tenant ${tenantId}`);
+      // Flag connection as needing reconnection
+      try {
+        await storage.updateMicrosoft365OAuthConnection(connection.id, { needsReconnection: true });
+        console.log(`Marked connection as needing reconnection due to missing refresh token for tenant ID: ${tenantId}`);
+      } catch (updateError) {
+        console.error("Failed to mark connection as needing reconnection:", updateError);
+      }
+      return null;
+    }
     
     try {
       // Token expired, refresh it
@@ -559,15 +610,40 @@ export async function getValidAccessToken(tenantId: string): Promise<string | nu
       
       console.log(`Token refreshed successfully for tenant ID: ${tenantId}`);
       
+      // Validate token response
+      if (!tokenResponse.access_token) {
+        throw new Error("Refresh request succeeded but no access token was returned");
+      }
+      
       try {
+        // Calculate proper expiration time
+        const expiresIn = typeof tokenResponse.expires_in === 'number' ? tokenResponse.expires_in : 3600; // Default to 1 hour if not specified
+        const expiresAt = new Date(Date.now() + (expiresIn * 1000));
+        
         // Update connection with new tokens
         await storage.updateMicrosoft365OAuthConnection(connection.id, {
           accessToken: tokenResponse.access_token,
-          refreshToken: tokenResponse.refresh_token,
-          expiresAt: new Date(Date.now() + (tokenResponse.expires_in * 1000))
+          refreshToken: tokenResponse.refresh_token || connection.refreshToken, // Use existing refresh token if not returned
+          expiresAt: expiresAt,
+          needsReconnection: false // Reset reconnection flag if it was set
         });
         
         console.log(`OAuth connection updated with new tokens for tenant ID: ${tenantId}`);
+        
+        // Create an audit log entry for successful token refresh
+        try {
+          await storage.createAuditLog({
+            userId: connection.userId,
+            tenantId: connection.companyId || null,
+            action: "TOKEN_REFRESH",
+            details: `Successfully refreshed Microsoft 365 access token for tenant ${connection.tenantName}`,
+            entityType: "MICROSOFT365_OAUTH_CONNECTION",
+            entityId: tenantId
+          });
+        } catch (auditError) {
+          console.error("Failed to create audit log for token refresh:", auditError);
+        }
+        
         return tokenResponse.access_token;
       } catch (dbError) {
         console.error(`Error updating OAuth connection with new tokens: ${dbError instanceof Error ? dbError.message : 'Unknown database error'}`);
@@ -580,7 +656,11 @@ export async function getValidAccessToken(tenantId: string): Promise<string | nu
       // If the refresh token is invalid or expired, flag the connection
       if (refreshError instanceof Error && 
           (refreshError.message.includes('Refresh token has expired') || 
-           refreshError.message.includes('invalid_grant'))) {
+           refreshError.message.includes('invalid_grant') ||
+           refreshError.message.includes('invalid_client') ||
+           refreshError.message.toLowerCase().includes('token') ||
+           refreshError.message.toLowerCase().includes('auth'))) {
+           
         try {
           // Create a type-safe partial update object
           const updateData: Partial<Microsoft365OAuthConnection> = {
@@ -589,17 +669,28 @@ export async function getValidAccessToken(tenantId: string): Promise<string | nu
           
           await storage.updateMicrosoft365OAuthConnection(connection.id, updateData);
           console.log(`Marked connection as needing reconnection for tenant ID: ${tenantId}`);
+          
+          // Create an audit log entry for failed token refresh
+          await storage.createAuditLog({
+            userId: connection.userId,
+            tenantId: connection.companyId || null,
+            action: "TOKEN_REFRESH_ERROR",
+            details: `Failed to refresh Microsoft 365 access token: ${refreshError.message}`,
+            entityType: "MICROSOFT365_OAUTH_CONNECTION",
+            entityId: tenantId
+          });
         } catch (flagError) {
           console.error(`Failed to mark connection as needing reconnection: ${flagError instanceof Error ? flagError.message : 'Unknown error'}`);
         }
       }
       
-      throw refreshError;
+      // Don't throw, return null instead to prevent crashes in calling code
+      return null;
     }
   } catch (error) {
-    console.error('Error getting valid access token:', error);
+    console.error(`Error getting valid access token for tenant ${tenantId}:`, error);
     
-    // Create a more detailed error message for upstream handlers
+    // Create a more detailed error message for upstream handlers and logs
     let message = 'Error retrieving Microsoft 365 access token.';
     if (error instanceof Error) {
       // Pass through specific error messages we've crafted in our refresh token function
@@ -612,7 +703,10 @@ export async function getValidAccessToken(tenantId: string): Promise<string | nu
       }
     }
     
-    // Still return null to maintain backward compatibility with existing code
+    // Log the detailed error message
+    console.error(message);
+    
+    // Return null to prevent crashes in calling code
     return null;
   }
 }
