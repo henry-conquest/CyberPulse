@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { 
   Check, 
@@ -41,6 +41,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface Report {
   id: number;
@@ -212,6 +214,8 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
 
 export default function ReportPeriods() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Get tenantId from URL if present
   const urlTenantId = (() => {
@@ -232,9 +236,39 @@ export default function ReportPeriods() {
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedQuarter, setSelectedQuarter] = useState<number | null>(null);
   const [showPastReports, setShowPastReports] = useState<boolean>(true);
+  const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
   
   const { data: tenants, isLoading: isLoadingTenants } = useQuery<Tenant[]>({
     queryKey: ["/api/tenants"],
+  });
+  
+  // Mutation for generating a quarterly report
+  const generateQuarterlyReportMutation = useMutation({
+    mutationFn: async (tenantId: number) => {
+      setIsGeneratingReport(true);
+      return await apiRequest(`/api/tenants/${tenantId}/generate-quarterly-report`, {
+        method: 'POST'
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success!",
+        description: `Quarterly report for Q${data.quarter} ${data.year} has been created successfully.`,
+        variant: "default",
+      });
+      // Refresh the reports list
+      queryClient.invalidateQueries({ queryKey: [`/api/reports/by-tenant?tenantId=${selectedTenantId}`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to generate quarterly report. Please try again later.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsGeneratingReport(false);
+    }
   });
   
   const { data: reports, isLoading: isLoadingReports } = useQuery<Report[]>({
