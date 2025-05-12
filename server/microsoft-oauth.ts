@@ -92,6 +92,14 @@ export function getAuthorizationUrl(
   const finalClientId = clientId || process.env.MS_GRAPH_CLIENT_ID || "";
   const finalRedirectUri = redirectUri || process.env.MS_GRAPH_REDIRECT_URI || "";
   
+  // Debug information
+  console.log("Authorization URL generation:");
+  console.log(`- State: ${state}`);
+  console.log(`- Client ID (provided): ${clientId || 'none'}`);
+  console.log(`- Client ID (environment): ${process.env.MS_GRAPH_CLIENT_ID || 'none'}`);
+  console.log(`- Client ID (final): ${finalClientId}`);
+  console.log(`- Redirect URI (final): ${finalRedirectUri}`);
+  
   // Define required scopes
   const scopes = [
     'https://graph.microsoft.com/.default',
@@ -100,6 +108,12 @@ export function getAuthorizationUrl(
   
   // Build the authorization URL
   const authUrl = new URL('https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
+  
+  // Ensure we have a valid client ID
+  if (!finalClientId) {
+    throw new Error("Missing client_id for Microsoft OAuth flow");
+  }
+  
   authUrl.searchParams.append('client_id', finalClientId);
   authUrl.searchParams.append('response_type', 'code');
   authUrl.searchParams.append('redirect_uri', finalRedirectUri);
@@ -107,7 +121,10 @@ export function getAuthorizationUrl(
   authUrl.searchParams.append('state', state);
   authUrl.searchParams.append('response_mode', 'query');
   
-  return authUrl.toString();
+  const finalUrl = authUrl.toString();
+  console.log(`- Final URL: ${finalUrl}`);
+  
+  return finalUrl;
 }
 
 /**
@@ -124,7 +141,28 @@ export async function exchangeCodeForToken(
   const finalClientSecret = clientSecret || process.env.MS_GRAPH_CLIENT_SECRET || "";
   const finalRedirectUri = redirectUri || process.env.MS_GRAPH_REDIRECT_URI || "";
   
+  // Debug information
+  console.log("Token exchange:");
+  console.log(`- Code: ${code.substring(0, 5)}...`);
+  console.log(`- Client ID (provided): ${clientId || 'none'}`);
+  console.log(`- Client ID (environment): ${process.env.MS_GRAPH_CLIENT_ID || 'none'}`);
+  console.log(`- Client ID (final): ${finalClientId}`);
+  console.log(`- Client Secret (provided): ${clientSecret ? '[PROVIDED]' : 'none'}`);
+  console.log(`- Client Secret (environment): ${process.env.MS_GRAPH_CLIENT_SECRET ? '[PROVIDED]' : 'none'}`);
+  console.log(`- Redirect URI (final): ${finalRedirectUri}`);
+  
+  // Ensure we have a valid client ID and secret
+  if (!finalClientId) {
+    throw new Error("Missing client_id for Microsoft OAuth token exchange");
+  }
+  
+  if (!finalClientSecret) {
+    throw new Error("Missing client_secret for Microsoft OAuth token exchange");
+  }
+  
   const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+  
+  console.log(`- Token URL: ${tokenUrl}`);
   
   const response = await fetch(tokenUrl, {
     method: 'POST',

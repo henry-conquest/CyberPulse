@@ -203,6 +203,14 @@ export default function IntegrationsPage() {
         companyId: data.companyId,
       });
       
+      // For debugging
+      console.log("Sending OAuth request with params:");
+      console.log("- Client ID:", data.clientId);
+      console.log("- Client Secret:", data.clientSecret ? "[PROVIDED]" : "[EMPTY]");
+      console.log("- Redirect URI:", data.redirectUri);
+      console.log("- Company ID:", data.companyId);
+      console.log("- Full query string:", params.toString());
+      
       // Get the authorization URL with these credentials
       const response = await fetch(`/api/auth/microsoft365/authorize?${params.toString()}`, {
         method: 'GET',
