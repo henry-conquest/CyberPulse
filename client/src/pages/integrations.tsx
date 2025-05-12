@@ -195,14 +195,16 @@ export default function IntegrationsPage() {
     try {
       setIsConnecting(true);
       
-      // Store credentials in session storage temporarily (they'll be used in the callback)
-      sessionStorage.setItem('ms_graph_client_id', data.clientId);
-      sessionStorage.setItem('ms_graph_client_secret', data.clientSecret);
-      sessionStorage.setItem('ms_graph_redirect_uri', data.redirectUri);
-      sessionStorage.setItem('ms_graph_company_id', data.companyId);
+      // Build query string with credentials
+      const params = new URLSearchParams({
+        clientId: data.clientId,
+        clientSecret: data.clientSecret,
+        redirectUri: data.redirectUri,
+        companyId: data.companyId,
+      });
       
       // Get the authorization URL with these credentials
-      const response = await fetch('/api/auth/microsoft365/authorize', {
+      const response = await fetch(`/api/auth/microsoft365/authorize?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
