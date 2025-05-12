@@ -552,6 +552,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       recipients,
     });
   }));
+  
+  // Get a report by tenant ID and report ID (for risk stats page)
+  app.get("/api/tenants/:tenantId/reports/:id", isAuthenticated, asyncHandler(async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    const tenantId = parseInt(req.params.tenantId);
+    const reportId = parseInt(req.params.id);
+    
+    // Check if user has access to this tenant
+    const user = await storage.getUser(userId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
+    
+    if (!hasAccess) {
+      return res.status(403).json({ message: "You don't have access to this tenant" });
+    }
+    
+    // Get the report
+    const report = await storage.getReport(reportId);
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+    
+    // Verify the report belongs to the requested tenant
+    if (report.tenantId !== tenantId) {
+      return res.status(404).json({ message: "Report not found for this tenant" });
+    }
+    
+    // Get recipients
+    const recipients = await storage.getReportRecipients(reportId);
+    
+    res.json({
+      ...report,
+      recipients,
+    });
+  }));
 
   app.patch("/api/reports/:id", isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
     const userId = (req.user as any).claims.sub;
