@@ -57,7 +57,10 @@ export default function Integrations() {
     },
   });
 
-  // Fetch tenants on mount
+  // Parse URL parameters
+  const [location] = useLocation();
+  
+  // Fetch tenants on mount and check for tenant param in URL
   useEffect(() => {
     const fetchTenants = async () => {
       try {
@@ -65,7 +68,15 @@ export default function Integrations() {
         const data = await response.json();
         setTenants(data);
         
-        if (data.length > 0) {
+        // Check if there's a tenant ID in the URL params
+        const params = new URLSearchParams(window.location.search);
+        const tenantParam = params.get('tenant');
+        
+        if (tenantParam && data.some((t: any) => t.id === parseInt(tenantParam))) {
+          // If the tenant from URL exists in our data, select it
+          setSelectedTenantId(parseInt(tenantParam));
+        } else if (data.length > 0) {
+          // Otherwise, select the first tenant
           setSelectedTenantId(data[0].id);
         }
       } catch (error) {
@@ -79,7 +90,7 @@ export default function Integrations() {
     };
 
     fetchTenants();
-  }, [toast]);
+  }, [toast, location]);
 
   // Fetch existing connections when tenant is selected
   useEffect(() => {

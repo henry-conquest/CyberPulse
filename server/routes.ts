@@ -327,6 +327,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     res.json(connectionWithoutSecret);
   }));
+  
+  // Microsoft 365 security insights endpoint
+  app.get("/api/tenants/:id/microsoft365/security-insights", isAuthenticated, asyncHandler(async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    const tenantId = parseInt(req.params.id);
+    
+    // Check if user has access to this tenant
+    const user = await storage.getUser(userId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
+    
+    if (!hasAccess) {
+      return res.status(403).json({ message: "You don't have access to this tenant" });
+    }
+    
+    const connection = await storage.getMicrosoft365ConnectionByTenantId(tenantId);
+    
+    if (!connection) {
+      return res.status(404).json({ message: "Microsoft 365 connection not found" });
+    }
+    
+    try {
+      // Initialize the Microsoft Graph service with the connection
+      const graphService = new MicrosoftGraphService(connection);
+      
+      // Get detailed security metrics
+      const securityMetrics = await graphService.getSecurityMetrics();
+      
+      // Get MFA method details
+      const mfaDetails = await graphService.getMFAMethodDetails();
+      
+      // Get global admin details
+      const adminDetails = await graphService.getGlobalAdminDetails();
+      
+      // Get device compliance details
+      const deviceCompliance = await graphService.getDeviceComplianceDetails();
+      
+      // Create a comprehensive security insights response
+      const securityInsights = {
+        securityMetrics,
+        mfaDetails: {
+          summary: {
+            total: mfaDetails.phoneMFA + mfaDetails.emailMFA + mfaDetails.appMFA + mfaDetails.noMFA,
+            enabled: mfaDetails.phoneMFA + mfaDetails.emailMFA + mfaDetails.appMFA,
+            notEnabled: mfaDetails.noMFA
+          },
+          methods: {
+            phone: mfaDetails.phoneMFA,
+            email: mfaDetails.emailMFA,
+            app: mfaDetails.appMFA,
+            none: mfaDetails.noMFA
+          },
+          users: mfaDetails.users.map((user: any) => ({
+            displayName: user.userDisplayName,
+            userPrincipalName: user.userPrincipalName,
+            isMfaRegistered: user.isMfaRegistered,
+            methods: user.methodsRegistered || []
+          }))
+        },
+        globalAdmins: {
+          count: adminDetails.count,
+          admins: adminDetails.admins.map((admin: any) => ({
+            displayName: admin.displayName,
+            email: admin.userPrincipalName
+          }))
+        },
+        deviceCompliance: {
+          total: deviceCompliance.totalDevices,
+          compliant: deviceCompliance.compliantDevices,
+          nonCompliant: deviceCompliance.totalDevices - deviceCompliance.compliantDevices,
+          compliancePercentage: deviceCompliance.totalDevices > 0 
+            ? Math.round((deviceCompliance.compliantDevices / deviceCompliance.totalDevices) * 100) 
+            : 0,
+          diskEncryption: deviceCompliance.encryptionEnabled,
+          defenderEnabled: deviceCompliance.defenderEnabled
+        }
+      };
+      
+      res.json(securityInsights);
+    } catch (error) {
+      console.error('Error fetching Microsoft 365 security insights:', error);
+      res.status(500).json({ 
+        message: "Failed to fetch security insights from Microsoft 365", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  }));
 
   // NinjaOne connections
   app.get("/api/tenants/:id/ninjaone", isAuthenticated, asyncHandler(async (req, res) => {
