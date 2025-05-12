@@ -102,6 +102,8 @@ export const reports = pgTable("reports", {
   status: varchar("status").notNull().default("new"), // new, reviewed, analyst_ready, manager_ready, sent
   pdfUrl: varchar("pdf_url"),
   securityData: json("security_data").notNull(),
+  summary: text("summary"),
+  recommendations: text("recommendations"),
   analystComments: text("analyst_comments"),
   analystNotes: text("analyst_notes"), // Special notes only editable by analyst_notes role
   createdBy: varchar("created_by").references(() => users.id),

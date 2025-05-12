@@ -8,6 +8,7 @@ import Companies from "@/pages/companies";
 import Reports from "@/pages/reports";
 import ReportPeriods from "@/pages/report-periods";
 import ReportView from "@/pages/report-view";
+import EditReport from "@/pages/edit-report";
 import RiskStats from "@/pages/risk-stats";
 import Recommendations from "@/pages/recommendations";
 import Settings from "@/pages/settings";
@@ -66,6 +67,14 @@ function Router() {
       )} />
       <Route path="/tenants/:tenantId/reports/:id/risk-stats" component={({ params }) => (
         <ProtectedRoute component={RiskStats} tenantId={params.tenantId} id={params.id} />
+      )} />
+      <Route path="/tenants/:tenantId/reports/:reportId/edit" component={({ params }) => (
+        <ProtectedRoute 
+          component={EditReport} 
+          tenantId={params.tenantId} 
+          reportId={params.reportId} 
+          roles={[UserRoles.ADMIN, UserRoles.ANALYST]}
+        />
       )} />
       <Route path="/tenants/:tenantId/recommendations" component={({ params }) => (
         <ProtectedRoute component={Recommendations} tenantId={params.tenantId} />
