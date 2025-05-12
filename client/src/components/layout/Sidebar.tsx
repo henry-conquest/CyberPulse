@@ -94,23 +94,15 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             Companies
           </NavItem>
           
-          {currentTenantId ? (
-            <>
-              <div className="border-t border-white/10 my-3 pt-3">
-                <div className="text-white/80 text-xs uppercase font-semibold mb-2">
-                  Company Reports
-                </div>
-                
-                <NavItem 
-                  href={`/tenants/${currentTenantId}/report-periods`} 
-                  icon={<CalendarDays className="h-5 w-5" />}
-                  isActive={location.endsWith("/report-periods")}
-                >
-                  Report Periods
-                </NavItem>
-              </div>
-            </>
-          ) : null}
+          {currentTenantId && (
+            <NavItem 
+              href={`/tenants/${currentTenantId}/report-periods`} 
+              icon={<CalendarDays className="h-5 w-5" />}
+              isActive={location.endsWith("/report-periods")}
+            >
+              Report Periods
+            </NavItem>
+          )}
           
           <NavItem 
             href="/settings" 
