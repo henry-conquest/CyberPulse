@@ -73,14 +73,20 @@ export default function IntegrationsPage() {
   
   useEffect(() => {
     // Check if any connections need reconnection
-    if (microsoft365OAuthConnections && microsoft365OAuthConnections.length > 0 && !checkedConnections) {
-      const needsReconnection = microsoft365OAuthConnections.some(conn => conn.needsReconnection);
+    if (microsoft365OAuthConnections && 
+        Array.isArray(microsoft365OAuthConnections) && 
+        microsoft365OAuthConnections.length > 0 && 
+        !checkedConnections) {
+        
+      const needsReconnection = microsoft365OAuthConnections.some((conn: {needsReconnection?: boolean}) => 
+        conn.needsReconnection === true
+      );
       
       if (needsReconnection) {
         toast({
           title: "Connection issue detected",
           description: "One or more Microsoft 365 connections need to be reconnected due to expired credentials.",
-          variant: "warning",
+          variant: "destructive",
           duration: 6000,
         });
       }
@@ -445,16 +451,23 @@ export default function IntegrationsPage() {
                             </div>
                             <div className="flex items-center space-x-2">
                               {connection.needsReconnection ? (
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  className="text-red-600 border-red-200 hover:bg-red-50"
-                                  onClick={() => {
-                                    setLocation(`/settings?tab=microsoft365&action=connect&company=${connection.companyId || ''}`)
-                                  }}
-                                >
-                                  <RefreshCw className="h-4 w-4 mr-1" /> Reconnect
-                                </Button>
+                                <div className="flex flex-col items-end">
+                                  <div className="flex items-center mb-1">
+                                    <AlertTriangle className="h-4 w-4 text-red-600 mr-1" />
+                                    <span className="text-xs text-red-600 font-medium">Needs reconnection</span>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    className="text-red-600 border-red-200 hover:bg-red-50 animate-pulse"
+                                    onClick={() => {
+                                      setLocation(`/settings?tab=microsoft365&action=connect&company=${connection.companyId || ''}`)
+                                    }}
+                                    title="The OAuth token has expired or is invalid. Click to reconnect and refresh the authorization."
+                                  >
+                                    <RefreshCw className="h-4 w-4 mr-1" /> Reconnect
+                                  </Button>
+                                </div>
                               ) : (
                                 <span className="text-sm text-blue-600 flex items-center">
                                   <CheckCircle className="h-4 w-4 mr-1" /> OAuth Connected
