@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronRight, BarChart, CalendarDays, LayoutGrid, Plus, Shield } from "lucide-react";
+import { ChevronRight, BarChart, CalendarDays, LayoutGrid, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { z } from "zod";
@@ -319,13 +319,6 @@ export default function Companies() {
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
-              <Button variant="outline" className="w-full" asChild>
-                <Link to={`/tenants/${tenant.id}/security-insights`}>
-                  <Shield className="h-4 w-4 mr-2" />
-                  Security Insights
-                </Link>
-              </Button>
-              
               {user?.role === "ADMIN" && (
                 <Button variant="outline" className="w-full" onClick={() => setLocation(`/integrations?tenant=${tenant.id}`)} asChild>
                   <Link to={`/integrations?tenant=${tenant.id}`}>
