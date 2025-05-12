@@ -661,27 +661,15 @@ export default function Settings() {
                   ) : microsoft365Connections && microsoft365Connections.length > 0 ? (
                     <Badge variant="outline" className="bg-success/10 text-success">Connected</Badge>
                   ) : (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={connectToMicrosoft365}
-                      disabled={isConnectingToM365}
-                    >
-                      {isConnectingToM365 ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Connecting...
-                        </>
-                      ) : (
-                        <>
-                          <Link2 className="h-4 w-4 mr-2" />
-                          Connect
-                        </>
-                      )}
-                    </Button>
+                    <Link href="/integrations?tab=microsoft365">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                      >
+                        <Link2 className="h-4 w-4 mr-2" />
+                        Connect
+                      </Button>
+                    </Link>
                   )}
                 </div>
                 
@@ -725,15 +713,15 @@ export default function Settings() {
                         <AlertTriangle className="h-4 w-4 inline-block mr-2 text-amber-500" />
                         Disconnecting will remove access to Microsoft 365 security metrics
                       </p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={connectToMicrosoft365}
-                        disabled={isConnectingToM365}
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Connect Another Tenant
-                      </Button>
+                      <Link href="/integrations?tab=microsoft365">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Connect Another Tenant
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 )}
