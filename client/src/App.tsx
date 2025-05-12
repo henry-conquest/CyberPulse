@@ -50,6 +50,9 @@ function Router() {
       <Route path="/reports/:id" component={({ params }) => (
         <ProtectedRoute component={ReportView} id={params.id} />
       )} />
+      <Route path="/reports/:id/risk-stats" component={({ params }) => (
+        <ProtectedRoute component={ReportView} id={params.id} tab="risk-stats" />
+      )} />
       <Route path="/recommendations" component={() => <ProtectedRoute component={Recommendations} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
       <Route path="/users" component={() => <ProtectedRoute component={Users} roles={["admin"]} />} />

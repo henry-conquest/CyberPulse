@@ -85,6 +85,23 @@ const getStatusIcon = (status: string) => {
   }
 };
 
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case "new":
+      return <Badge className="bg-slate-500">New</Badge>;
+    case "reviewed":
+      return <Badge className="bg-blue-500">Reviewed</Badge>;
+    case "analyst_ready":
+      return <Badge className="bg-purple-500">Analyst Ready</Badge>;
+    case "manager_ready":
+      return <Badge className="bg-green-500">Manager Ready</Badge>;
+    case "sent":
+      return <Badge className="bg-teal-500">Sent</Badge>;
+    default:
+      return <Badge>{status}</Badge>;
+  }
+};
+
 const ReportPeriodCard = ({ report }: { report: Report }) => {
   const riskScoreColor = report.overallRiskScore >= 75 
     ? "text-red-500" 
@@ -93,7 +110,7 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
       : "text-green-500";
 
   return (
-    <Card className="w-full">
+    <Card className="w-full hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div className="space-y-1">
@@ -102,20 +119,23 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
               Report Period: {new Date(report.startDate).toLocaleDateString()} - {new Date(report.endDate).toLocaleDateString()}
             </CardDescription>
           </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  {getStatusIcon(report.status)}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="capitalize">{report.status === "analyst_ready" ? "Analyst Ready" : 
-                  report.status === "manager_ready" ? "Manager Ready" : 
-                  report.status.charAt(0).toUpperCase() + report.status.slice(1)}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div className="flex items-center space-x-2">
+            {getStatusBadge(report.status)}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    {getStatusIcon(report.status)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="capitalize">{report.status === "analyst_ready" ? "Analyst Ready" : 
+                    report.status === "manager_ready" ? "Manager Ready" : 
+                    report.status.charAt(0).toUpperCase() + report.status.slice(1)}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -143,16 +163,16 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
       </CardContent>
       <CardFooter className="pt-2 flex justify-between">
         <Button variant="outline" size="sm" asChild>
-          <Link href={`/reports/${report.id}`}>
+          <Link href={`/reports/${report.id}/risk-stats`}>
             <Eye className="h-4 w-4 mr-2" />
-            View Report
+            View Risk Stats
           </Link>
         </Button>
         {report.status !== "sent" && (
           <Button size="sm" variant="default" asChild>
             <Link href={`/reports/${report.id}/edit`}>
               <FileEdit className="h-4 w-4 mr-2" />
-              {report.status === "draft" ? "Edit Draft" : "Review"}
+              {report.status === "new" ? "Review" : "Edit"}
             </Link>
           </Button>
         )}
@@ -163,7 +183,18 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
 
 export default function ReportPeriods() {
   const { user } = useAuth();
-  const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
+  
+  // Get tenantId from URL if present
+  const urlTenantId = (() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const tenantId = searchParams.get('tenantId');
+      return tenantId ? parseInt(tenantId) : null;
+    }
+    return null;
+  })();
+  
+  const [selectedTenantId, setSelectedTenantId] = useState<number | null>(urlTenantId);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedQuarter, setSelectedQuarter] = useState<number | null>(null);
   
@@ -172,16 +203,21 @@ export default function ReportPeriods() {
   });
   
   const { data: reports, isLoading: isLoadingReports } = useQuery<Report[]>({
-    queryKey: [`/api/reports/by-tenant?tenantId=${selectedTenantId}${selectedYear ? `&year=${selectedYear}` : ''}${selectedQuarter ? `&quarter=${selectedQuarter}` : ''}`],
+    queryKey: [`/api/reports/by-tenant?tenantId=${selectedTenantId}${selectedYear ? `&year=${selectedYear}` : ''}`],
     enabled: !!selectedTenantId,
   });
 
-  // Set the first tenant as default when tenants load
+  // Set the tenant from URL or first tenant as default when tenants load
   useEffect(() => {
-    if (tenants && tenants.length > 0 && !selectedTenantId) {
+    // If we have a tenantId in the URL, use that
+    if (urlTenantId) {
+      setSelectedTenantId(urlTenantId);
+    } 
+    // Otherwise, use the first tenant
+    else if (tenants && tenants.length > 0 && !selectedTenantId) {
       setSelectedTenantId(tenants[0].id);
     }
-  }, [tenants, selectedTenantId]);
+  }, [tenants, selectedTenantId, urlTenantId]);
 
   // Generate array of years from 2020 to current year + 1
   const years = Array.from({ length: new Date().getFullYear() - 2020 + 2 }, (_, i) => 2020 + i);
@@ -243,7 +279,7 @@ export default function ReportPeriods() {
                 <SelectValue placeholder="Quarter" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Quarters</SelectItem>
+                <SelectItem value="all">All Quarters</SelectItem>
                 <SelectItem value="1">Q1</SelectItem>
                 <SelectItem value="2">Q2</SelectItem>
                 <SelectItem value="3">Q3</SelectItem>

@@ -367,8 +367,16 @@ export default function Reports() {
       
       {/* Reports list */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>All Reports</CardTitle>
+          {selectedTenantId && (
+            <Button variant="outline" asChild>
+              <Link href={`/report-periods?tenantId=${selectedTenantId}`}>
+                <Calendar className="h-4 w-4 mr-2" />
+                View Report Periods
+              </Link>
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
