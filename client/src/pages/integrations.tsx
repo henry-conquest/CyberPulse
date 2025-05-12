@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, QueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -133,12 +133,7 @@ export default function Integrations() {
     try {
       const method = ms365Connection ? "PATCH" : "POST";
       
-      await apiRequest(method, `/api/tenants/${selectedTenantId}/microsoft365`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      await apiRequest(method, `/api/tenants/${selectedTenantId}/microsoft365`, data);
 
       toast({
         title: "Success",
@@ -148,7 +143,7 @@ export default function Integrations() {
       });
 
       // Refetch connections
-      queryClient.invalidateQueries([`/api/tenants/${selectedTenantId}/microsoft365`]);
+      queryClient.invalidateQueries({ queryKey: [`/api/tenants/${selectedTenantId}/microsoft365`] });
       
       // Reset the form
       ms365Form.reset(data);
@@ -169,12 +164,7 @@ export default function Integrations() {
     try {
       const method = ninjaConnection ? "PATCH" : "POST";
       
-      await apiRequest(method, `/api/tenants/${selectedTenantId}/ninjaone`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      await apiRequest(method, `/api/tenants/${selectedTenantId}/ninjaone`, data);
 
       toast({
         title: "Success",
@@ -184,7 +174,7 @@ export default function Integrations() {
       });
 
       // Refetch connections
-      queryClient.invalidateQueries([`/api/tenants/${selectedTenantId}/ninjaone`]);
+      queryClient.invalidateQueries({ queryKey: [`/api/tenants/${selectedTenantId}/ninjaone`] });
       
       // Reset the form
       ninjaForm.reset(data);

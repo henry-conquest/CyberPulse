@@ -27,7 +27,7 @@ export default function Dashboard() {
 
   // Fetch security data for the selected tenant
   const { data: securityData, isLoading } = useQuery({
-    queryKey: ['/api/tenants', selectedTenantId, 'security-data'],
+    queryKey: [`/api/tenants/${selectedTenantId}/security-data`],
     enabled: !!selectedTenantId,
   });
 
