@@ -276,9 +276,21 @@ export default function IntegrationsPage() {
       
       // Extract and display a meaningful error message
       let errorMessage = "Failed to initiate Microsoft 365 connection";
+      let errorDetails = "";
       
       if (error instanceof Error) {
         errorMessage = error.message;
+        
+        // Extract additional information from specific error types
+        if (errorMessage.includes('client_id') || errorMessage.includes('Client ID')) {
+          errorDetails = "The application ID (client ID) may be incorrect or not configured properly in Azure.";
+        } else if (errorMessage.includes('client_secret') || errorMessage.includes('Client Secret')) {
+          errorDetails = "The client secret may be incorrect, expired, or not configured properly in Azure.";
+        } else if (errorMessage.includes('redirect_uri') || errorMessage.includes('Redirect URI')) {
+          errorDetails = "The redirect URI doesn't match the one configured in your Azure app registration. It must match exactly.";
+        } else if (errorMessage.includes('permission') || errorMessage.includes('consent')) {
+          errorDetails = "The app doesn't have the required permissions or admin consent hasn't been granted.";
+        }
       }
       
       // Show toast with the error message
@@ -288,8 +300,8 @@ export default function IntegrationsPage() {
         variant: "destructive",
       });
       
-      // Display the error in the dialog instead of closing it
-      setErrorMessage(errorMessage);
+      // Display the error in the dialog with any additional context
+      setErrorMessage(errorMessage + (errorDetails ? `\n\nPossible cause: ${errorDetails}` : ""));
       setConnErrorDialog(true);
       setIsConnecting(false);
       
@@ -639,11 +651,22 @@ export default function IntegrationsPage() {
               You can now access security insights and metrics for your Microsoft 365 tenant.
               View security data on the Security Insights page.
             </p>
+            <div className="flex items-center mt-4 p-3 bg-green-50 rounded-md border border-green-100">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
+              <p className="text-sm text-green-700">
+                Connection successful! Your Microsoft 365 tenant data will start appearing in the security dashboards.
+              </p>
+            </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => setConnSuccessDialog(false)}>
-              Continue
+            <Button variant="outline" onClick={() => setConnSuccessDialog(false)}>
+              Close
             </Button>
+            <a href="/security-insights">
+              <Button>
+                View Security Insights
+              </Button>
+            </a>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -662,9 +685,11 @@ export default function IntegrationsPage() {
           </DialogHeader>
           <div className="py-4">
             <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
-              <p className="text-sm font-medium text-red-800">
-                {errorMessage || "Unknown error occurred"}
-              </p>
+              {errorMessage.split('\n\n').map((paragraph, index) => (
+                <p key={index} className={`text-sm font-medium text-red-800 ${index > 0 ? 'mt-3' : ''}`}>
+                  {paragraph}
+                </p>
+              ))}
             </div>
             
             <div className="space-y-3">
@@ -694,7 +719,14 @@ export default function IntegrationsPage() {
             <Button variant="outline" onClick={() => setConnErrorDialog(false)}>
               Close
             </Button>
-            <Button onClick={openConnectDialog}>
+            <Button 
+              onClick={() => {
+                setConnErrorDialog(false);
+                // Reset and reopen the form
+                form.reset();
+                setConnectDialogOpen(true);
+              }}
+            >
               Try Again
             </Button>
           </DialogFooter>
