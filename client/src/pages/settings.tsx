@@ -86,6 +86,7 @@ export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("profile");
   const [isConnectingToM365, setIsConnectingToM365] = useState(false);
   

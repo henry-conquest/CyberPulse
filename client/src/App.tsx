@@ -88,7 +88,6 @@ function Router() {
       {/* Admin routes */}
       <Route path="/users" component={() => <ProtectedRoute component={Users} roles={["ADMIN"]} />} />
       <Route path="/tenants" component={() => <ProtectedRoute component={Tenants} roles={["ADMIN"]} />} />
-      <Route path="/integrations" component={() => <ProtectedRoute component={Integrations} roles={["ADMIN"]} />} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
