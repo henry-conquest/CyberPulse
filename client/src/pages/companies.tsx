@@ -85,7 +85,7 @@ export default function Companies() {
               </div>
             </CardContent>
             <CardFooter className="px-4 pt-3 pb-4 flex flex-col gap-3">
-              <div className="flex gap-2 w-full mb-1">
+              <div className="flex gap-4 w-full mb-3">
                 <Button variant="outline" size="sm" className="flex-1 bg-gray-50" asChild>
                   <Link to={`/tenants/${tenant.id}/dashboard`}>
                     <BarChart className="h-4 w-4 mr-1" />
@@ -99,7 +99,7 @@ export default function Companies() {
                   </Link>
                 </Button>
               </div>
-              <Button variant="default" size="sm" className="w-full bg-blue-500 hover:bg-blue-600" asChild>
+              <Button variant="default" className="w-full bg-blue-500 hover:bg-blue-600" asChild>
                 <Link to={`/tenants/${tenant.id}/report-periods`}>
                   View Details
                   <ChevronRight className="h-4 w-4 ml-1" />
