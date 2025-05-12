@@ -10,7 +10,7 @@ import Recommendations from "@/pages/recommendations";
 import Settings from "@/pages/settings";
 import Users from "@/pages/users";
 import Tenants from "@/pages/tenants";
-import Integrations from "@/pages/integrations";
+import Integrations from "./pages/integrations";
 
 import { useAuth } from "@/hooks/useAuth";
 import Layout from "@/components/layout/Layout";

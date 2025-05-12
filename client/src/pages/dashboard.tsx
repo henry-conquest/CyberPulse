@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import RiskGauge from "@/components/dashboard/RiskGauge";
 import RiskIndicator from "@/components/dashboard/RiskIndicator";
@@ -155,7 +156,26 @@ Cyber Security and the threats associated are a continuous moving target, howeve
             <h3 className="text-lg font-semibold">{selectedTenant?.name || "Organization"}</h3>
             <p className="text-secondary-500">Executive Cyber Risk Dashboard - {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
           </div>
-          <div className="mt-4 md:mt-0 flex space-x-3">
+          <div className="mt-4 md:mt-0 flex space-x-3 items-center">
+            {user?.tenants && user.tenants.length > 0 && (
+              <div className="mr-4">
+                <Select 
+                  value={selectedTenantId?.toString() || ""} 
+                  onValueChange={(value) => setSelectedTenantId(parseInt(value))}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Select tenant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {user.tenants.map((tenant: any) => (
+                      <SelectItem key={tenant.id} value={tenant.id.toString()}>
+                        {tenant.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <Button onClick={handleGenerateReport}>
               <Download className="h-4 w-4 mr-2" />
               Generate Report
