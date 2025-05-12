@@ -661,15 +661,14 @@ export default function Settings() {
                   ) : microsoft365Connections && microsoft365Connections.length > 0 ? (
                     <Badge variant="outline" className="bg-success/10 text-success">Connected</Badge>
                   ) : (
-                    <Link href="/integrations?tab=microsoft365">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                      >
-                        <Link2 className="h-4 w-4 mr-2" />
-                        Connect
-                      </Button>
-                    </Link>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.location.href = `${window.location.origin}/integrations?tab=microsoft365`}
+                    >
+                      <Link2 className="h-4 w-4 mr-2" />
+                      Connect
+                    </Button>
                   )}
                 </div>
                 
@@ -713,15 +712,14 @@ export default function Settings() {
                         <AlertTriangle className="h-4 w-4 inline-block mr-2 text-amber-500" />
                         Disconnecting will remove access to Microsoft 365 security metrics
                       </p>
-                      <Link href="/integrations?tab=microsoft365">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                        >
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          Connect Another Tenant
-                        </Button>
-                      </Link>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => window.location.href = `${window.location.origin}/integrations?tab=microsoft365`}
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Connect Another Tenant
+                      </Button>
                     </div>
                   </div>
                 )}
