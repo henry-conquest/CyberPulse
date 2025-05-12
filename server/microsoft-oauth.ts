@@ -441,41 +441,92 @@ export async function storeOAuthConnection(
   clientSecret?: string,
   companyId?: string
 ): Promise<void> {
-  // Check if connection already exists
-  const existingConnection = await storage.getMicrosoft365OAuthConnectionByTenantId(tenantId);
-  
-  const finalClientId = clientId || process.env.MS_GRAPH_CLIENT_ID || "";
-  const finalClientSecret = clientSecret || process.env.MS_GRAPH_CLIENT_SECRET || "";
-  const expiresAt = new Date(Date.now() + (expiresIn * 1000));
-  
-  if (existingConnection) {
-    // Update existing connection
-    await storage.updateMicrosoft365OAuthConnection(existingConnection.id, {
+  try {
+    if (!tenantId) {
+      throw new Error("Tenant ID is required to store OAuth connection");
+    }
+    
+    if (!userId) {
+      throw new Error("User ID is required to store OAuth connection");
+    }
+    
+    if (!accessToken || !refreshToken) {
+      throw new Error("Valid access and refresh tokens are required to store OAuth connection");
+    }
+    
+    if (expiresIn <= 0) {
+      console.warn(`Unusually short token expiration time: ${expiresIn} seconds`);
+    }
+    
+    console.log(`Storing OAuth connection for tenant ${tenantId} (${tenantName})`);
+    
+    // Check if connection already exists
+    const existingConnection = await storage.getMicrosoft365OAuthConnectionByTenantId(tenantId);
+    
+    const finalClientId = clientId || process.env.MS_GRAPH_CLIENT_ID || "";
+    const finalClientSecret = clientSecret || process.env.MS_GRAPH_CLIENT_SECRET || "";
+    const expiresAt = new Date(Date.now() + (expiresIn * 1000));
+    
+    // Create connection data with all required fields
+    const connectionData = {
       userId,
       tenantId,
-      tenantName,
-      tenantDomain,
+      tenantName: tenantName || "Unknown Tenant",
+      tenantDomain: tenantDomain || "unknown.onmicrosoft.com",
       clientId: finalClientId,
       clientSecret: finalClientSecret,
       accessToken,
       refreshToken,
       expiresAt,
+      needsReconnection: false,
       companyId: companyId ? Number(companyId) : undefined
-    });
-  } else {
-    // Create new connection
-    await storage.createMicrosoft365OAuthConnection({
+    };
+    
+    if (existingConnection) {
+      // Update existing connection
+      console.log(`Updating existing connection for tenant ${tenantId}`);
+      await storage.updateMicrosoft365OAuthConnection(existingConnection.id, connectionData);
+      
+      // Log the successful update
+      console.log(`Successfully updated OAuth connection for tenant ${tenantId}`);
+    } else {
+      // Create new connection
+      console.log(`Creating new connection for tenant ${tenantId}`);
+      await storage.createMicrosoft365OAuthConnection(connectionData);
+      
+      // Log the successful creation
+      console.log(`Successfully created new OAuth connection for tenant ${tenantId}`);
+    }
+    
+    // Create audit log for connection created/updated
+    await storage.createAuditLog({
       userId,
-      tenantId,
-      tenantName,
-      tenantDomain,
-      clientId: finalClientId,
-      clientSecret: finalClientSecret,
-      accessToken,
-      refreshToken,
-      expiresAt,
-      companyId: companyId ? Number(companyId) : undefined
+      tenantId: companyId ? Number(companyId) : null,
+      action: existingConnection ? "UPDATE_CONNECTION" : "CREATE_CONNECTION",
+      details: `Microsoft 365 OAuth connection ${existingConnection ? "updated" : "created"} for tenant ${tenantName}`,
+      entityType: "MICROSOFT365_OAUTH_CONNECTION",
+      entityId: tenantId
     });
+  } catch (error: any) {
+    // Log comprehensive error details
+    console.error(`Error storing OAuth connection for tenant ${tenantId}:`, error);
+    
+    // Create audit log for failed connection
+    try {
+      await storage.createAuditLog({
+        userId,
+        tenantId: companyId ? Number(companyId) : null,
+        action: "CONNECTION_ERROR",
+        details: `Failed to store Microsoft 365 OAuth connection: ${error.message}`,
+        entityType: "MICROSOFT365_OAUTH_CONNECTION",
+        entityId: tenantId
+      });
+    } catch (auditError) {
+      console.error("Failed to create audit log for OAuth connection error:", auditError);
+    }
+    
+    // Re-throw the error to be handled by the caller
+    throw error;
   }
 }
 
