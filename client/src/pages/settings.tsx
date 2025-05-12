@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -210,14 +211,14 @@ export default function Settings() {
     changePasswordMutation.mutate(data);
   };
   
+  // Using the navigate function from wouter to redirect users
+  const [, navigate] = useLocation();
+  
   // Microsoft 365 connection - redirect to integrations page
   const connectToMicrosoft365 = () => {
-    try {
-      // Redirect to integrations page with tab=microsoft365 to show the connection form
-      window.location.href = '/integrations?tab=microsoft365';
-    } catch (error) {
-      console.error("Error redirecting to integrations page:", error);
-    }
+    // This uses the navigate function from wouter for proper client-side routing
+    navigate('/integrations?tab=microsoft365');
+    setIsConnectingToM365(false); // Reset the loading state
   };
   
   // Disconnect Microsoft 365
