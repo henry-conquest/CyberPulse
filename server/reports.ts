@@ -565,7 +565,7 @@ export function getPreviousQuarterInfo(quarter: 1 | 2 | 3 | 4, year: number): { 
 }
 
 // Create a report for a specific tenant and quarter
-export async function createQuarterlyReport(tenantId: number, quarter: 1 | 2 | 3 | 4, year: number, userId?: string): Promise<Report | null> {
+export async function createQuarterlyReport(tenantId: number, quarter: 1 | 2 | 3 | 4, year: number, userId?: string, forceRefresh: boolean = false): Promise<Report | null> {
   try {
     // Calculate the start and end dates for the quarter
     let startDate: Date, endDate: Date;
@@ -586,14 +586,18 @@ export async function createQuarterlyReport(tenantId: number, quarter: 1 | 2 | 3
     
     // Check if report already exists for this quarter and tenant
     const existingReports = await storage.getReportsByTenantId(tenantId);
-    const reportExists = existingReports.some(report => 
+    const existingReport = existingReports.find(report => 
       report.quarter === quarter && report.year === year
     );
     
-    if (reportExists) {
+    if (existingReport && !forceRefresh) {
       console.log(`Report for Q${quarter} ${year} for tenant ${tenantId} already exists, skipping creation`);
       return null;
     }
+    
+    const action = existingReport && forceRefresh ? "Refreshing" : "Creating";
+    console.log(`${action} report for Q${quarter} ${year} for tenant ${tenantId}`);
+    
     
     // Get tenant information
     const tenant = await storage.getTenant(tenantId);
