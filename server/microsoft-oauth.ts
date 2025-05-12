@@ -1,5 +1,6 @@
 import { storage } from "./storage";
 import crypto from "crypto";
+import { Microsoft365OAuthConnection } from "@shared/schema";
 
 // In-memory state cache for OAuth flow
 interface StateData {

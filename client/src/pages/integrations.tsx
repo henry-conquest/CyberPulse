@@ -68,6 +68,27 @@ export default function IntegrationsPage() {
   const [connErrorDialog, setConnErrorDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Handle connection status check
+  const [checkedConnections, setCheckedConnections] = useState(false);
+  
+  useEffect(() => {
+    // Check if any connections need reconnection
+    if (microsoft365OAuthConnections && microsoft365OAuthConnections.length > 0 && !checkedConnections) {
+      const needsReconnection = microsoft365OAuthConnections.some(conn => conn.needsReconnection);
+      
+      if (needsReconnection) {
+        toast({
+          title: "Connection issue detected",
+          description: "One or more Microsoft 365 connections need to be reconnected due to expired credentials.",
+          variant: "warning",
+          duration: 6000,
+        });
+      }
+      
+      setCheckedConnections(true);
+    }
+  }, [microsoft365OAuthConnections, checkedConnections, toast]);
+  
   // Handle URL parameters on page load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
