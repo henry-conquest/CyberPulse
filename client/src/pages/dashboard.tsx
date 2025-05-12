@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 import RiskGauge from "@/components/dashboard/RiskGauge";
 import RiskIndicator from "@/components/dashboard/RiskIndicator";
@@ -13,22 +14,26 @@ import SecurityItem from "@/components/dashboard/SecurityItem";
 import ThreatTable, { Threat } from "@/components/dashboard/ThreatTable";
 import AnalystComments from "@/components/dashboard/AnalystComments";
 
-export default function Dashboard() {
-  const { user } = useAuth();
-  const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
-  const { toast } = useToast();
+interface DashboardProps {
+  tenantId?: string;
+}
 
-  // Set selected tenant from the first available tenant if not already set
+export default function Dashboard({ tenantId }: DashboardProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [location, setLocation] = useLocation();
+
+  // Navigate to companies page if no tenant ID is provided
   useEffect(() => {
-    if (user?.tenants?.length && !selectedTenantId) {
-      setSelectedTenantId(user.tenants[0].id);
+    if (!tenantId) {
+      setLocation("/companies");
     }
-  }, [user, selectedTenantId]);
+  }, [tenantId, setLocation]);
 
   // Fetch security data for the selected tenant
   const { data: securityData, isLoading } = useQuery({
-    queryKey: [`/api/tenants/${selectedTenantId}/security-data`],
-    enabled: !!selectedTenantId,
+    queryKey: [`/api/tenants/${tenantId}/security-data`],
+    enabled: !!tenantId,
   });
 
   // Format threat data for the threat table

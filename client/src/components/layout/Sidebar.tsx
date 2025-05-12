@@ -1,5 +1,4 @@
 import { useAuth } from "@/hooks/useAuth";
-import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   BarChart3, 
@@ -8,9 +7,9 @@ import {
   Settings, 
   Users, 
   Shield, 
-  Mail,
   Building,
-  CalendarDays
+  CalendarDays,
+  Grid
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoImg from "../../assets/logo.png";
@@ -44,16 +43,13 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const { user } = useAuth();
   const [location] = useLocation();
-  const [selectedTenant, setSelectedTenant] = useState<number | null>(
-    user?.tenants?.[0]?.id || null
-  );
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "ADMIN";
   
-  function handleTenantChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    setSelectedTenant(parseInt(e.target.value));
-  }
-
+  // Check if we're in a tenant-specific route
+  const tenantMatch = location.match(/\/tenants\/(\d+)/);
+  const currentTenantId = tenantMatch ? tenantMatch[1] : null;
+  
   return (
     <div className={cn(
       "w-64 bg-[#146d87] text-white fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0",
@@ -81,33 +77,10 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 {user?.firstName || user?.email?.split('@')[0] || "User"}
               </p>
               <p className="text-xs text-white/70">
-                Microsoft 365 SSO
+                Analyst
               </p>
             </div>
           </div>
-          
-          {/* Tenant Selector */}
-          {user?.tenants && user.tenants.length > 0 && (
-            <div className="mt-3">
-              <div className="text-white/80 text-xs uppercase font-semibold mb-2">
-                Client Organization
-              </div>
-              <select 
-                className="bg-white/10 border border-white/20 text-white rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
-                value={selectedTenant || ""}
-                onChange={handleTenantChange}
-              >
-                {user.tenants.map(tenant => (
-                  <option key={tenant.id} value={tenant.id}>
-                    {tenant.name}
-                  </option>
-                ))}
-              </select>
-              <div className="text-xs text-white/60 mt-1">
-                Data: Q2 2025 (Apr-Jun)
-              </div>
-            </div>
-          )}
         </div>
         
         <div className="mt-6 space-y-1">
@@ -116,30 +89,54 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           </div>
           
           <NavItem 
-            href="/" 
-            icon={<BarChart3 className="h-5 w-5" />}
-            isActive={location === "/"}
+            href="/companies" 
+            icon={<Grid className="h-5 w-5" />}
+            isActive={location === "/" || location === "/companies"}
           >
-            Dashboard
+            Companies
           </NavItem>
           
-          <NavItem 
-            href="/reports" 
-            icon={<FileText className="h-5 w-5" />}
-            isActive={location.startsWith("/reports")}
-          >
-            Reports
-          </NavItem>
-          
-          {/* Report Periods moved to after client selection */}
-          
-          <NavItem 
-            href="/recommendations" 
-            icon={<HelpCircle className="h-5 w-5" />}
-            isActive={location === "/recommendations"}
-          >
-            Recommendations
-          </NavItem>
+          {currentTenantId ? (
+            <>
+              <div className="border-t border-white/10 my-3 pt-3">
+                <div className="text-white/80 text-xs uppercase font-semibold mb-2">
+                  Company Dashboard
+                </div>
+                
+                <NavItem 
+                  href={`/tenants/${currentTenantId}/dashboard`} 
+                  icon={<BarChart3 className="h-5 w-5" />}
+                  isActive={location.endsWith("/dashboard")}
+                >
+                  Dashboard
+                </NavItem>
+                
+                <NavItem 
+                  href={`/tenants/${currentTenantId}/report-periods`} 
+                  icon={<CalendarDays className="h-5 w-5" />}
+                  isActive={location.endsWith("/report-periods")}
+                >
+                  Report Periods
+                </NavItem>
+                
+                <NavItem 
+                  href={`/tenants/${currentTenantId}/reports`} 
+                  icon={<FileText className="h-5 w-5" />}
+                  isActive={location.includes("/reports") && !location.includes("/report-periods")}
+                >
+                  Reports
+                </NavItem>
+                
+                <NavItem 
+                  href={`/tenants/${currentTenantId}/recommendations`} 
+                  icon={<HelpCircle className="h-5 w-5" />}
+                  isActive={location.endsWith("/recommendations")}
+                >
+                  Recommendations
+                </NavItem>
+              </div>
+            </>
+          ) : null}
           
           <NavItem 
             href="/settings" 

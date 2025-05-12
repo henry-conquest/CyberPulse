@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
+import Companies from "@/pages/companies";
 import Reports from "@/pages/reports";
 import ReportPeriods from "@/pages/report-periods";
 import ReportView from "@/pages/report-view";
@@ -44,20 +45,35 @@ function ProtectedRoute({ component: Component, roles, ...rest }: {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
-      <Route path="/reports" component={() => <ProtectedRoute component={Reports} />} />
-      <Route path="/report-periods" component={() => <ProtectedRoute component={ReportPeriods} />} />
-      <Route path="/reports/:id" component={({ params }) => (
-        <ProtectedRoute component={ReportView} id={params.id} />
-      )} />
-      <Route path="/reports/:id/risk-stats" component={({ params }) => (
-        <ProtectedRoute component={ReportView} id={params.id} tab="risk-stats" />
-      )} />
-      <Route path="/recommendations" component={() => <ProtectedRoute component={Recommendations} />} />
+      {/* Main routes */}
+      <Route path="/" component={() => <ProtectedRoute component={Companies} />} />
+      <Route path="/companies" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
-      <Route path="/users" component={() => <ProtectedRoute component={Users} roles={["admin"]} />} />
-      <Route path="/tenants" component={() => <ProtectedRoute component={Tenants} roles={["admin"]} />} />
-      <Route path="/integrations" component={() => <ProtectedRoute component={Integrations} roles={["admin"]} />} />
+      
+      {/* Tenant-specific routes */}
+      <Route path="/tenants/:tenantId/dashboard" component={({ params }) => (
+        <ProtectedRoute component={Dashboard} tenantId={params.tenantId} />
+      )} />
+      <Route path="/tenants/:tenantId/reports" component={({ params }) => (
+        <ProtectedRoute component={Reports} tenantId={params.tenantId} />
+      )} />
+      <Route path="/tenants/:tenantId/report-periods" component={({ params }) => (
+        <ProtectedRoute component={ReportPeriods} tenantId={params.tenantId} />
+      )} />
+      <Route path="/tenants/:tenantId/reports/:id" component={({ params }) => (
+        <ProtectedRoute component={ReportView} tenantId={params.tenantId} id={params.id} />
+      )} />
+      <Route path="/tenants/:tenantId/reports/:id/risk-stats" component={({ params }) => (
+        <ProtectedRoute component={ReportView} tenantId={params.tenantId} id={params.id} tab="risk-stats" />
+      )} />
+      <Route path="/tenants/:tenantId/recommendations" component={({ params }) => (
+        <ProtectedRoute component={Recommendations} tenantId={params.tenantId} />
+      )} />
+      
+      {/* Admin routes */}
+      <Route path="/users" component={() => <ProtectedRoute component={Users} roles={["ADMIN"]} />} />
+      <Route path="/tenants" component={() => <ProtectedRoute component={Tenants} roles={["ADMIN"]} />} />
+      <Route path="/integrations" component={() => <ProtectedRoute component={Integrations} roles={["ADMIN"]} />} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
