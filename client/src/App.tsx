@@ -53,6 +53,10 @@ function Router() {
       <Route path="/companies" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
       
+      {/* Integration routes */}
+      <Route path="/integrations" component={() => <ProtectedRoute component={Integrations} roles={["ADMIN"]} />} />
+      <Route path="/integrations/:tab" component={({ params }) => <ProtectedRoute component={Integrations} roles={["ADMIN"]} tab={params.tab} />} />
+      
       {/* Tenant-specific routes */}
       <Route path="/tenants/:tenantId/dashboard" component={({ params }) => (
         <ProtectedRoute component={Dashboard} tenantId={params.tenantId} />

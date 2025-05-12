@@ -57,11 +57,11 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function IntegrationsPage() {
+export default function IntegrationsPage({ tab }: { tab?: string }) {
   const { user, isAuthenticated } = useAuth();
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('microsoft365');
+  const [activeTab, setActiveTab] = useState(tab || 'microsoft365');
   const { toast } = useToast();
   const [isConnecting, setIsConnecting] = useState(false);
   const [connSuccessDialog, setConnSuccessDialog] = useState(false);
@@ -97,14 +97,16 @@ export default function IntegrationsPage() {
   
   // Handle URL parameters on page load
   useEffect(() => {
+    // Check both URL search params and props for tab
     const params = new URLSearchParams(window.location.search);
-    const tab = params.get('tab');
+    const urlTab = params.get('tab');
     const success = params.get('success');
     const error = params.get('error');
     const action = params.get('action');
 
-    if (tab) {
-      setActiveTab(tab);
+    // Set active tab from URL parameter or prop
+    if (urlTab) {
+      setActiveTab(urlTab);
     }
 
     if (success === 'true') {
@@ -112,7 +114,7 @@ export default function IntegrationsPage() {
       
       // Clear URL parameters after handling
       const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl + (tab ? `?tab=${tab}` : ''));
+      window.history.replaceState({}, document.title, cleanUrl + (urlTab ? `?tab=${urlTab}` : ''));
     }
 
     if (error) {
@@ -122,21 +124,26 @@ export default function IntegrationsPage() {
       
       // Clear URL parameters after handling
       const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl + (tab ? `?tab=${tab}` : ''));
+      window.history.replaceState({}, document.title, cleanUrl + (urlTab ? `?tab=${urlTab}` : ''));
     }
 
     // Check if we should open the connection dialog based on the action parameter
-    if (action === 'connect' && tab === 'microsoft365') {
+    if (action === 'connect') {
       console.log("Opening connection dialog from URL parameter");
-      setConnectDialogOpen(true);
+      
+      // Make sure Microsoft 365 tab is active if action=connect
+      if (urlTab === 'microsoft365' || !urlTab) {
+        setActiveTab('microsoft365');
+        setConnectDialogOpen(true);
+      }
       
       // Update URL to remove the action parameter but keep the tab
       const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl + (tab ? `?tab=${tab}` : ''));
+      window.history.replaceState({}, document.title, cleanUrl + (urlTab ? `?tab=${urlTab}` : ''));
     }
 
     // Keep the tab parameter in the URL, just clean success and error present
-    if (!success && !error && !action && tab) {
+    if (!success && !error && !action && urlTab) {
       // We want to keep the tab parameter
       // No need to clean the URL in this case
     }
