@@ -226,6 +226,7 @@ export default function IntegrationsPage() {
       console.log("- Full query string:", params.toString());
       
       // Get the authorization URL with these credentials
+      console.log("Requesting authorization URL from endpoint...");
       const response = await fetch(`/api/auth/microsoft365/authorize?${params.toString()}`, {
         method: 'GET',
         headers: {
@@ -233,27 +234,58 @@ export default function IntegrationsPage() {
         }
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to get authorization URL');
-      }
-      
       const responseData = await response.json();
       
+      // Check if the response contains an error
+      if (!response.ok) {
+        console.error("Authorization URL request failed:", response.status);
+        console.error("Error response:", responseData);
+        
+        let errorMessage = 'Failed to get authorization URL';
+        
+        // Use server-provided error message if available
+        if (responseData && responseData.message) {
+          errorMessage = responseData.message;
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      console.log("Authorization URL response received:", responseData);
+      
       if (responseData.authUrl) {
+        console.log("Redirecting to authorization URL...");
         window.location.href = responseData.authUrl;
       } else {
-        throw new Error('No authorization URL received');
+        console.error("No authorization URL in response:", responseData);
+        throw new Error('No authorization URL received from server');
       }
     } catch (error) {
+      console.error('OAuth connection error:', error);
+      
+      // Extract and display a meaningful error message
+      let errorMessage = "Failed to initiate Microsoft 365 connection";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      // Show toast with the error message
       toast({
-        title: "Error",
-        description: "Failed to initiate Microsoft 365 connection. Please try again.",
+        title: "OAuth Connection Error",
+        description: errorMessage,
         variant: "destructive",
       });
-      console.error('OAuth connection error:', error);
+      
+      // Display the error in the dialog instead of closing it
+      setErrorMessage(errorMessage);
+      setConnErrorDialog(true);
+      setIsConnecting(false);
+      
+      // Close the connect dialog only if the error dialog is shown
+      setConnectDialogOpen(false);
     } finally {
       setIsConnecting(false);
-      setConnectDialogOpen(false);
     }
   };
   
@@ -618,12 +650,34 @@ export default function IntegrationsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              Error details: {errorMessage || "Unknown error occurred"}
-            </p>
-            <p className="mt-4">
-              Please try again or contact support if the issue persists.
-            </p>
+            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+              <p className="text-sm font-medium text-red-800">
+                {errorMessage || "Unknown error occurred"}
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">Common Solutions:</h4>
+              
+              <ul className="text-sm space-y-2 ml-5 list-disc">
+                <li>
+                  <span className="font-medium">Client ID or Secret issues:</span> Double-check that you've entered the correct Azure app registration credentials.
+                </li>
+                <li>
+                  <span className="font-medium">Redirect URI mismatch:</span> Ensure the redirect URI in Azure matches exactly what you've entered.
+                </li>
+                <li>
+                  <span className="font-medium">Missing permissions:</span> Verify your Azure app has the proper Microsoft Graph API permissions.
+                </li>
+                <li>
+                  <span className="font-medium">Admin consent required:</span> Your tenant admin may need to approve the permissions.
+                </li>
+              </ul>
+              
+              <p className="text-muted-foreground text-sm pt-2">
+                If you continue to experience issues, please contact support with the error message shown above.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConnErrorDialog(false)}>
