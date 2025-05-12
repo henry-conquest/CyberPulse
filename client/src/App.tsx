@@ -15,6 +15,7 @@ import Settings from "@/pages/settings";
 import Users from "@/pages/users";
 import Tenants from "@/pages/tenants";
 import Integrations from "./pages/integrations";
+import SecurityInsights from "./pages/security-insights";
 
 import { useAuth } from "@/hooks/useAuth";
 import Layout from "@/components/layout/Layout";
@@ -79,6 +80,10 @@ function Router() {
       )} />
       <Route path="/tenants/:tenantId/recommendations" component={({ params }) => (
         <ProtectedRoute component={Recommendations} tenantId={params.tenantId} />
+      )} />
+      
+      <Route path="/tenants/:tenantId/security-insights" component={({ params }) => (
+        <ProtectedRoute component={SecurityInsights} tenantId={params.tenantId} />
       )} />
       
       {/* Admin routes */}
