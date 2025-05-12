@@ -293,7 +293,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(reports)
       .where(eq(reports.tenantId, tenantId))
-      .orderBy(desc(reports.createdAt));
+      .orderBy(desc(reports.year), desc(reports.quarter));
   }
 
   async updateReport(id: number, report: Partial<InsertReport>): Promise<Report> {

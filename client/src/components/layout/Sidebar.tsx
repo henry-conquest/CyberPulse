@@ -130,6 +130,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           </NavItem>
           
           <NavItem 
+            href="/report-periods" 
+            icon={<CalendarDays className="h-5 w-5" />}
+            isActive={location === "/report-periods"}
+          >
+            Report Periods
+          </NavItem>
+          
+          <NavItem 
             href="/recommendations" 
             icon={<HelpCircle className="h-5 w-5" />}
             isActive={location === "/recommendations"}

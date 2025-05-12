@@ -745,11 +745,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const pdfBuffer = await generatePdfReport(report);
       
+      // Determine quarter name
+      const quarters = {
+        1: "Q1",
+        2: "Q2", 
+        3: "Q3",
+        4: "Q4"
+      };
+      
       // Set response headers
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition", 
-        `attachment; filename="Cyber_Risk_Report_${report.month}_${report.year}.pdf"`
+        `attachment; filename="Cyber_Risk_Report_${quarters[report.quarter as 1|2|3|4]}_${report.year}.pdf"`
       );
       
       // Send the PDF

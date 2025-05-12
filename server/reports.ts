@@ -38,10 +38,26 @@ export async function generatePdfReport(report: Report): Promise<Buffer> {
       font: boldFont,
     });
     
-    page.drawText(`${report.month} ${report.year}`, {
+    // Determine the quarter months
+    const quarterMonths = {
+      1: "January - March",
+      2: "April - June",
+      3: "July - September",
+      4: "October - December"
+    };
+    
+    page.drawText(`${quarterMonths[report.quarter as 1 | 2 | 3 | 4]} ${report.year}`, {
       x: 50,
       y: 720,
       size: 16,
+      font: font,
+    });
+    
+    // Draw report period dates
+    page.drawText(`Report Period: ${new Date(report.startDate).toLocaleDateString()} - ${new Date(report.endDate).toLocaleDateString()}`, {
+      x: 50,
+      y: 700,
+      size: 12,
       font: font,
     });
     
