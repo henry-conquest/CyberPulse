@@ -333,6 +333,8 @@ export default function ReportView({ id }: ReportViewProps) {
   // Get security data from the report
   const securityData = report.securityData || {};
   console.log("Report security data:", securityData);
+  
+  // Add SecureScoreWidget to the report view using the correct data structure
 
   // Check permissions
   const isAdmin = user?.role === "admin";
