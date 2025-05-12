@@ -443,6 +443,50 @@ export default function ReportView({ id }: ReportViewProps) {
             </CardContent>
           </Card>
           
+          {/* Report Summary */}
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Executive Summary</CardTitle>
+                {canEdit && report.status !== "sent" && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setLocation(`/tenants/${tenantId}/reports/${report.id}/edit`)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="prose prose-sm max-w-none">
+                {report.summary ? (
+                  <div dangerouslySetInnerHTML={{ __html: report.summary.replace(/\n/g, '<br />') }} />
+                ) : (
+                  <p className="text-secondary-500 italic">No summary available for this report.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Recommendations */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Key Recommendations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="prose prose-sm max-w-none">
+                {report.recommendations ? (
+                  <div dangerouslySetInnerHTML={{ __html: report.recommendations.replace(/\n/g, '<br />') }} />
+                ) : (
+                  <p className="text-secondary-500 italic">No recommendations available for this report.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          
           {/* Analyst Comments */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
