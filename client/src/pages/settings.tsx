@@ -212,9 +212,12 @@ export default function Settings() {
   
   // Microsoft 365 connection - redirect to integrations page
   const connectToMicrosoft365 = () => {
-    setIsConnectingToM365(true);
-    // Redirect to integrations page with tab=microsoft365 to show the connection form
-    window.location.href = '/integrations?tab=microsoft365';
+    try {
+      // Redirect to integrations page with tab=microsoft365 to show the connection form
+      window.location.href = '/integrations?tab=microsoft365';
+    } catch (error) {
+      console.error("Error redirecting to integrations page:", error);
+    }
   };
   
   // Disconnect Microsoft 365
