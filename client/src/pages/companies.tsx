@@ -339,13 +339,13 @@ export default function Companies() {
         ))}
       </div>
 
-      {/* Microsoft 365 Connection Dialog */}
+      {/* Microsoft 365 Direct Connection Dialog */}
       <Dialog open={m365DialogOpen} onOpenChange={setM365DialogOpen}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
             <DialogTitle>Connect Microsoft 365</DialogTitle>
             <DialogDescription>
-              Enter your Microsoft 365 credentials to retrieve security insights and compliance data.
+              Enter your Microsoft 365 API credentials to retrieve security insights.
             </DialogDescription>
           </DialogHeader>
           
@@ -354,14 +354,36 @@ export default function Companies() {
               <h3 className="text-sm font-medium text-blue-800 mb-1">How to get these credentials</h3>
               <ul className="text-xs text-blue-700 space-y-1 list-disc pl-4">
                 <li>Register an application in Azure Active Directory</li>
-                <li>Grant the app API permissions for Microsoft Graph</li>
+                <li>Grant the app API permissions for Microsoft Graph (SecurityEvents.Read.All, etc.)</li>
                 <li>Create a client secret for the application</li>
-                <li>Use the redirect URI shown below in your app registration</li>
+                <li>Note your tenant's domain name (e.g., yourcompany.onmicrosoft.com)</li>
               </ul>
             </div>
             
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label htmlFor="tenantDomain" className="block text-sm font-medium mb-1">Tenant Domain</label>
+                  <input 
+                    id="tenantDomain"
+                    type="text"
+                    className="w-full p-2 border rounded-md text-sm" 
+                    placeholder="yourcompany.onmicrosoft.com"
+                  />
+                  <p className="text-xs text-secondary-500 mt-1">Your Microsoft 365 tenant domain name</p>
+                </div>
+                
+                <div>
+                  <label htmlFor="tenantName" className="block text-sm font-medium mb-1">Tenant Name</label>
+                  <input 
+                    id="tenantName"
+                    type="text"
+                    className="w-full p-2 border rounded-md text-sm" 
+                    placeholder="Your Company Name"
+                  />
+                  <p className="text-xs text-secondary-500 mt-1">A friendly name for this tenant</p>
+                </div>
+                
                 <div>
                   <label htmlFor="clientId" className="block text-sm font-medium mb-1">Client ID</label>
                   <input 
@@ -383,18 +405,6 @@ export default function Companies() {
                   />
                   <p className="text-xs text-secondary-500 mt-1">The client secret value (not the ID) from your Azure app</p>
                 </div>
-                
-                <div>
-                  <label htmlFor="redirectUri" className="block text-sm font-medium mb-1">Redirect URI</label>
-                  <input 
-                    id="redirectUri"
-                    type="text"
-                    className="w-full p-2 border rounded-md text-sm bg-secondary-50" 
-                    value="https://conquestwildman.replit.app/api/auth/microsoft365/callback"
-                    readOnly
-                  />
-                  <p className="text-xs text-secondary-500 mt-1">Use this exact redirect URI in your Azure app registration</p>
-                </div>
               </div>
             </div>
           </div>
@@ -408,46 +418,52 @@ export default function Companies() {
             </Button>
             <Button 
               onClick={() => {
+                const tenantDomain = (document.getElementById('tenantDomain') as HTMLInputElement)?.value;
+                const tenantName = (document.getElementById('tenantName') as HTMLInputElement)?.value;
                 const clientId = (document.getElementById('clientId') as HTMLInputElement)?.value;
                 const clientSecret = (document.getElementById('clientSecret') as HTMLInputElement)?.value;
-                const redirectUri = (document.getElementById('redirectUri') as HTMLInputElement)?.value;
                 
-                if (!clientId || !clientSecret) {
+                if (!tenantDomain || !tenantName || !clientId || !clientSecret) {
                   toast({
                     title: "Missing Information",
-                    description: "Please provide both Client ID and Client Secret",
+                    description: "Please fill in all fields",
                     variant: "destructive"
                   });
                   return;
                 }
                 
-                // Build query string with credentials
-                const params = new URLSearchParams({
-                  clientId,
-                  clientSecret,
-                  redirectUri,
-                  companyId: selectedTenantId?.toString() || ""
-                });
-                
-                // Get the authorization URL with these credentials
-                fetch(`/api/auth/microsoft365/authorize?${params.toString()}`, {
-                  method: 'GET',
+                // Create the Microsoft 365 connection directly with the API
+                fetch(`/api/tenants/${selectedTenantId}/microsoft365`, {
+                  method: 'POST',
                   headers: {
                     'Content-Type': 'application/json'
-                  }
+                  },
+                  body: JSON.stringify({
+                    tenantDomain,
+                    tenantName,
+                    clientId,
+                    clientSecret
+                  })
                 })
-                .then(response => response.json())
-                .then(data => {
-                  if (data.authUrl) {
-                    window.location.href = data.authUrl;
-                  } else {
-                    throw new Error('No authorization URL received from server');
+                .then(response => {
+                  if (!response.ok) {
+                    return response.json().then(data => {
+                      throw new Error(data.message || "Failed to create Microsoft 365 connection");
+                    });
                   }
+                  return response.json();
+                })
+                .then(data => {
+                  toast({
+                    title: "Connection Successful",
+                    description: `Successfully connected to Microsoft 365 tenant: ${tenantName}`
+                  });
+                  setM365DialogOpen(false);
                 })
                 .catch(error => {
                   toast({
                     title: "Connection Error",
-                    description: error.message || "Failed to start Microsoft 365 connection",
+                    description: error.message || "Failed to create Microsoft 365 connection",
                     variant: "destructive"
                   });
                 });

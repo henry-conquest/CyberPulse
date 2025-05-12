@@ -68,6 +68,7 @@ export const microsoft365Connections = pgTable("microsoft365_connections", {
   clientId: varchar("client_id").notNull(),
   clientSecret: varchar("client_secret").notNull(),
   tenantDomain: varchar("tenant_domain").notNull(),
+  userId: varchar("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

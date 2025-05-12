@@ -553,20 +553,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tenants/:id/microsoft365", isAuthenticated, isAuthorized([UserRoles.ADMIN]), asyncHandler(async (req, res) => {
     const tenantId = parseInt(req.params.id);
+    const userId = (req.user as any).claims.sub;
+    
     const validatedData = insertMicrosoft365ConnectionSchema.parse({
       ...req.body,
       tenantId,
+      userId,
     });
     
-    const connection = await storage.createMicrosoft365Connection(validatedData);
+    // Check if a connection already exists for this tenant
+    const existingConnection = await storage.getMicrosoft365ConnectionByTenantId(tenantId);
     
-    // Create audit log
-    await storage.createAuditLog({
-      userId: (req.user as any).claims.sub,
-      tenantId,
-      action: "create_microsoft365_connection",
-      details: `Created Microsoft 365 connection for tenant ID ${tenantId}`,
-    });
+    let connection;
+    if (existingConnection) {
+      // Update the existing connection
+      connection = await storage.updateMicrosoft365Connection(
+        existingConnection.id,
+        validatedData
+      );
+      
+      // Create audit log for update
+      await storage.createAuditLog({
+        userId,
+        tenantId,
+        action: "update_microsoft365_connection",
+        details: `Updated Microsoft 365 connection for tenant ID ${tenantId}`,
+      });
+    } else {
+      // Create a new connection
+      connection = await storage.createMicrosoft365Connection(validatedData);
+      
+      // Create audit log for creation
+      await storage.createAuditLog({
+        userId,
+        tenantId,
+        action: "create_microsoft365_connection",
+        details: `Created Microsoft 365 connection for tenant ID ${tenantId}`,
+      });
+    }
     
     // Don't return client secret in response
     const { clientSecret, ...connectionWithoutSecret } = connection;
