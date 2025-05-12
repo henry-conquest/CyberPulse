@@ -331,6 +331,11 @@ export default function IntegrationsPage() {
                             <div>
                               <h3 className="font-medium">{connection.tenantName}</h3>
                               <p className="text-sm text-muted-foreground">{connection.tenantDomain}</p>
+                              {connection.companyName && (
+                                <p className="text-xs text-emerald-600 font-medium mt-1">
+                                  Company: {connection.companyName}
+                                </p>
+                              )}
                               <p className="text-xs text-muted-foreground mt-1">
                                 Expires: {new Date(connection.expiresAt).toLocaleString()}
                               </p>

@@ -292,19 +292,72 @@ export class DatabaseStorage implements IStorage {
     return connection;
   }
   
-  async getMicrosoft365OAuthConnections(): Promise<Microsoft365OAuthConnection[]> {
-    return await db
-      .select()
+  async getMicrosoft365OAuthConnections(): Promise<(Microsoft365OAuthConnection & { companyName?: string })[]> {
+    // Basic query without join when no company is associated
+    const basicQuery = db
+      .select({
+        ...microsoft365OAuthConnections,
+        companyName: null,
+      })
       .from(microsoft365OAuthConnections)
-      .orderBy(desc(microsoft365OAuthConnections.createdAt));
+      .where(sql`${microsoft365OAuthConnections.companyId} IS NULL`);
+    
+    // Query with join when company is associated
+    const joinQuery = db
+      .select({
+        ...microsoft365OAuthConnections,
+        companyName: tenants.name,
+      })
+      .from(microsoft365OAuthConnections)
+      .leftJoin(tenants, eq(microsoft365OAuthConnections.companyId, tenants.id))
+      .where(sql`${microsoft365OAuthConnections.companyId} IS NOT NULL`);
+    
+    // Union the results
+    const [basicResults, joinResults] = await Promise.all([
+      basicQuery,
+      joinQuery
+    ]);
+    
+    return [...basicResults, ...joinResults].sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   }
   
-  async getMicrosoft365OAuthConnectionsByUserId(userId: string): Promise<Microsoft365OAuthConnection[]> {
-    return await db
-      .select()
+  async getMicrosoft365OAuthConnectionsByUserId(userId: string): Promise<(Microsoft365OAuthConnection & { companyName?: string })[]> {
+    // Basic query without join when no company is associated
+    const basicQuery = db
+      .select({
+        ...microsoft365OAuthConnections,
+        companyName: null,
+      })
       .from(microsoft365OAuthConnections)
-      .where(eq(microsoft365OAuthConnections.userId, userId))
-      .orderBy(desc(microsoft365OAuthConnections.createdAt));
+      .where(and(
+        eq(microsoft365OAuthConnections.userId, userId),
+        sql`${microsoft365OAuthConnections.companyId} IS NULL`
+      ));
+    
+    // Query with join when company is associated
+    const joinQuery = db
+      .select({
+        ...microsoft365OAuthConnections,
+        companyName: tenants.name,
+      })
+      .from(microsoft365OAuthConnections)
+      .leftJoin(tenants, eq(microsoft365OAuthConnections.companyId, tenants.id))
+      .where(and(
+        eq(microsoft365OAuthConnections.userId, userId),
+        sql`${microsoft365OAuthConnections.companyId} IS NOT NULL`
+      ));
+    
+    // Union the results
+    const [basicResults, joinResults] = await Promise.all([
+      basicQuery,
+      joinQuery
+    ]);
+    
+    return [...basicResults, ...joinResults].sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
   }
 
   async updateMicrosoft365OAuthConnection(id: number, connection: Partial<InsertMicrosoft365OAuthConnection>): Promise<Microsoft365OAuthConnection> {
