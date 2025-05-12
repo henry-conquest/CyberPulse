@@ -19,6 +19,15 @@ import {
 import { MicrosoftGraphService } from "./microsoft";
 import { NinjaOneService } from "./ninjaone";
 import { 
+  generateState, 
+  storeState, 
+  validateState, 
+  getAuthorizationUrl, 
+  exchangeCodeForToken, 
+  getTenantInfo, 
+  storeOAuthConnection 
+} from "./microsoft-oauth";
+import { 
   fetchSecurityDataForTenant, 
   calculateRiskScores, 
   generatePdfReport 
@@ -75,157 +84,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/microsoft365/authorize', isAuthenticated, asyncHandler(async (req: any, res) => {
     const userId = req.user.claims.sub;
     
-    // Microsoft OAuth configuration
-    const clientId = process.env.MS_GRAPH_CLIENT_ID || "enter-your-client-id";
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/microsoft365/callback`;
-    const scopes = [
-      'https://graph.microsoft.com/.default',
-      'offline_access'
-    ].join(' ');
-    
     // Generate and store state value to prevent CSRF
-    const state = crypto.randomBytes(16).toString('hex');
-    req.session.oauthState = state;
-    req.session.userId = userId;
+    const state = generateState();
+    storeState(state, userId);
     
-    // Build the authorization URL
-    const authUrl = new URL('https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
-    authUrl.searchParams.append('client_id', clientId);
-    authUrl.searchParams.append('response_type', 'code');
-    authUrl.searchParams.append('redirect_uri', redirectUri);
-    authUrl.searchParams.append('scope', scopes);
-    authUrl.searchParams.append('state', state);
-    authUrl.searchParams.append('response_mode', 'query');
+    // Get the authorization URL
+    const authUrl = getAuthorizationUrl(state);
     
-    res.json({ authUrl: authUrl.toString() });
+    res.json({ authUrl });
   }));
   
   // Microsoft 365 OAuth callback
   app.get('/api/auth/microsoft365/callback', asyncHandler(async (req: Request, res: Response) => {
     const { code, state, error, error_description } = req.query;
-    const session = (req as any).session;
     
     // Handle OAuth errors
     if (error) {
       console.error('OAuth error:', error, error_description);
-      return res.redirect(`/settings?error=${encodeURIComponent(error_description as string || 'Authentication failed')}`);
+      return res.redirect(`/integrations?error=${encodeURIComponent(error_description as string || 'Authentication failed')}`);
     }
     
-    // Validate state to prevent CSRF
-    if (!session.oauthState || session.oauthState !== state) {
-      return res.redirect('/settings?error=Invalid%20OAuth%20state');
+    if (!code || !state) {
+      return res.redirect('/integrations?error=Missing%20required%20parameters');
     }
     
     try {
-      // Exchange code for tokens
-      const clientId = process.env.MS_GRAPH_CLIENT_ID || "enter-your-client-id";
-      const clientSecret = process.env.MS_GRAPH_CLIENT_SECRET || "enter-your-client-secret";
-      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/microsoft365/callback`;
-      
-      const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
-      
-      const response = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({
-          client_id: clientId,
-          client_secret: clientSecret,
-          code: code as string,
-          redirect_uri: redirectUri,
-          grant_type: 'authorization_code'
-        }).toString()
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error_description || 'Failed to exchange code for tokens');
+      // Validate state and get userId
+      const userId = validateState(state as string);
+      if (!userId) {
+        return res.redirect('/integrations?error=Invalid%20or%20expired%20state');
       }
       
-      const tokenData = await response.json();
-      
-      // Extract tenant info from ID token or access token
-      const accessToken = tokenData.access_token;
-      const refreshToken = tokenData.refresh_token;
+      // Exchange code for token
+      const tokenResponse = await exchangeCodeForToken(code as string);
       
       // Get tenant information
-      const graphUrl = 'https://graph.microsoft.com/v1.0/organization';
-      const graphResponse = await fetch(graphUrl, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
+      const tenantInfo = await getTenantInfo(tokenResponse.access_token);
       
-      if (!graphResponse.ok) {
-        throw new Error('Failed to fetch tenant information');
-      }
-      
-      const orgData = await graphResponse.json();
-      const tenantId = orgData.value[0]?.id;
-      const tenantName = orgData.value[0]?.displayName;
-      const tenantDomain = orgData.value[0]?.verifiedDomains[0]?.name;
-      
-      if (!tenantId || !tenantDomain) {
-        throw new Error('Failed to extract tenant information');
-      }
-      
-      // Save the connection to the database
-      const userId = session.userId;
-      
-      // Check if connection already exists for this user and tenant
-      const existingConnections = await storage.getMicrosoft365Connections();
-      const existingConnection = existingConnections.find(c => 
-        c.tenantId === tenantId && c.userId === userId
+      // Store connection in database
+      await storeOAuthConnection(
+        userId,
+        tenantInfo.id,
+        tenantInfo.displayName,
+        tenantInfo.domains[0] || 'unknown',
+        tokenResponse.access_token,
+        tokenResponse.refresh_token,
+        tokenResponse.expires_in
       );
       
-      if (existingConnection) {
-        // Update existing connection
-        await storage.updateMicrosoft365Connection(existingConnection.id, {
-          accessToken,
-          refreshToken,
-          tenantName: tenantName || existingConnection.tenantName,
-          expiresAt: new Date(Date.now() + (tokenData.expires_in * 1000))
-        });
-        
-        // Create audit log
-        await storage.createAuditLog({
-          userId,
-          action: "update_microsoft365_connection",
-          details: `Updated Microsoft 365 connection for tenant: ${tenantName || tenantId}`
-        });
-      } else {
-        // Create new connection
-        await storage.createMicrosoft365Connection({
-          userId,
-          tenantId,
-          tenantName: tenantName || 'Microsoft 365 Tenant',
-          tenantDomain,
-          clientId,
-          clientSecret,
-          accessToken,
-          refreshToken,
-          expiresAt: new Date(Date.now() + (tokenData.expires_in * 1000))
-        });
-        
-        // Create audit log
-        await storage.createAuditLog({
-          userId,
-          action: "create_microsoft365_connection",
-          details: `Connected to Microsoft 365 tenant: ${tenantName || tenantId}`
-        });
-      }
+      // Create audit log
+      await storage.createAuditLog({
+        userId,
+        action: "create_microsoft365_oauth_connection",
+        details: `Connected to Microsoft 365 tenant via OAuth: ${tenantInfo.displayName || tenantInfo.id}`
+      });
       
-      // Clear OAuth state
-      delete session.oauthState;
-      delete session.userId;
-      
-      // Redirect to settings page with success message
-      res.redirect('/settings?tab=integrations&success=true');
+      // Redirect to the integrations page with success message
+      res.redirect('/integrations?oauth=success');
       
     } catch (error) {
-      console.error('Microsoft OAuth Error:', error);
-      res.redirect(`/settings?tab=integrations&error=${encodeURIComponent(error instanceof Error ? error.message : 'Authentication failed')}`);
+      console.error("OAuth callback error:", error);
+      res.redirect('/integrations?oauth=error');
     }
   }));
   
@@ -239,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Don't return sensitive information
       const safeConnections = connections.map(conn => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { clientSecret, accessToken, refreshToken, ...safeConn } = conn;
+        const { clientSecret, ...safeConn } = conn;
         return safeConn;
       });
       
@@ -248,6 +167,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error fetching Microsoft 365 connections:', error);
       res.status(500).json({ 
         message: 'Failed to fetch Microsoft 365 connections',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }));
+  
+  // List Microsoft 365 OAuth connections for the authenticated user
+  app.get('/api/connections/microsoft365/oauth', isAuthenticated, asyncHandler(async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    
+    try {
+      const connections = await storage.getMicrosoft365OAuthConnectionsByUserId(userId);
+      
+      // Don't return sensitive information
+      const safeConnections = connections.map(conn => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { clientSecret, accessToken, refreshToken, ...safeConn } = conn;
+        return safeConn;
+      });
+      
+      res.json(safeConnections);
+    } catch (error) {
+      console.error('Error fetching Microsoft 365 OAuth connections:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch Microsoft 365 OAuth connections',
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
