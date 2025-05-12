@@ -538,7 +538,7 @@ export default function IntegrationsPage() {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Company to associate with this Microsoft 365 tenant
+                      Select the company in your system that this Microsoft 365 tenant belongs to. This mapping allows you to organize tenant data by company.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
