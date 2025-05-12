@@ -1306,6 +1306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     console.log(`Report refresh result - ID: ${refreshedReport.id}`);
+    console.log(`Report securityData structure:`, JSON.stringify(refreshedReport.securityData, null, 2));
     
     res.json({
       message: "Report refreshed successfully",

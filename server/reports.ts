@@ -632,6 +632,9 @@ export async function createQuarterlyReport(tenantId: number, quarter: 1 | 2 | 3
     // Create quarterly report title
     const title = `${tenant.name} - Q${quarter} ${year} Security Report`;
     
+    // Log the security data structure for debugging
+    console.log("Security data structure from API:", JSON.stringify(securityData, null, 2));
+    
     // Calculate risk scores
     const riskScores = calculateRiskScores(securityData.securityData);
     
