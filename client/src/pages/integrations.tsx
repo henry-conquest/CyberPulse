@@ -404,7 +404,7 @@ export default function IntegrationsPage() {
                       <h3 className="text-lg font-medium mb-3">OAuth Connections</h3>
                       <div className="space-y-4">
                         {microsoft365OAuthConnections.map((connection: any) => (
-                          <div key={connection.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50">
+                          <div key={connection.id} className={`flex items-center justify-between p-4 border rounded-lg ${connection.needsReconnection ? 'bg-red-50 border-red-200' : 'bg-slate-50'}`}>
                             <div>
                               <h3 className="font-medium">{connection.tenantName}</h3>
                               <p className="text-sm text-muted-foreground">{connection.tenantDomain}</p>
@@ -416,11 +416,29 @@ export default function IntegrationsPage() {
                               <p className="text-xs text-muted-foreground mt-1">
                                 Expires: {new Date(connection.expiresAt).toLocaleString()}
                               </p>
+                              {connection.needsReconnection && (
+                                <p className="text-xs text-red-600 font-medium mt-1">
+                                  Authentication expired. Please reconnect.
+                                </p>
+                              )}
                             </div>
                             <div className="flex items-center space-x-2">
-                              <span className="text-sm text-blue-600 flex items-center">
-                                <CheckCircle className="h-4 w-4 mr-1" /> OAuth Connected
-                              </span>
+                              {connection.needsReconnection ? (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="text-red-600 border-red-200 hover:bg-red-50"
+                                  onClick={() => {
+                                    setLocation(`/settings?tab=microsoft365&action=connect&company=${connection.companyId || ''}`)
+                                  }}
+                                >
+                                  <RefreshCw className="h-4 w-4 mr-1" /> Reconnect
+                                </Button>
+                              ) : (
+                                <span className="text-sm text-blue-600 flex items-center">
+                                  <CheckCircle className="h-4 w-4 mr-1" /> OAuth Connected
+                                </span>
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"

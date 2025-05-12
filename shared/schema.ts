@@ -85,6 +85,7 @@ export const microsoft365OAuthConnections = pgTable("microsoft365_oauth_connecti
   refreshToken: text("refresh_token").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   companyId: integer("company_id").references(() => tenants.id), // Link to our internal tenants
+  needsReconnection: boolean("needs_reconnection").default(false), // Flag to indicate if token refresh failed
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
