@@ -191,14 +191,14 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
       </CardContent>
       <CardFooter className="pt-2 flex justify-between">
         <Button variant="outline" size="sm" asChild>
-          <Link href={`/reports/${report.id}/risk-stats`}>
+          <Link href={`/tenants/${report.tenantId}/reports/${report.id}/risk-stats`}>
             <Eye className="h-4 w-4 mr-2" />
             View Risk Stats
           </Link>
         </Button>
         {report.status !== "sent" && (
           <Button size="sm" variant="default" asChild>
-            <Link href={`/reports/${report.id}/edit`}>
+            <Link href={`/tenants/${report.tenantId}/reports/${report.id}/edit`}>
               <FileEdit className="h-4 w-4 mr-2" />
               {report.status === "new" ? "Review" : "Edit"}
             </Link>
