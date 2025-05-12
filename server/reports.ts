@@ -522,10 +522,199 @@ export async function fetchSecurityDataForTenant(tenantId: number) {
   }
 }
 
-// Function to schedule report generation
-export function scheduleMonthlyReports() {
-  // Logic to schedule automatic report generation
-  // This would be implemented with a library like node-schedule
-  // For now, we'll just have the endpoint to trigger generation
-  console.log("Monthly report generation scheduled");
+// Function to get quarter info based on date
+export function getQuarterInfo(date: Date): { quarter: 1 | 2 | 3 | 4, year: number, startDate: Date, endDate: Date } {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  
+  let quarter: 1 | 2 | 3 | 4;
+  let startDate: Date;
+  let endDate: Date;
+  
+  if (month < 3) {
+    quarter = 1;
+    startDate = new Date(year, 0, 1); // Jan 1
+    endDate = new Date(year, 2, 31, 23, 59, 59, 999); // Mar 31
+  } else if (month < 6) {
+    quarter = 2;
+    startDate = new Date(year, 3, 1); // Apr 1
+    endDate = new Date(year, 5, 30, 23, 59, 59, 999); // Jun 30
+  } else if (month < 9) {
+    quarter = 3;
+    startDate = new Date(year, 6, 1); // Jul 1
+    endDate = new Date(year, 8, 30, 23, 59, 59, 999); // Sep 30
+  } else {
+    quarter = 4;
+    startDate = new Date(year, 9, 1); // Oct 1
+    endDate = new Date(year, 11, 31, 23, 59, 59, 999); // Dec 31
+  }
+  
+  return { quarter, year, startDate, endDate };
+}
+
+// Function to find the previous quarter information
+export function getPreviousQuarterInfo(quarter: 1 | 2 | 3 | 4, year: number): { quarter: 1 | 2 | 3 | 4, year: number } {
+  if (quarter === 1) {
+    return { quarter: 4, year: year - 1 };
+  } else {
+    return { quarter: (quarter - 1) as 1 | 2 | 3 | 4, year };
+  }
+}
+
+// Create a report for a specific tenant and quarter
+export async function createQuarterlyReport(tenantId: number, quarter: 1 | 2 | 3 | 4, year: number, userId?: string): Promise<Report | null> {
+  try {
+    // Calculate the start and end dates for the quarter
+    let startDate: Date, endDate: Date;
+    
+    if (quarter === 1) {
+      startDate = new Date(year, 0, 1); // Jan 1
+      endDate = new Date(year, 2, 31, 23, 59, 59, 999); // Mar 31
+    } else if (quarter === 2) {
+      startDate = new Date(year, 3, 1); // Apr 1
+      endDate = new Date(year, 5, 30, 23, 59, 59, 999); // Jun 30
+    } else if (quarter === 3) {
+      startDate = new Date(year, 6, 1); // Jul 1
+      endDate = new Date(year, 8, 30, 23, 59, 59, 999); // Sep 30
+    } else {
+      startDate = new Date(year, 9, 1); // Oct 1
+      endDate = new Date(year, 11, 31, 23, 59, 59, 999); // Dec 31
+    }
+    
+    // Check if report already exists for this quarter and tenant
+    const existingReports = await storage.getReportsByTenantId(tenantId);
+    const reportExists = existingReports.some(report => 
+      report.quarter === quarter && report.year === year
+    );
+    
+    if (reportExists) {
+      console.log(`Report for Q${quarter} ${year} for tenant ${tenantId} already exists, skipping creation`);
+      return null;
+    }
+    
+    // Get tenant information
+    const tenant = await storage.getTenant(tenantId);
+    if (!tenant) {
+      console.error(`Tenant ${tenantId} not found`);
+      return null;
+    }
+    
+    // Fetch security data for the tenant
+    const securityData = await fetchSecurityDataForTenant(tenantId);
+    
+    // Get previous quarterly report (if exists) for comparison
+    const prevQuarter = getPreviousQuarterInfo(quarter, year);
+    const previousReports = existingReports.filter(report => 
+      report.quarter === prevQuarter.quarter && report.year === prevQuarter.year
+    );
+    const previousReport = previousReports.length > 0 ? previousReports[0] : null;
+    
+    // If previous report exists, add comparison data to security data
+    if (previousReport && previousReport.securityData) {
+      const prevData = previousReport.securityData;
+      securityData.securityData.previousSecureScore = prevData.secureScore;
+      securityData.securityData.previousSecureScorePercent = prevData.secureScorePercent;
+    }
+    
+    // Create quarterly report title
+    const title = `${tenant.name} - Q${quarter} ${year} Security Report`;
+    
+    // Calculate risk scores
+    const riskScores = calculateRiskScores(securityData.securityData);
+    
+    // Create new report
+    const newReport = await storage.createReport({
+      tenantId,
+      title,
+      quarter,
+      year,
+      startDate: startDate.toISOString().split('T')[0], // YYYY-MM-DD format
+      endDate: endDate.toISOString().split('T')[0], // YYYY-MM-DD format
+      overallRiskScore: riskScores.overallRiskScore,
+      identityRiskScore: riskScores.identityRiskScore,
+      trainingRiskScore: riskScores.trainingRiskScore,
+      deviceRiskScore: riskScores.deviceRiskScore,
+      cloudRiskScore: riskScores.cloudRiskScore,
+      threatRiskScore: riskScores.threatRiskScore,
+      status: "new",
+      securityData: securityData.securityData,
+      createdBy: userId
+    });
+    
+    console.log(`Created Q${quarter} ${year} report for tenant ${tenant.name} (ID: ${tenantId})`);
+    
+    return newReport;
+  } catch (error) {
+    console.error(`Error creating quarterly report for tenant ${tenantId}, Q${quarter} ${year}:`, error);
+    return null;
+  }
+}
+
+// Function to schedule quarterly report generation
+export async function scheduleQuarterlyReports() {
+  const nodeSchedule = await import('node-schedule');
+  
+  // Schedule for Q1 report (January 25) - covering Q1 (Jan-Mar)
+  nodeSchedule.scheduleJob('0 0 9 25 1 *', async () => {
+    console.log('Running scheduled Q1 report generation');
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    await generateReportsForAllTenants(1, currentYear);
+  });
+  
+  // Schedule for Q2 report (April 25) - covering Q2 (Apr-Jun)
+  nodeSchedule.scheduleJob('0 0 9 25 4 *', async () => {
+    console.log('Running scheduled Q2 report generation');
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    await generateReportsForAllTenants(2, currentYear);
+  });
+  
+  // Schedule for Q3 report (July 25) - covering Q3 (Jul-Sep)
+  nodeSchedule.scheduleJob('0 0 9 25 7 *', async () => {
+    console.log('Running scheduled Q3 report generation');
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    await generateReportsForAllTenants(3, currentYear);
+  });
+  
+  // Schedule for Q4 report (October 25) - covering Q4 (Oct-Dec)
+  nodeSchedule.scheduleJob('0 0 9 25 10 *', async () => {
+    console.log('Running scheduled Q4 report generation');
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    await generateReportsForAllTenants(4, currentYear);
+  });
+  
+  console.log('Quarterly report generation scheduled');
+}
+
+// Generate reports for all tenants
+async function generateReportsForAllTenants(quarter: 1 | 2 | 3 | 4, year: number) {
+  try {
+    // Get all tenants
+    const tenants = await storage.getAllTenants();
+    console.log(`Generating Q${quarter} ${year} reports for ${tenants.length} tenants`);
+    
+    for (const tenant of tenants) {
+      try {
+        await createQuarterlyReport(tenant.id, quarter, year);
+      } catch (error) {
+        console.error(`Error generating report for tenant ${tenant.name} (${tenant.id}):`, error);
+      }
+    }
+    
+    console.log(`Completed Q${quarter} ${year} report generation for all tenants`);
+  } catch (error) {
+    console.error(`Error generating reports for Q${quarter} ${year}:`, error);
+  }
+}
+
+// Add manual API endpoint for generating quarterly reports
+export async function generateReportForCurrentQuarter(tenantId: number, userId?: string): Promise<Report | null> {
+  const now = new Date();
+  const { quarter, year } = getQuarterInfo(now);
+  
+  console.log(`Manually generating Q${quarter} ${year} report for tenant ${tenantId}`);
+  return await createQuarterlyReport(tenantId, quarter, year, userId);
 }

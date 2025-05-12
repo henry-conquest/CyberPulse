@@ -30,7 +30,10 @@ import {
 import { 
   fetchSecurityDataForTenant, 
   calculateRiskScores, 
-  generatePdfReport 
+  generatePdfReport, 
+  createQuarterlyReport,
+  getQuarterInfo,
+  generateReportForCurrentQuarter
 } from "./reports";
 import { emailService } from "./email";
 import fs from "fs/promises";
@@ -1251,6 +1254,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating PDF:", error);
       res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  }));
+
+  // Generate current quarterly report
+  app.post("/api/tenants/:id/generate-quarterly-report", isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    const tenantId = parseInt(req.params.id);
+    
+    // Check if user has access to this tenant
+    const hasAccess = await hasTenantAccess(userId, tenantId);
+    if (!hasAccess) {
+      return res.status(403).json({ message: "You don't have access to this tenant" });
+    }
+    
+    // Get tenant information
+    const tenant = await storage.getTenant(tenantId);
+    if (!tenant) {
+      return res.status(404).json({ message: "Tenant not found" });
+    }
+    
+    try {
+      // Generate the quarterly report
+      const report = await generateReportForCurrentQuarter(tenantId, userId);
+      
+      if (!report) {
+        return res.status(400).json({ 
+          message: "Failed to generate quarterly report. It may already exist for this quarter or there may be an issue with the tenant connections." 
+        });
+      }
+      
+      // Create audit log
+      await storage.createAuditLog({
+        userId,
+        tenantId,
+        action: "generate_quarterly_report",
+        details: `Generated quarterly report: ${report.title}`,
+      });
+      
+      res.status(201).json(report);
+    } catch (error) {
+      console.error("Error generating quarterly report:", error);
+      res.status(500).json({ 
+        message: "Failed to generate quarterly report", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   }));
 
