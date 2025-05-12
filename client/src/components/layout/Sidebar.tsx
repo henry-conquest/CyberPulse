@@ -24,8 +24,8 @@ function NavItem({ href, icon, children, isActive }: NavItemProps) {
   return (
     <Link href={href}>
       <a className={cn(
-        "flex items-center space-x-2 px-3 py-2 rounded hover:bg-secondary-800 text-secondary-300",
-        isActive && "bg-primary-700 text-white"
+        "flex items-center space-x-2 px-3 py-2 rounded hover:bg-white/10 text-white/80",
+        isActive && "bg-white/15 text-white font-medium"
       )}>
         {icon}
         <span>{children}</span>
@@ -54,40 +54,61 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
   return (
     <div className={cn(
-      "w-64 bg-secondary-900 text-white fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0",
+      "w-64 bg-[#146d87] text-white fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0",
       isOpen ? "translate-x-0" : "-translate-x-full"
     )}>
-      <div className="p-4 border-b border-secondary-700">
+      <div className="p-4 border-b border-white/20">
         <div className="flex items-center space-x-3">
-          <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold">
-            CP
+          <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center text-white font-bold">
+            CR
           </div>
-          <h1 className="text-xl font-bold">CyberPulse</h1>
+          <h1 className="text-xl font-bold">Cyber Risk Management</h1>
         </div>
       </div>
       
       <div className="p-4">
-        {user?.tenants && user.tenants.length > 0 && (
-          <div className="mb-4">
-            <div className="text-secondary-400 text-xs uppercase font-semibold mb-2">
-              Organization
+        {/* User Info */}
+        <div className="mb-6">
+          <div className="flex items-center mb-3">
+            <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-lg">
+              {user?.firstName?.[0] || user?.email?.[0] || "U"}
             </div>
-            <select 
-              className="bg-secondary-800 text-white rounded w-full p-2 text-sm"
-              value={selectedTenant || ""}
-              onChange={handleTenantChange}
-            >
-              {user.tenants.map(tenant => (
-                <option key={tenant.id} value={tenant.id}>
-                  {tenant.name}
-                </option>
-              ))}
-            </select>
+            <div className="ml-3">
+              <p className="text-base font-medium">
+                {user?.firstName || user?.email?.split('@')[0] || "User"}
+              </p>
+              <p className="text-xs text-white/70">
+                Microsoft 365 SSO
+              </p>
+            </div>
           </div>
-        )}
+          
+          {/* Tenant Selector */}
+          {user?.tenants && user.tenants.length > 0 && (
+            <div className="mt-3">
+              <div className="text-white/80 text-xs uppercase font-semibold mb-2">
+                Client Organization
+              </div>
+              <select 
+                className="bg-white/10 border border-white/20 text-white rounded w-full p-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
+                value={selectedTenant || ""}
+                onChange={handleTenantChange}
+              >
+                {user.tenants.map(tenant => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.name}
+                  </option>
+                ))}
+              </select>
+              <div className="text-xs text-white/60 mt-1">
+                Data: Q2 2025 (Apr-Jun)
+              </div>
+            </div>
+          )}
+        </div>
         
         <div className="mt-6 space-y-1">
-          <div className="text-secondary-400 text-xs uppercase font-semibold mb-2">
+          <div className="text-white/80 text-xs uppercase font-semibold mb-2">
             Menu
           </div>
           
@@ -126,7 +147,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         
         {isAdmin && (
           <div className="mt-8">
-            <div className="text-secondary-400 text-xs uppercase font-semibold mb-2">
+            <div className="text-white/80 text-xs uppercase font-semibold mb-2">
               Admin
             </div>
             
@@ -157,30 +178,13 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         )}
       </div>
       
-      <div className="mt-auto p-4 border-t border-secondary-700">
-        <div className="flex items-center">
-          <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white">
-            {user?.firstName?.[0] || user?.email?.[0] || "U"}
-          </div>
-          <div className="ml-3">
-            <p className="text-sm font-medium">
-              {user?.firstName || user?.email?.split('@')[0] || "User"}
-            </p>
-            <p className="text-xs text-secondary-400">
-              {user?.role === "admin" ? "Administrator" : 
-                user?.role === "analyst" ? "Security Analyst" : 
-                user?.role === "account_manager" ? "Account Manager" : "User"}
-            </p>
-          </div>
-        </div>
-        <div className="mt-3">
-          <a 
-            href="/api/logout" 
-            className="text-xs text-secondary-400 hover:text-secondary-300"
-          >
-            Log out
-          </a>
-        </div>
+      <div className="mt-auto p-4 border-t border-white/20">
+        <a 
+          href="/api/logout" 
+          className="text-xs text-white/70 hover:text-white flex items-center"
+        >
+          <span className="mr-1">Log out</span>
+        </a>
       </div>
     </div>
   );

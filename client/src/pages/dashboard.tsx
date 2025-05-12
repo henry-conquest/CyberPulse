@@ -154,7 +154,7 @@ Cyber Security and the threats associated are a continuous moving target, howeve
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
             <h3 className="text-lg font-semibold">{selectedTenant?.name || "Organization"}</h3>
-            <p className="text-secondary-500">Executive Cyber Risk Dashboard - {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+            <p className="text-secondary-500">Executive Cyber Risk Dashboard - Q2 2025 (Apr-Jun)</p>
           </div>
           <div className="mt-4 md:mt-0 flex space-x-3 items-center">
             {user?.tenants && user.tenants.length > 0 && (
