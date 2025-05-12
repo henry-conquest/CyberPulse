@@ -84,46 +84,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/microsoft365/authorize', isAuthenticated, asyncHandler(async (req: any, res) => {
     const userId = req.user.claims.sub;
     
+    console.log("OAuth authorization endpoint called");
+    console.log("- User ID:", userId);
+    
     // Get credentials and company ID from request query parameters (not cookies)
     const clientId = req.query.clientId as string || undefined;
     const clientSecret = req.query.clientSecret as string || undefined;
     const redirectUri = req.query.redirectUri as string || undefined;
     const companyId = req.query.companyId as string || undefined;
     
-    // Generate and store state value to prevent CSRF
-    const state = generateState();
-    storeState(state, userId, clientId, clientSecret, redirectUri, companyId);
+    console.log("Request parameters:");
+    console.log("- Client ID provided:", !!clientId);
+    console.log("- Client Secret provided:", !!clientSecret);
+    console.log("- Redirect URI provided:", !!redirectUri);
+    console.log("- Company ID provided:", !!companyId, companyId || "");
     
-    // Get the authorization URL
-    const authUrl = getAuthorizationUrl(state, clientId, redirectUri);
+    // Validate required parameters
+    if (!clientId || !clientSecret) {
+      console.error("Missing required OAuth parameters");
+      return res.status(400).json({ 
+        error: true, 
+        message: "Missing required OAuth credentials. Please provide both Client ID and Client Secret." 
+      });
+    }
     
-    res.json({ authUrl });
+    try {
+      // Generate and store state value to prevent CSRF
+      console.log("Generating OAuth state parameter");
+      const state = generateState();
+      storeState(state, userId, clientId, clientSecret, redirectUri, companyId);
+      
+      // Get the authorization URL
+      console.log("Getting authorization URL");
+      const authUrl = getAuthorizationUrl(state, clientId, redirectUri);
+      
+      console.log("Authorization URL generated successfully");
+      res.json({ authUrl });
+    } catch (error) {
+      console.error("Error generating OAuth authorization URL:", error);
+      
+      let errorMessage = "Failed to generate authorization URL";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      res.status(500).json({ 
+        error: true, 
+        message: errorMessage 
+      });
+    }
   }));
   
   // Microsoft 365 OAuth callback
   app.get('/api/auth/microsoft365/callback', asyncHandler(async (req: Request, res: Response) => {
     const { code, state, error, error_description } = req.query;
     
+    console.log("OAuth callback received");
+    console.log("- Code present:", !!code);
+    console.log("- State present:", !!state);
+    console.log("- Error present:", !!error);
+    
     // Handle OAuth errors
     if (error) {
-      console.error('OAuth error:', error, error_description);
-      return res.redirect(`/integrations?error=${encodeURIComponent(error_description as string || 'Authentication failed')}`);
+      console.error('OAuth error received from Microsoft:', error);
+      console.error('Error description:', error_description);
+      return res.redirect(`/integrations?tab=microsoft365&error=${encodeURIComponent(error_description as string || 'Authentication failed')}`);
     }
     
     if (!code || !state) {
-      return res.redirect('/integrations?error=Missing%20required%20parameters');
+      console.error('Missing required OAuth parameters');
+      console.error('- Code present:', !!code);
+      console.error('- State present:', !!state);
+      return res.redirect('/integrations?tab=microsoft365&error=Missing%20required%20OAuth%20parameters.%20Please%20try%20again.');
     }
     
     try {
       // Validate state and get state data
+      console.log("Validating state parameter");
       const stateData = validateState(state as string);
+      
       if (!stateData) {
-        return res.redirect('/integrations?error=Invalid%20or%20expired%20state');
+        console.error('Invalid or expired state parameter');
+        return res.redirect('/integrations?tab=microsoft365&error=Invalid%20or%20expired%20state.%20Please%20try%20connecting%20again.');
       }
       
       const { userId, clientId, clientSecret, redirectUri, companyId } = stateData;
       
+      console.log("State validation successful");
+      console.log("- User ID:", userId);
+      console.log("- Client ID provided:", !!clientId);
+      console.log("- Client Secret provided:", !!clientSecret);
+      console.log("- Redirect URI:", redirectUri || "using default");
+      console.log("- Company ID:", companyId || "not provided");
+      
       // Exchange code for token
+      console.log("Exchanging authorization code for access token");
       const tokenResponse = await exchangeCodeForToken(
         code as string,
         clientId,
@@ -131,10 +186,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         redirectUri
       );
       
+      console.log("Token exchange successful");
+      
       // Get tenant information
+      console.log("Fetching tenant information using access token");
       const tenantInfo = await getTenantInfo(tokenResponse.access_token);
       
+      console.log("Tenant information retrieved successfully:");
+      console.log("- Tenant ID:", tenantInfo.id);
+      console.log("- Tenant Name:", tenantInfo.displayName);
+      console.log("- Primary Domain:", tenantInfo.domains[0] || "unknown");
+      
       // Store connection in database
+      console.log("Storing OAuth connection in database");
       await storeOAuthConnection(
         userId,
         tenantInfo.id,
@@ -155,13 +219,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: `Connected to Microsoft 365 tenant via OAuth: ${tenantInfo.displayName || tenantInfo.id}`
       });
       
+      console.log("OAuth connection stored successfully");
+      
       // Redirect to the integrations page with success message
       res.redirect('/integrations?tab=microsoft365&success=true');
       
     } catch (error) {
-      console.error("OAuth callback error:", error);
-      const errorMsg = error instanceof Error ? encodeURIComponent(error.message) : 'Unknown error occurred';
-      res.redirect(`/integrations?tab=microsoft365&error=${errorMsg}`);
+      console.error('Error in Microsoft 365 OAuth callback:', error);
+      
+      let errorMessage = 'Unknown error occurred';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        console.error('Error details:', error.stack);
+      }
+      
+      // Provide more user-friendly error messages
+      let userFriendlyError = errorMessage;
+      
+      if (errorMessage.includes('invalid_client')) {
+        userFriendlyError = 'Invalid client credentials. Please check your Client ID and Client Secret.';
+      } else if (errorMessage.includes('invalid_grant')) {
+        userFriendlyError = 'Authorization code is invalid or expired. Please try again.';
+      } else if (errorMessage.includes('redirect_uri_mismatch')) {
+        userFriendlyError = 'Redirect URI mismatch. The redirect URI must exactly match what you configured in Azure.';
+      } else if (errorMessage.includes('Missing client_id')) {
+        userFriendlyError = 'Missing Client ID. Please ensure you entered a valid Client ID in the form.';
+      } else if (errorMessage.includes('Missing client_secret')) {
+        userFriendlyError = 'Missing Client Secret. Please ensure you entered a valid Client Secret in the form.';
+      }
+      
+      res.redirect(`/integrations?tab=microsoft365&error=${encodeURIComponent(userFriendlyError)}`);
     }
   }));
   
