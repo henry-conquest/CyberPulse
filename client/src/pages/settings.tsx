@@ -50,6 +50,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   Calendar,
+  Link2,
+  Cloud,
+  LinkIcon,
+  ExternalLink,
 } from "lucide-react";
 
 // Schema for profile settings
