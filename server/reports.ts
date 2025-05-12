@@ -564,9 +564,11 @@ export function getPreviousQuarterInfo(quarter: 1 | 2 | 3 | 4, year: number): { 
   }
 }
 
-// Create a report for a specific tenant and quarter
+// Create or update a report for a specific tenant and quarter
 export async function createQuarterlyReport(tenantId: number, quarter: 1 | 2 | 3 | 4, year: number, userId?: string, forceRefresh: boolean = false): Promise<Report | null> {
   try {
+    console.log(`createQuarterlyReport called for tenant ${tenantId}, Q${quarter} ${year}, forceRefresh=${forceRefresh}`);
+    
     // Calculate the start and end dates for the quarter
     let startDate: Date, endDate: Date;
     
@@ -591,11 +593,12 @@ export async function createQuarterlyReport(tenantId: number, quarter: 1 | 2 | 3
     );
     
     if (existingReport) {
+      console.log(`Found existing report with ID ${existingReport.id}`);
       if (!forceRefresh) {
         console.log(`Report for Q${quarter} ${year} for tenant ${tenantId} already exists, skipping creation`);
         return existingReport;
       } else {
-        console.log(`Refreshing report for Q${quarter} ${year} for tenant ${tenantId}`);
+        console.log(`Refreshing report for Q${quarter} ${year} for tenant ${tenantId} with ID ${existingReport.id}`);
       }
     } else {
       console.log(`Creating new report for Q${quarter} ${year} for tenant ${tenantId}`);

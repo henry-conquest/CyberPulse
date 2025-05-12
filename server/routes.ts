@@ -1271,6 +1271,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const reportId = parseInt(req.params.reportId);
     const userId = (req.user as any)?.claims?.sub || null;
     
+    console.log(`Refresh request for report ID ${reportId} of tenant ${tenantId}`);
+    
     // Check if user has access to this tenant
     const hasAccess = await hasTenantAccess(userId, tenantId);
     if (!hasAccess && (req.user as any)?.role !== UserRoles.ADMIN) {
@@ -1288,6 +1290,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ message: "Report does not belong to this tenant" });
     }
     
+    console.log(`Found existing report: ID ${report.id}, Quarter ${report.quarter}, Year ${report.year}`);
+    
     // Refresh the report
     const refreshedReport = await createQuarterlyReport(
       tenantId, 
@@ -1300,6 +1304,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!refreshedReport) {
       return res.status(500).json({ message: "Failed to refresh report" });
     }
+    
+    console.log(`Report refresh result - ID: ${refreshedReport.id}`);
     
     res.json({
       message: "Report refreshed successfully",
