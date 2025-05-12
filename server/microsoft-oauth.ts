@@ -46,6 +46,15 @@ export function storeState(
   redirectUri?: string,
   companyId?: string
 ): void {
+  // Debug information
+  console.log("Storing OAuth state:");
+  console.log(`- State: ${state}`);
+  console.log(`- User ID: ${userId}`);
+  console.log(`- Client ID: ${clientId || 'none'}`);
+  console.log(`- Client secret provided: ${clientSecret ? 'Yes' : 'No'}`);
+  console.log(`- Redirect URI: ${redirectUri || 'none'}`);
+  console.log(`- Company ID: ${companyId || 'none'}`);
+  
   stateCache[state] = {
     userId,
     timestamp: Date.now(),
@@ -61,14 +70,18 @@ export function storeState(
  * @returns state data if valid, null if invalid or expired
  */
 export function validateState(state: string): StateData | null {
+  console.log(`Validating state: ${state}`);
+  
   const cached = stateCache[state];
   
   if (!cached) {
+    console.log("State not found in cache");
     return null;
   }
   
   // Check if state has expired
   if (Date.now() - cached.timestamp > STATE_EXPIRY) {
+    console.log("State has expired");
     delete stateCache[state];
     return null;
   }
@@ -76,6 +89,13 @@ export function validateState(state: string): StateData | null {
   // Remove from cache after use
   const stateCopy = {...cached};
   delete stateCache[state];
+  
+  console.log("State validated successfully:");
+  console.log(`- User ID: ${stateCopy.userId}`);
+  console.log(`- Client ID: ${stateCopy.clientId || 'none'}`);
+  console.log(`- Client Secret: ${stateCopy.clientSecret ? '[PROVIDED]' : 'none'}`);
+  console.log(`- Redirect URI: ${stateCopy.redirectUri || 'none'}`);
+  console.log(`- Company ID: ${stateCopy.companyId || 'none'}`);
   
   return stateCopy;
 }

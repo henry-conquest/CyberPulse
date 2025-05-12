@@ -182,9 +182,12 @@ export default function IntegrationsPage() {
     defaultValues: {
       clientId: "",
       clientSecret: "",
-      redirectUri: "",
+      // Default to the current domain for the redirect URI
+      redirectUri: `${window.location.origin}/api/auth/microsoft365/callback`,
       companyId: ""
-    }
+    },
+    // Ensure validation happens on all changes
+    mode: "onChange"
   });
   
   // Connect dialog state
