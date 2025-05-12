@@ -49,6 +49,10 @@ export default function Companies() {
   const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  useEffect(() => {
+    console.log('Current user:', user);
+  }, [user]);
 
   // Form for creating new company
   const form = useForm<CompanyFormValues>({
@@ -321,7 +325,7 @@ export default function Companies() {
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
-              {user?.role === "ADMIN" && (
+              {user?.role === "admin" && (
                 <Button 
                   variant="outline" 
                   className="w-full"
