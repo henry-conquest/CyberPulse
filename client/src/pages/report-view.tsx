@@ -792,12 +792,12 @@ export default function ReportView({ id }: ReportViewProps) {
                     <div className="mt-2 flex items-center">
                       <div className="flex-1 bg-secondary-200 rounded-full h-2">
                         <div 
-                          className={`h-2 rounded-full ${securityData.secureScorePercent > 70 ? 'bg-success' : securityData.secureScorePercent > 30 ? 'bg-warning' : 'bg-danger'}`} 
-                          style={{ width: `${securityData.secureScorePercent || 0}%` }}
+                          className={`h-2 rounded-full ${securityData?.securityData?.secureScorePercent > 70 ? 'bg-success' : securityData?.securityData?.secureScorePercent > 30 ? 'bg-warning' : 'bg-danger'}`} 
+                          style={{ width: `${securityData?.securityData?.secureScorePercent || 0}%` }}
                         ></div>
                       </div>
                       <span className="ml-2 text-sm font-medium">
-                        {securityData.secureScorePercent || 0}%
+                        {securityData?.securityData?.secureScorePercent || 0}%
                       </span>
                     </div>
                   </div>
