@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronRight, BarChart, CalendarDays, LayoutGrid, Plus } from "lucide-react";
+import { ChevronRight, BarChart, CalendarDays, LayoutGrid, Plus, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { z } from "zod";
@@ -45,6 +45,8 @@ export default function Companies() {
   const { user, isLoading: isUserLoading } = useAuth();
   const [location, setLocation] = useLocation();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [m365DialogOpen, setM365DialogOpen] = useState(false);
+  const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -320,16 +322,142 @@ export default function Companies() {
                 </Link>
               </Button>
               {user?.role === "ADMIN" && (
-                <Button variant="outline" className="w-full" onClick={() => setLocation(`/integrations?tenant=${tenant.id}`)} asChild>
-                  <Link to={`/integrations?tenant=${tenant.id}`}>
-                    Connect Data Sources
-                  </Link>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    setSelectedTenantId(tenant.id);
+                    setM365DialogOpen(true);
+                  }}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Connect Microsoft 365
                 </Button>
               )}
             </CardFooter>
           </Card>
         ))}
       </div>
+
+      {/* Microsoft 365 Connection Dialog */}
+      <Dialog open={m365DialogOpen} onOpenChange={setM365DialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>Connect Microsoft 365</DialogTitle>
+            <DialogDescription>
+              Enter your Microsoft 365 credentials to retrieve security insights and compliance data.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <div className="bg-blue-50 p-4 rounded-md mb-4">
+              <h3 className="text-sm font-medium text-blue-800 mb-1">How to get these credentials</h3>
+              <ul className="text-xs text-blue-700 space-y-1 list-disc pl-4">
+                <li>Register an application in Azure Active Directory</li>
+                <li>Grant the app API permissions for Microsoft Graph</li>
+                <li>Create a client secret for the application</li>
+                <li>Use the redirect URI shown below in your app registration</li>
+              </ul>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label htmlFor="clientId" className="block text-sm font-medium mb-1">Client ID</label>
+                  <input 
+                    id="clientId"
+                    type="text"
+                    className="w-full p-2 border rounded-md text-sm" 
+                    placeholder="Enter your Azure App Registration Client ID"
+                  />
+                  <p className="text-xs text-secondary-500 mt-1">The Application (client) ID from your Azure app registration</p>
+                </div>
+                
+                <div>
+                  <label htmlFor="clientSecret" className="block text-sm font-medium mb-1">Client Secret</label>
+                  <input 
+                    id="clientSecret"
+                    type="password"
+                    className="w-full p-2 border rounded-md text-sm" 
+                    placeholder="Enter your client secret value"
+                  />
+                  <p className="text-xs text-secondary-500 mt-1">The client secret value (not the ID) from your Azure app</p>
+                </div>
+                
+                <div>
+                  <label htmlFor="redirectUri" className="block text-sm font-medium mb-1">Redirect URI</label>
+                  <input 
+                    id="redirectUri"
+                    type="text"
+                    className="w-full p-2 border rounded-md text-sm bg-secondary-50" 
+                    value="https://conquestwildman.replit.app/api/auth/microsoft365/callback"
+                    readOnly
+                  />
+                  <p className="text-xs text-secondary-500 mt-1">Use this exact redirect URI in your Azure app registration</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setM365DialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                const clientId = (document.getElementById('clientId') as HTMLInputElement)?.value;
+                const clientSecret = (document.getElementById('clientSecret') as HTMLInputElement)?.value;
+                const redirectUri = (document.getElementById('redirectUri') as HTMLInputElement)?.value;
+                
+                if (!clientId || !clientSecret) {
+                  toast({
+                    title: "Missing Information",
+                    description: "Please provide both Client ID and Client Secret",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                
+                // Build query string with credentials
+                const params = new URLSearchParams({
+                  clientId,
+                  clientSecret,
+                  redirectUri,
+                  companyId: selectedTenantId?.toString() || ""
+                });
+                
+                // Get the authorization URL with these credentials
+                fetch(`/api/auth/microsoft365/authorize?${params.toString()}`, {
+                  method: 'GET',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  }
+                })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.authUrl) {
+                    window.location.href = data.authUrl;
+                  } else {
+                    throw new Error('No authorization URL received from server');
+                  }
+                })
+                .catch(error => {
+                  toast({
+                    title: "Connection Error",
+                    description: error.message || "Failed to start Microsoft 365 connection",
+                    variant: "destructive"
+                  });
+                });
+              }}
+            >
+              Connect
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
