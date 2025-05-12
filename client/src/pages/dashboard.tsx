@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 
 import RiskGauge from "@/components/dashboard/RiskGauge";
 import RiskIndicator from "@/components/dashboard/RiskIndicator";
@@ -29,6 +29,12 @@ export default function Dashboard({ tenantId }: DashboardProps) {
       setLocation("/companies");
     }
   }, [tenantId, setLocation]);
+
+  // Get tenant details (name, etc.)
+  const { data: tenant } = useQuery({
+    queryKey: [`/api/tenants/${tenantId}`],
+    enabled: !!tenantId,
+  });
 
   // Fetch security data for the selected tenant
   const { data: securityData, isLoading } = useQuery({
@@ -124,7 +130,7 @@ Cyber Security and the threats associated are a continuous moving target, howeve
     }
   };
 
-  if (isLoading) {
+  if (!tenantId || isLoading) {
     return (
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-center h-64">
@@ -141,19 +147,24 @@ Cyber Security and the threats associated are a continuous moving target, howeve
         <div className="bg-white rounded-lg shadow-sm p-6 text-center">
           <h3 className="text-lg font-semibold mb-4">No Data Available</h3>
           <p className="text-secondary-600 mb-4">
-            Security data could not be loaded for the selected tenant. Please check the tenant's API connections or try again later.
+            Security data could not be loaded. Please check the tenant's API connections or try again later.
           </p>
           <Button onClick={() => window.location.reload()}>Retry</Button>
+          <Button variant="outline" className="ml-3" asChild>
+            <Link href="/companies">
+              Change Company
+            </Link>
+          </Button>
         </div>
       </div>
     );
   }
 
-  const selectedTenant = user?.tenants?.find(t => t.id === selectedTenantId);
+  // Get the tenant name from our API query
+  const tenantName = tenant?.name || "Company";
   
-  // If there's no tenant selected and there are tenants available,
-  // show a company selection interface
-  if ((!selectedTenantId || !securityData) && user?.tenants && user.tenants.length > 0) {
+  // If tenant data is not available, show a message
+  if (!tenant) {
     return (
       <div className="max-w-7xl mx-auto py-8">
         <h1 className="text-2xl font-bold mb-6">Select a Company</h1>
