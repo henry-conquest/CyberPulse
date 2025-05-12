@@ -62,7 +62,7 @@ export default function Companies() {
           <Card key={tenant.id} className="overflow-hidden transition-all duration-200 hover:shadow-md">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-lg font-bold">{tenant.name}</CardTitle>
+                <CardTitle className="text-xl font-bold">{tenant.name}</CardTitle>
                 <Badge variant="outline" className="text-xs font-normal px-2 py-0.5">
                   {tenant.industry || "Technology"}
                 </Badge>
@@ -73,31 +73,33 @@ export default function Companies() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pb-3">
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <div className="bg-secondary-50 rounded p-2 text-center">
-                  <div className="text-sm font-medium">Current Quarter</div>
-                  <div className="text-lg font-bold text-primary-600">Q{currentQuarter} {currentYear}</div>
+              <div className="grid grid-cols-2 gap-4 mb-2">
+                <div>
+                  <div className="text-sm font-medium text-secondary-600">Current Quarter</div>
+                  <div className="text-lg font-bold text-secondary-900">Q{currentQuarter} {currentYear}</div>
                 </div>
-                <div className="bg-secondary-50 rounded p-2 text-center">
-                  <div className="text-sm font-medium">Risk Score</div>
+                <div>
+                  <div className="text-sm font-medium text-secondary-600">Risk Score</div>
                   <div className="text-lg font-bold text-amber-500">Medium</div>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="pt-0 flex justify-between">
-              <Button variant="outline" size="sm" asChild>
-                <Link to={`/tenants/${tenant.id}/dashboard`}>
-                  <BarChart className="h-4 w-4 mr-1" />
-                  Dashboard
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <Link to={`/tenants/${tenant.id}/reports`}>
-                  <LayoutGrid className="h-4 w-4 mr-1" />
-                  Reports
-                </Link>
-              </Button>
-              <Button variant="default" size="sm" className="ml-auto" asChild>
+            <CardFooter className="px-4 pt-3 pb-4 flex flex-col gap-3">
+              <div className="flex gap-2 w-full mb-1">
+                <Button variant="outline" size="sm" className="flex-1 bg-gray-50" asChild>
+                  <Link to={`/tenants/${tenant.id}/dashboard`}>
+                    <BarChart className="h-4 w-4 mr-1" />
+                    Dashboard
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1 bg-gray-50" asChild>
+                  <Link to={`/tenants/${tenant.id}/reports`}>
+                    <LayoutGrid className="h-4 w-4 mr-1" />
+                    Reports
+                  </Link>
+                </Button>
+              </div>
+              <Button variant="default" size="sm" className="w-full bg-blue-500 hover:bg-blue-600" asChild>
                 <Link to={`/tenants/${tenant.id}/report-periods`}>
                   View Details
                   <ChevronRight className="h-4 w-4 ml-1" />
