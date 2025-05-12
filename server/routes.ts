@@ -452,6 +452,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const reports = await storage.getReportsByTenantId(tenantId);
     res.json(reports);
   }));
+  
+  // Get reports by tenant and optionally filtered by year
+  app.get("/api/reports/by-tenant", isAuthenticated, asyncHandler(async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    const tenantId = parseInt(req.query.tenantId as string);
+    const year = req.query.year ? parseInt(req.query.year as string) : null;
+    
+    if (!tenantId) {
+      return res.status(400).json({ message: "Tenant ID is required" });
+    }
+    
+    // Check if user has access to the tenant
+    const user = await storage.getUser(userId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
+    
+    if (!hasAccess) {
+      return res.status(403).json({ message: "You don't have access to this tenant" });
+    }
+    
+    let reports = await storage.getReportsByTenantId(tenantId);
+    
+    // Filter by year if specified
+    if (year) {
+      reports = reports.filter(report => report.year === year);
+    }
+    
+    res.json(reports);
+  }));
 
   app.post("/api/tenants/:id/reports", isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
     const userId = (req.user as any).claims.sub;
@@ -564,6 +592,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       tenantId: report.tenantId,
       action: "update_report",
       details: `Updated report ID ${reportId}${status ? ` - Status changed to ${status}` : ''}`,
+    });
+    
+    res.json(updatedReport);
+  }));
+  
+  // Update analyst notes (only for users with analyst_notes role)
+  app.patch("/api/reports/:id/analyst-notes", isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST_NOTES]), asyncHandler(async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    const reportId = parseInt(req.params.id);
+    const { analystNotes } = req.body;
+    
+    if (analystNotes === undefined) {
+      return res.status(400).json({ message: "Analyst notes are required" });
+    }
+    
+    // Get report to check tenant access
+    const report = await storage.getReport(reportId);
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+    
+    // Check if user has access to the tenant this report belongs to
+    const hasAccess = await hasTenantAccess(userId, report.tenantId);
+    if (!hasAccess) {
+      return res.status(403).json({ message: "You don't have access to this report" });
+    }
+    
+    const updatedReport = await storage.updateReport(reportId, { analystNotes });
+    
+    // Create audit log
+    await storage.createAuditLog({
+      userId,
+      tenantId: report.tenantId,
+      action: "update_analyst_notes",
+      details: `Updated analyst notes for report ID ${reportId}`,
     });
     
     res.json(updatedReport);

@@ -9,7 +9,8 @@ import {
   Users, 
   Shield, 
   Mail,
-  Building 
+  Building,
+  CalendarDays
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

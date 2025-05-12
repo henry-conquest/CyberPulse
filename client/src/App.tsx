@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Reports from "@/pages/reports";
+import ReportPeriods from "@/pages/report-periods";
 import ReportView from "@/pages/report-view";
 import Recommendations from "@/pages/recommendations";
 import Settings from "@/pages/settings";
@@ -45,6 +46,7 @@ function Router() {
     <Switch>
       <Route path="/" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/reports" component={() => <ProtectedRoute component={Reports} />} />
+      <Route path="/report-periods" component={() => <ProtectedRoute component={ReportPeriods} />} />
       <Route path="/reports/:id" component={({ params }) => (
         <ProtectedRoute component={ReportView} id={params.id} />
       )} />
