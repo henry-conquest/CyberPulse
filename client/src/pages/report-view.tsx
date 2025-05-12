@@ -84,7 +84,7 @@ interface ReportViewProps {
 
 export default function ReportView({ id }: ReportViewProps) {
   const { user } = useAuth();
-  const [_, navigate] = useLocation();
+  const [_, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const reportId = parseInt(id);
@@ -108,10 +108,13 @@ export default function ReportView({ id }: ReportViewProps) {
     },
   });
 
+  // Get the tenant ID from the URL
+  const tenantId = parseInt(window.location.pathname.split('/')[2]);
+  
   // Fetch report data
   const { data: report, isLoading } = useQuery({
-    queryKey: ['/api/reports', reportId],
-    enabled: !!reportId,
+    queryKey: [`/api/tenants/${tenantId}/reports/${reportId}`],
+    enabled: !!reportId && !!tenantId,
   });
 
   // Update comments form when report data is loaded
@@ -126,7 +129,13 @@ export default function ReportView({ id }: ReportViewProps) {
   // Mutations
   const updateCommentsMutation = useMutation({
     mutationFn: async (data: z.infer<typeof commentsSchema>) => {
-      const response = await apiRequest('PATCH', `/api/reports/${reportId}`, data);
+      const response = await fetch(`/api/tenants/${tenantId}/reports/${reportId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -134,7 +143,7 @@ export default function ReportView({ id }: ReportViewProps) {
         title: "Comments updated",
         description: "Analyst comments have been updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/reports', reportId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tenants/${tenantId}/reports/${reportId}`] });
       setIsCommentsDialogOpen(false);
     },
     onError: (error) => {
