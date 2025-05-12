@@ -84,12 +84,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/microsoft365/authorize', isAuthenticated, asyncHandler(async (req: any, res) => {
     const userId = req.user.claims.sub;
     
+    // Get credentials and company ID from request query parameters (not cookies)
+    const clientId = req.query.clientId as string || undefined;
+    const clientSecret = req.query.clientSecret as string || undefined;
+    const redirectUri = req.query.redirectUri as string || undefined;
+    const companyId = req.query.companyId as string || undefined;
+    
     // Generate and store state value to prevent CSRF
     const state = generateState();
-    storeState(state, userId);
+    storeState(state, userId, clientId, clientSecret, redirectUri, companyId);
     
     // Get the authorization URL
-    const authUrl = getAuthorizationUrl(state);
+    const authUrl = getAuthorizationUrl(state, clientId, redirectUri);
     
     res.json({ authUrl });
   }));
@@ -109,14 +115,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Validate state and get userId
-      const userId = validateState(state as string);
-      if (!userId) {
+      // Validate state and get state data
+      const stateData = validateState(state as string);
+      if (!stateData) {
         return res.redirect('/integrations?error=Invalid%20or%20expired%20state');
       }
       
+      const { userId, clientId, clientSecret, redirectUri, companyId } = stateData;
+      
       // Exchange code for token
-      const tokenResponse = await exchangeCodeForToken(code as string);
+      const tokenResponse = await exchangeCodeForToken(
+        code as string,
+        clientId,
+        clientSecret,
+        redirectUri
+      );
       
       // Get tenant information
       const tenantInfo = await getTenantInfo(tokenResponse.access_token);
@@ -129,7 +142,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tenantInfo.domains[0] || 'unknown',
         tokenResponse.access_token,
         tokenResponse.refresh_token,
-        tokenResponse.expires_in
+        tokenResponse.expires_in,
+        clientId,
+        clientSecret,
+        companyId
       );
       
       // Create audit log

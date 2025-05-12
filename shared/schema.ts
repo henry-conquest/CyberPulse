@@ -84,6 +84,7 @@ export const microsoft365OAuthConnections = pgTable("microsoft365_oauth_connecti
   accessToken: text("access_token").notNull(),
   refreshToken: text("refresh_token").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
+  companyId: integer("company_id").references(() => tenants.id), // Link to our internal tenants
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

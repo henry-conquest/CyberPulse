@@ -2,7 +2,16 @@ import { storage } from "./storage";
 import crypto from "crypto";
 
 // In-memory state cache for OAuth flow
-const stateCache: Record<string, { userId: string, timestamp: number }> = {};
+interface StateData {
+  userId: string;
+  timestamp: number;
+  clientId?: string;
+  clientSecret?: string;
+  redirectUri?: string;
+  companyId?: string;
+}
+
+const stateCache: Record<string, StateData> = {};
 const STATE_EXPIRY = 10 * 60 * 1000; // 10 minutes
 
 // Interfaces for OAuth responses
@@ -27,20 +36,31 @@ export function generateState(): string {
 }
 
 /**
- * Store state with userId in memory cache
+ * Store state with user data in memory cache
  */
-export function storeState(state: string, userId: string): void {
+export function storeState(
+  state: string, 
+  userId: string, 
+  clientId?: string,
+  clientSecret?: string,
+  redirectUri?: string,
+  companyId?: string
+): void {
   stateCache[state] = {
     userId,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    clientId,
+    clientSecret,
+    redirectUri,
+    companyId
   };
 }
 
 /**
- * Validate state parameter and return associated userId
- * @returns userId if valid, null if invalid or expired
+ * Validate state parameter and return associated state data
+ * @returns state data if valid, null if invalid or expired
  */
-export function validateState(state: string): string | null {
+export function validateState(state: string): StateData | null {
   const cached = stateCache[state];
   
   if (!cached) {
@@ -54,9 +74,10 @@ export function validateState(state: string): string | null {
   }
   
   // Remove from cache after use
+  const stateCopy = {...cached};
   delete stateCache[state];
   
-  return cached.userId;
+  return stateCopy;
 }
 
 /**
