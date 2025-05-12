@@ -13,6 +13,7 @@ import {
   CalendarDays
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import logoImg from "../../assets/logo.png";
 
 interface NavItemProps {
   href: string;
@@ -59,11 +60,12 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       isOpen ? "translate-x-0" : "-translate-x-full"
     )}>
       <div className="p-4 border-b border-white/20">
-        <div className="flex items-center space-x-3">
-          <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center text-white font-bold">
-            CR
-          </div>
-          <h1 className="text-xl font-bold">Cyber Risk Management</h1>
+        <div className="flex items-center justify-center">
+          <img 
+            src={logoImg} 
+            alt="ConquestWildman" 
+            className="h-12 w-auto my-2 brightness-0 invert" 
+          />
         </div>
       </div>
       
