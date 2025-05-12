@@ -409,18 +409,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Security data endpoints
   app.get("/api/tenants/:id/security-data", isAuthenticated, asyncHandler(async (req, res) => {
+    console.log("Security data endpoint called");
     const userId = (req.user as any).claims.sub;
     const tenantId = parseInt(req.params.id);
+    
+    console.log(`Fetching security data for tenant: ${tenantId}, user: ${userId}`);
     
     const user = await storage.getUser(userId);
     const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
+      console.log(`User ${userId} does not have access to tenant ${tenantId}`);
       return res.status(403).json({ message: "You don't have access to this tenant" });
     }
     
     try {
+      console.log("Calling fetchSecurityDataForTenant...");
       const data = await fetchSecurityDataForTenant(tenantId);
+      console.log("Security data fetched:", JSON.stringify(data, null, 2));
       res.json(data);
     } catch (error) {
       console.error("Error fetching security data:", error);
