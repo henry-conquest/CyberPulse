@@ -48,7 +48,7 @@ interface Report {
   year: number;
   startDate: string;
   endDate: string;
-  status: string;
+  status: "new" | "reviewed" | "analyst_ready" | "manager_ready" | "sent";
   overallRiskScore: number;
   sentAt: string | null;
 }
@@ -70,14 +70,16 @@ const getQuarterLabel = (quarter: number, year: number) => {
 
 const getStatusIcon = (status: string) => {
   switch (status) {
-    case "draft":
-      return <FileEdit className="h-5 w-5 text-slate-500" />;
-    case "review":
-      return <Clock className="h-5 w-5 text-orange-500" />;
-    case "approved":
+    case "new":
+      return <FileText className="h-5 w-5 text-slate-500" />;
+    case "reviewed":
+      return <FileEdit className="h-5 w-5 text-blue-500" />;
+    case "analyst_ready":
+      return <Clock className="h-5 w-5 text-purple-500" />;
+    case "manager_ready":
       return <Check className="h-5 w-5 text-green-500" />;
     case "sent":
-      return <Send className="h-5 w-5 text-blue-500" />;
+      return <Send className="h-5 w-5 text-teal-500" />;
     default:
       return <FileText className="h-5 w-5 text-slate-500" />;
   }
@@ -108,7 +110,9 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="capitalize">{report.status}</p>
+                <p className="capitalize">{report.status === "analyst_ready" ? "Analyst Ready" : 
+                  report.status === "manager_ready" ? "Manager Ready" : 
+                  report.status.charAt(0).toUpperCase() + report.status.slice(1)}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

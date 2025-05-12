@@ -129,13 +129,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             Reports
           </NavItem>
           
-          <NavItem 
-            href="/report-periods" 
-            icon={<CalendarDays className="h-5 w-5" />}
-            isActive={location === "/report-periods"}
-          >
-            Report Periods
-          </NavItem>
+          {/* Report Periods moved to after client selection */}
           
           <NavItem 
             href="/recommendations" 

@@ -313,6 +313,21 @@ export default function Reports() {
       </div>
       
       {/* Filter controls */}
+      {/* Add Report Periods button when tenant is selected */}
+      {selectedTenantId && (
+        <div className="mb-6">
+          <Link href={`/report-periods?tenantId=${selectedTenantId}`}>
+            <Button variant="outline" className="w-full md:w-auto">
+              <Calendar className="h-4 w-4 mr-2" />
+              View Report Periods
+            </Button>
+          </Link>
+          <p className="text-sm text-secondary-500 mt-2">
+            View quarterly reporting periods and risk management statistics
+          </p>
+        </div>
+      )}
+      
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-grow">
           <Input
