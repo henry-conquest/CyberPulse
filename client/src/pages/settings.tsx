@@ -86,6 +86,13 @@ export default function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
+  const [isConnectingToM365, setIsConnectingToM365] = useState(false);
+  
+  // Fetch connections
+  const { data: microsoft365Connections, isLoading: isLoadingConnections } = useQuery({
+    queryKey: ['/api/connections/microsoft365'],
+    enabled: !!user,
+  });
 
   // Profile form
   const profileForm = useForm<z.infer<typeof profileSchema>>({
@@ -202,6 +209,49 @@ export default function Settings() {
   const onSecuritySubmit = (data: z.infer<typeof securitySchema>) => {
     changePasswordMutation.mutate(data);
   };
+  
+  // Microsoft 365 connection
+  const connectToMicrosoft365 = async () => {
+    setIsConnectingToM365(true);
+    try {
+      const response = await apiRequest('GET', '/api/auth/microsoft365/authorize');
+      const data = await response.json();
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error("Failed to get authorization URL");
+      }
+    } catch (error) {
+      toast({
+        title: "Connection Error",
+        description: error instanceof Error ? error.message : "Failed to connect to Microsoft 365",
+        variant: "destructive",
+      });
+      setIsConnectingToM365(false);
+    }
+  };
+  
+  // Disconnect Microsoft 365
+  const disconnectMicrosoft365Mutation = useMutation({
+    mutationFn: async (connectionId: number) => {
+      const response = await apiRequest('DELETE', `/api/connections/microsoft365/${connectionId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Disconnected",
+        description: "Microsoft 365 connection has been removed successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/connections/microsoft365'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to disconnect Microsoft 365",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (!user) {
     return (
@@ -227,7 +277,7 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-3 mb-6">
+        <TabsList className="grid grid-cols-4 mb-6">
           <TabsTrigger value="profile" className="flex items-center">
             <User className="h-4 w-4 mr-2" />
             Profile
@@ -239,6 +289,10 @@ export default function Settings() {
           <TabsTrigger value="security" className="flex items-center">
             <Shield className="h-4 w-4 mr-2" />
             Security
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="flex items-center">
+            <Link2 className="h-4 w-4 mr-2" />
+            Integrations
           </TabsTrigger>
         </TabsList>
 
@@ -561,6 +615,170 @@ export default function Settings() {
                 <AlertTitle>Security Notice</AlertTitle>
                 <AlertDescription>
                   For enhanced security, your session will automatically expire after 24 hours of inactivity.
+                </AlertDescription>
+              </Alert>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        {/* Integrations Tab */}
+        <TabsContent value="integrations">
+          <Card>
+            <CardHeader>
+              <CardTitle>Integrations</CardTitle>
+              <CardDescription>
+                Connect external services to enhance security monitoring capabilities
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Microsoft 365 Integration */}
+              <div className="rounded-lg border p-4">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-blue-100 rounded-full mr-3">
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width="24" 
+                        height="24" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        className="text-blue-600"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M3 9h18" />
+                        <path d="M9 21V9" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-medium">Microsoft 365</h3>
+                      <p className="text-sm text-secondary-500">
+                        Access secure score and security metrics from Microsoft 365 tenant
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {isLoadingConnections ? (
+                    <Button disabled variant="outline" size="sm">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Loading...
+                    </Button>
+                  ) : microsoft365Connections && microsoft365Connections.length > 0 ? (
+                    <Badge variant="outline" className="bg-success/10 text-success">Connected</Badge>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={connectToMicrosoft365}
+                      disabled={isConnectingToM365}
+                    >
+                      {isConnectingToM365 ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <Link2 className="h-4 w-4 mr-2" />
+                          Connect
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+                
+                {microsoft365Connections && microsoft365Connections.length > 0 && (
+                  <div className="mt-4 space-y-4">
+                    {microsoft365Connections.map((connection: any) => (
+                      <div key={connection.id} className="bg-secondary-50 p-4 rounded-md">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-medium">{connection.tenantName || 'Microsoft 365 Tenant'}</h4>
+                            <p className="text-xs text-secondary-500 mt-1">
+                              Connected on {new Date(connection.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                            onClick={() => disconnectMicrosoft365Mutation.mutate(connection.id)}
+                            disabled={disconnectMicrosoft365Mutation.isPending}
+                          >
+                            {disconnectMicrosoft365Mutation.isPending ? 'Disconnecting...' : 'Disconnect'}
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 mt-3">
+                          <div className="text-sm">
+                            <span className="text-secondary-500">Tenant ID:</span>
+                            <span className="ml-1 font-mono text-xs">{connection.tenantId}</span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="text-secondary-500">Status:</span>
+                            <Badge variant="outline" className="ml-2 bg-success/10 text-success text-xs">Active</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <div className="flex items-center justify-between p-3 border border-dashed rounded-md mt-4">
+                      <p className="text-sm text-secondary-500">
+                        <AlertTriangle className="h-4 w-4 inline-block mr-2 text-amber-500" />
+                        Disconnecting will remove access to Microsoft 365 security metrics
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={connectToMicrosoft365}
+                        disabled={isConnectingToM365}
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Connect Another Tenant
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {!isLoadingConnections && (!microsoft365Connections || microsoft365Connections.length === 0) && (
+                  <Alert className="mt-4">
+                    <Cloud className="h-4 w-4" />
+                    <AlertTitle>No connection found</AlertTitle>
+                    <AlertDescription>
+                      Connect your Microsoft 365 tenant to enable security insights and monitoring for your organization.
+                      This requires administrator permissions for your Microsoft 365 tenant.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+              
+              {/* Future integrations can be added here */}
+              <div className="rounded-lg border border-dashed p-4 bg-secondary-50">
+                <div className="flex items-center justify-center py-4">
+                  <div className="text-center">
+                    <h3 className="text-lg font-medium mb-2">More integrations coming soon</h3>
+                    <p className="text-sm text-secondary-500 max-w-md mx-auto">
+                      We're working on additional integrations to enhance your security monitoring capabilities.
+                      Stay tuned for updates!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="border-t pt-6">
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Integration Access</AlertTitle>
+                <AlertDescription>
+                  Connecting integrations grants read-only access to security metrics. No data is modified in your tenant.
                 </AlertDescription>
               </Alert>
             </CardFooter>

@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAuthorized } from "./replitAuth";
@@ -26,6 +26,9 @@ import {
 import { emailService } from "./email";
 import fs from "fs/promises";
 import path from "path";
+import crypto from "crypto";
+import { ClientSecretCredential } from "@azure/identity";
+import { TokenCredentialAuthenticationProvider } from "@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials";
 
 // Helper to check if user has access to a tenant
 async function hasTenantAccess(userId: string, tenantId: number): Promise<boolean> {
