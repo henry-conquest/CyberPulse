@@ -1,6 +1,6 @@
 import { Microsoft365Connection } from "@shared/schema";
 import { Client } from "@microsoft/microsoft-graph-client";
-import { TokenCredentialAuthenticationProvider } from "@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials/tokenCredentialAuthenticationProvider.js";
+import { TokenCredentialAuthenticationProvider } from "@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials";
 import { ClientSecretCredential } from "@azure/identity";
 
 // Interface for MS Graph secure score data
