@@ -391,6 +391,66 @@ export function calculateRiskScores(securityData: any): {
 
 // Function to fetch security data from Microsoft 365 and NinjaOne for a tenant
 export async function fetchSecurityDataForTenant(tenantId: number) {
+  // In a development environment without real M365 and NinjaOne connections,
+  // we'll use mock data to demonstrate the application functionality
+  if (process.env.NODE_ENV === 'development') {
+    console.log("Using mock data for development environment");
+    
+    // Mock security data for development testing
+    const mockSecurityData = {
+      secureScore: 52,
+      secureScorePercent: 52,
+      identityMetrics: {
+        mfaNotEnabled: 17,
+        phishResistantMfa: false,
+        globalAdmins: 3,
+        riskBasedSignOn: false,
+        roleBasedAccessControl: true,
+        singleSignOn: false,
+        managedIdentityProtection: false,
+      },
+      deviceMetrics: {
+        deviceScore: 65,
+        diskEncryption: false,
+        defenderForEndpoint: true,
+        deviceHardening: false,
+        softwareUpdated: true,
+        managedDetectionResponse: false,
+        totalDevices: 24,
+        compliantDevices: 19,
+        nonCompliantDevices: 4,
+        unknownDevices: 1,
+        compliancePercentage: 78,
+      },
+      cloudMetrics: {
+        saasProtection: false,
+        sensitivityLabels: false,
+        backupArchiving: true,
+        dataLossPrevention: false,
+        defenderFor365: true,
+        suitableFirewall: true,
+        dkimPolicies: true,
+        dmarcPolicies: true,
+        conditionalAccess: false,
+        compliancePolicies: false,
+        byodPolicies: "Partial",
+      },
+      threatMetrics: {
+        identityThreats: 5,
+        deviceThreats: 1,
+        otherThreats: 0,
+      }
+    };
+
+    // Calculate risk scores based on mock data
+    const mockRiskScores = calculateRiskScores(mockSecurityData);
+    
+    return {
+      securityData: mockSecurityData,
+      ...mockRiskScores
+    };
+  }
+
   try {
     // Get Microsoft 365 connection for tenant
     const ms365Connection = await storage.getMicrosoft365ConnectionByTenantId(tenantId);
@@ -440,59 +500,7 @@ export async function fetchSecurityDataForTenant(tenantId: number) {
     };
   } catch (error) {
     console.error("Error fetching security data for tenant:", error);
-    
-    // For development, return mock data if API calls fail
-    const mockSecurityData = {
-      secureScore: 52,
-      secureScorePercent: 52,
-      identityMetrics: {
-        mfaNotEnabled: 17,
-        phishResistantMfa: false,
-        globalAdmins: 3,
-        riskBasedSignOn: false,
-        roleBasedAccessControl: true,
-        singleSignOn: false,
-        managedIdentityProtection: false,
-      },
-      deviceMetrics: {
-        deviceScore: 65,
-        diskEncryption: false,
-        defenderForEndpoint: true,
-        deviceHardening: false,
-        softwareUpdated: true,
-        managedDetectionResponse: false,
-        totalDevices: 24,
-        compliantDevices: 19,
-        nonCompliantDevices: 4,
-        unknownDevices: 1,
-        compliancePercentage: 78,
-      },
-      cloudMetrics: {
-        saasProtection: false,
-        sensitivityLabels: false,
-        backupArchiving: true,
-        dataLossPrevention: false,
-        defenderFor365: true,
-        suitableFirewall: true,
-        dkimPolicies: true,
-        dmarcPolicies: true,
-        conditionalAccess: false,
-        compliancePolicies: false,
-        byodPolicies: "Partial",
-      },
-      threatMetrics: {
-        identityThreats: 5,
-        deviceThreats: 1,
-        otherThreats: 0,
-      }
-    };
-    
-    const mockRiskScores = calculateRiskScores(mockSecurityData);
-    
-    return {
-      securityData: mockSecurityData,
-      ...mockRiskScores
-    };
+    throw error;
   }
 }
 
