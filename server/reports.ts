@@ -407,9 +407,15 @@ export function calculateRiskScores(securityData: any): {
 
 // Function to fetch security data from Microsoft 365 and NinjaOne for a tenant
 export async function fetchSecurityDataForTenant(tenantId: number) {
-  // In a development environment without real M365 and NinjaOne connections,
-  // we'll use mock data to demonstrate the application functionality
-  if (process.env.NODE_ENV === 'development') {
+  // Check if the tenant has Microsoft 365 and NinjaOne connections
+  const ms365Connection = await storage.getMicrosoft365ConnectionByTenantId(tenantId);
+  const ninjaConnection = await storage.getNinjaOneConnectionByTenantId(tenantId);
+  
+  // In development environment without real connections, we'll use mock data
+  const useMockData = process.env.NODE_ENV === 'development' && 
+                     (!ms365Connection || !ninjaConnection);
+  
+  if (useMockData) {
     console.log("Using mock data for development environment");
     
     // Mock security data for development testing
@@ -470,14 +476,11 @@ export async function fetchSecurityDataForTenant(tenantId: number) {
   }
 
   try {
-    // Get Microsoft 365 connection for tenant
-    const ms365Connection = await storage.getMicrosoft365ConnectionByTenantId(tenantId);
+    // We already have the connections from above, but check again to make sure they're valid
     if (!ms365Connection) {
       throw new Error("Microsoft 365 connection not found for tenant");
     }
     
-    // Get NinjaOne connection for tenant
-    const ninjaConnection = await storage.getNinjaOneConnectionByTenantId(tenantId);
     if (!ninjaConnection) {
       throw new Error("NinjaOne connection not found for tenant");
     }
