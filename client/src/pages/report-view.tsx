@@ -332,6 +332,7 @@ export default function ReportView({ id }: ReportViewProps) {
 
   // Get security data from the report
   const securityData = report.securityData || {};
+  console.log("Report security data:", securityData);
 
   // Check permissions
   const isAdmin = user?.role === "admin";
