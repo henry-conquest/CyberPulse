@@ -113,7 +113,12 @@ const RiskCategory = ({
           </div>
           <Progress 
             value={score} 
-            className={`h-2 ${progressColor}`}
+            className="h-2"
+            style={{
+              "--progress-color": score >= 75 ? "#ef4444" : 
+                                score >= 50 ? "#f59e0b" : 
+                                "#22c55e"
+            } as React.CSSProperties}
           />
         </div>
         <p className="text-sm text-muted-foreground mt-3">
@@ -255,11 +260,12 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
             <div className="mt-4">
               <Progress 
                 value={overallRiskScore} 
-                className={`h-3 ${
-                  overallRiskScore >= 75 ? "bg-red-500" : 
-                  overallRiskScore >= 50 ? "bg-amber-500" : 
-                  "bg-green-500"
-                }`}
+                className="h-3"
+                style={{
+                  "--progress-color": overallRiskScore >= 75 ? "#ef4444" : 
+                                     overallRiskScore >= 50 ? "#f59e0b" : 
+                                     "#22c55e"
+                } as React.CSSProperties}
               />
             </div>
           </CardContent>
