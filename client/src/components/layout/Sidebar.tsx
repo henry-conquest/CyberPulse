@@ -100,16 +100,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             <>
               <div className="border-t border-white/10 my-3 pt-3">
                 <div className="text-white/80 text-xs uppercase font-semibold mb-2">
-                  Company Dashboard
+                  Company Reports
                 </div>
-                
-                <NavItem 
-                  href={`/tenants/${currentTenantId}/dashboard`} 
-                  icon={<BarChart3 className="h-5 w-5" />}
-                  isActive={location.endsWith("/dashboard")}
-                >
-                  Dashboard
-                </NavItem>
                 
                 <NavItem 
                   href={`/tenants/${currentTenantId}/report-periods`} 
@@ -117,22 +109,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   isActive={location.endsWith("/report-periods")}
                 >
                   Report Periods
-                </NavItem>
-                
-                <NavItem 
-                  href={`/tenants/${currentTenantId}/reports`} 
-                  icon={<FileText className="h-5 w-5" />}
-                  isActive={location.includes("/reports") && !location.includes("/report-periods")}
-                >
-                  Reports
-                </NavItem>
-                
-                <NavItem 
-                  href={`/tenants/${currentTenantId}/recommendations`} 
-                  icon={<HelpCircle className="h-5 w-5" />}
-                  isActive={location.endsWith("/recommendations")}
-                >
-                  Recommendations
                 </NavItem>
               </div>
             </>
