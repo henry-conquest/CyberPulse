@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { Download, Plus } from "lucide-react";
+import { Download, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import RiskGauge from "@/components/dashboard/RiskGauge";
 import RiskIndicator from "@/components/dashboard/RiskIndicator";
@@ -147,6 +146,44 @@ Cyber Security and the threats associated are a continuous moving target, howeve
 
   const selectedTenant = user?.tenants?.find(t => t.id === selectedTenantId);
   
+  // If there's no tenant selected and there are tenants available,
+  // show a company selection interface
+  if ((!selectedTenantId || !securityData) && user?.tenants && user.tenants.length > 0) {
+    return (
+      <div className="max-w-7xl mx-auto py-8">
+        <h1 className="text-2xl font-bold mb-6">Select a Company</h1>
+        <p className="text-secondary-600 mb-8">
+          Choose a company to view their cyber risk dashboard and reports.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {user.tenants.map((tenant: any) => (
+            <Card 
+              key={tenant.id} 
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => setSelectedTenantId(tenant.id)}
+            >
+              <CardContent className="pt-6 pb-6">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Building className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">{tenant.name}</h3>
+                  <p className="text-sm text-secondary-500 mb-4">
+                    Client Organization
+                  </p>
+                  <Button className="mt-2">
+                    View Dashboard
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Overview Section */}
@@ -157,32 +194,12 @@ Cyber Security and the threats associated are a continuous moving target, howeve
             <p className="text-secondary-500">Executive Cyber Risk Dashboard - Q2 2025 (Apr-Jun)</p>
           </div>
           <div className="mt-4 md:mt-0 flex space-x-3 items-center">
-            {user?.tenants && user.tenants.length > 0 && (
-              <div className="mr-4">
-                <Select 
-                  value={selectedTenantId?.toString() || ""} 
-                  onValueChange={(value) => setSelectedTenantId(parseInt(value))}
-                >
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Select tenant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {user.tenants.map((tenant: any) => (
-                      <SelectItem key={tenant.id} value={tenant.id.toString()}>
-                        {tenant.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <Button onClick={() => setSelectedTenantId(null)} variant="outline" className="mr-2">
+              Change Company
+            </Button>
             <Button onClick={handleGenerateReport}>
               <Download className="h-4 w-4 mr-2" />
               Generate Report
-            </Button>
-            <Button variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Actions
             </Button>
           </div>
         </div>

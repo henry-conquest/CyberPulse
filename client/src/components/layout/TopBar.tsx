@@ -1,13 +1,7 @@
-import { Bell, HelpCircle, Menu, ChevronDown } from "lucide-react";
+import { Menu, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
 
 interface TopBarProps {
   toggleSidebar: () => void;
@@ -43,41 +37,20 @@ export default function TopBar({ toggleSidebar }: TopBarProps) {
         </div>
 
         <div className="flex items-center space-x-4">
-          <button className="text-secondary-400 hover:text-secondary-600 relative">
-            <Bell className="h-6 w-6" />
-            <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-primary-600"></span>
-          </button>
-
-          <button className="text-secondary-400 hover:text-secondary-600">
-            <HelpCircle className="h-6 w-6" />
-          </button>
+          <div className="flex items-center space-x-2">
+            <Clock className="h-5 w-5 text-primary-500" />
+            <span className="text-sm text-secondary-600 hidden sm:inline-block">
+              {format(now, "MMMM d, yyyy")}
+            </span>
+          </div>
 
           <div className="border-l border-secondary-200 h-6 mx-2"></div>
-
-          <div className="flex items-center">
-            <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white md:hidden">
-              {user?.firstName?.[0] || user?.email?.[0] || "U"}
-            </div>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center text-sm text-secondary-700 hover:text-secondary-900 hidden md:flex">
-                  <span className="mr-1">
-                    {user?.firstName || user?.email?.split('@')[0] || "User"}
-                  </span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">Settings</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <a href="/api/logout" className="cursor-pointer">Log out</a>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          
+          <Button variant="ghost" size="sm" asChild>
+            <a href="/api/logout" className="text-secondary-600 hover:text-secondary-900">
+              Log out
+            </a>
+          </Button>
         </div>
       </div>
     </header>
