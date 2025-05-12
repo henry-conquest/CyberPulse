@@ -52,7 +52,7 @@ import {
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { CheckCircle, Info, RefreshCw, Shield, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info, RefreshCw, Shield, X } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
@@ -711,7 +711,85 @@ export default function IntegrationsPage() {
             </div>
             
             <div className="space-y-3">
-              <h4 className="text-sm font-medium">Common Solutions:</h4>
+              <h4 className="text-sm font-medium">Suggested Solutions:</h4>
+              
+              {errorMessage.toLowerCase().includes('client_id') || 
+               errorMessage.toLowerCase().includes('client id') ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <h5 className="text-sm font-medium text-amber-800 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-2" /> Client ID Issue Detected
+                  </h5>
+                  <p className="text-sm mt-1 text-amber-700">
+                    The Client ID you provided appears to be invalid or missing. Please check that you've entered the 
+                    correct application (client) ID from your Azure app registration.
+                  </p>
+                </div>
+              ) : null}
+              
+              {errorMessage.toLowerCase().includes('client_secret') || 
+               errorMessage.toLowerCase().includes('client secret') ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <h5 className="text-sm font-medium text-amber-800 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-2" /> Client Secret Issue Detected
+                  </h5>
+                  <p className="text-sm mt-1 text-amber-700">
+                    The Client Secret you provided appears to be invalid. Please check that you've entered the correct 
+                    secret value from your Azure app registration. Remember that client secrets are time-limited and may have expired.
+                  </p>
+                </div>
+              ) : null}
+              
+              {errorMessage.toLowerCase().includes('redirect_uri') || 
+               errorMessage.toLowerCase().includes('redirect uri') ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <h5 className="text-sm font-medium text-amber-800 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-2" /> Redirect URI Mismatch
+                  </h5>
+                  <p className="text-sm mt-1 text-amber-700">
+                    The redirect URI in your Azure app registration doesn't match the one expected by this application.
+                    Please add the following redirect URI to your Azure app registration:
+                    <code className="block mt-1 bg-white p-2 rounded border text-sm">
+                      {window.location.origin}/api/auth/microsoft365/callback
+                    </code>
+                  </p>
+                </div>
+              ) : null}
+              
+              {errorMessage.toLowerCase().includes('permission') || 
+               errorMessage.toLowerCase().includes('consent') ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <h5 className="text-sm font-medium text-amber-800 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-2" /> Permission/Consent Issue
+                  </h5>
+                  <p className="text-sm mt-1 text-amber-700">
+                    Your application may be missing required permissions or admin consent. Ensure your Azure app has the following Microsoft Graph API permissions:
+                    <span className="block mt-1 bg-white p-2 rounded border text-xs font-mono">
+                      SecurityEvents.Read.All, Reports.Read.All, Directory.Read.All,<br />
+                      User.Read.All, Organization.Read.All
+                    </span>
+                    An administrator must grant consent for these permissions.
+                  </p>
+                </div>
+              ) : null}
+              
+              {errorMessage.toLowerCase().includes('token') || 
+               errorMessage.toLowerCase().includes('refresh token') || 
+               errorMessage.toLowerCase().includes('expired') ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <h5 className="text-sm font-medium text-amber-800 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-2" /> Token Issue
+                  </h5>
+                  <p className="text-sm mt-1 text-amber-700">
+                    There was a problem with the authentication token. This could be because:
+                    <ul className="list-disc ml-5 mt-1">
+                      <li>Your session has expired</li>
+                      <li>Your app's permissions have changed</li>
+                      <li>The user has revoked access</li>
+                    </ul>
+                    Please try to reconnect your Microsoft 365 account.
+                  </p>
+                </div>
+              ) : null}
               
               <ul className="text-sm space-y-2 ml-5 list-disc">
                 <li>

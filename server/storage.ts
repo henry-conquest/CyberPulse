@@ -360,10 +360,22 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async updateMicrosoft365OAuthConnection(id: number, connection: Partial<InsertMicrosoft365OAuthConnection>): Promise<Microsoft365OAuthConnection> {
+  async updateMicrosoft365OAuthConnection(id: number, connection: Partial<Microsoft365OAuthConnection>): Promise<Microsoft365OAuthConnection> {
+    // Create a safe update object without undefined values
+    const updateData: Record<string, any> = { updatedAt: new Date() };
+    
+    // Copy all defined fields from connection to updateData
+    Object.entries(connection).forEach(([key, value]) => {
+      if (value !== undefined) {
+        updateData[key] = value;
+      }
+    });
+    
+    console.log("Updating OAuth connection with data:", JSON.stringify(updateData, null, 2));
+    
     const [updatedConnection] = await db
       .update(microsoft365OAuthConnections)
-      .set({ ...connection, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(microsoft365OAuthConnections.id, id))
       .returning();
     return updatedConnection;

@@ -530,9 +530,12 @@ export async function getValidAccessToken(tenantId: string): Promise<string | nu
           (refreshError.message.includes('Refresh token has expired') || 
            refreshError.message.includes('invalid_grant'))) {
         try {
-          await storage.updateMicrosoft365OAuthConnection(connection.id, {
+          // Create a type-safe partial update object
+          const updateData: Partial<Microsoft365OAuthConnection> = {
             needsReconnection: true
-          });
+          };
+          
+          await storage.updateMicrosoft365OAuthConnection(connection.id, updateData);
           console.log(`Marked connection as needing reconnection for tenant ID: ${tenantId}`);
         } catch (flagError) {
           console.error(`Failed to mark connection as needing reconnection: ${flagError instanceof Error ? flagError.message : 'Unknown error'}`);
