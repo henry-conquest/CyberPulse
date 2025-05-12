@@ -44,14 +44,20 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
+  ArrowUpDown, 
+  Calendar, 
+  Check, 
+  ChevronDown, 
   Download,
+  Eye, 
+  FileEdit, 
   FileText,
+  FilePlus, 
   PlusCircle,
-  Calendar,
   Search,
-  Eye,
   Send,
   Trash,
+  Trash2
 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -71,7 +77,7 @@ type Report = {
   title: string;
   month: string;
   year: number;
-  status: "draft" | "review" | "approved" | "sent";
+  status: "new" | "reviewed" | "analyst_ready" | "manager_ready" | "sent";
   overallRiskScore: number;
   analystComments?: string;
   createdAt: string;
@@ -81,14 +87,16 @@ type Report = {
 
 const getStatusBadge = (status: string) => {
   switch (status) {
-    case "draft":
-      return <Badge variant="outline">Draft</Badge>;
-    case "review":
-      return <Badge variant="secondary">In Review</Badge>;
-    case "approved":
-      return <Badge variant="default">Approved</Badge>;
+    case "new":
+      return <Badge variant="outline">New</Badge>;
+    case "reviewed":
+      return <Badge variant="secondary">Reviewed</Badge>;
+    case "analyst_ready":
+      return <Badge variant="secondary">Analyst Ready</Badge>;
+    case "manager_ready":
+      return <Badge variant="default">Manager Ready</Badge>;
     case "sent":
-      return <Badge variant="success">Sent</Badge>;
+      return <Badge>Sent</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }

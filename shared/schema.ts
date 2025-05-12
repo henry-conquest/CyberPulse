@@ -98,7 +98,7 @@ export const reports = pgTable("reports", {
   deviceRiskScore: integer("device_risk_score").notNull(),
   cloudRiskScore: integer("cloud_risk_score").notNull(),
   threatRiskScore: integer("threat_risk_score").notNull(),
-  status: varchar("status").notNull().default("draft"), // draft, review, approved, sent
+  status: varchar("status").notNull().default("new"), // new, reviewed, analyst_ready, manager_ready, sent
   pdfUrl: varchar("pdf_url"),
   securityData: json("security_data").notNull(),
   analystComments: text("analyst_comments"),
@@ -203,9 +203,10 @@ export const UserRoles = {
 } as const;
 
 export const ReportStatus = {
-  DRAFT: "draft",
-  REVIEW: "review",
-  APPROVED: "approved",
+  NEW: "new",
+  REVIEWED: "reviewed",
+  ANALYST_READY: "analyst_ready",
+  MANAGER_READY: "manager_ready",
   SENT: "sent",
 } as const;
 

@@ -572,20 +572,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Validate status changes
     const { status } = req.body;
     if (status) {
-      // Only admin or analyst can change to review
-      if (status === ReportStatus.REVIEW && 
+      // Only admin or analyst can mark as reviewed
+      if (status === ReportStatus.REVIEWED && 
           !([UserRoles.ADMIN, UserRoles.ANALYST].includes((await storage.getUser(userId))?.role as any))) {
-        return res.status(403).json({ message: "You don't have permission to submit reports for review" });
+        return res.status(403).json({ message: "You don't have permission to review reports" });
       }
       
-      // Only admin can approve a report
-      if (status === ReportStatus.APPROVED &&
+      // Only analyst can mark as analyst ready
+      if (status === ReportStatus.ANALYST_READY &&
+          !([UserRoles.ADMIN, UserRoles.ANALYST].includes((await storage.getUser(userId))?.role as any))) {
+        return res.status(403).json({ message: "Only analysts can mark reports as analyst ready" });
+      }
+      
+      // Only admin can mark as manager ready
+      if (status === ReportStatus.MANAGER_READY &&
           !((await storage.getUser(userId))?.role === UserRoles.ADMIN)) {
-        return res.status(403).json({ message: "Only administrators can approve reports" });
+        return res.status(403).json({ message: "Only administrators can mark reports as manager ready" });
       }
       
-      // If approving, add approver
-      if (status === ReportStatus.APPROVED) {
+      // If marking as manager ready, add approver
+      if (status === ReportStatus.MANAGER_READY) {
         req.body.approvedBy = userId;
       }
     }
@@ -790,9 +796,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ message: "You don't have access to this report" });
     }
     
-    // Check if report is approved
-    if (report.status !== ReportStatus.APPROVED) {
-      return res.status(400).json({ message: "Report must be approved before sending" });
+    // Check if report is manager ready
+    if (report.status !== ReportStatus.MANAGER_READY) {
+      return res.status(400).json({ message: "Report must be marked as manager ready before sending" });
     }
     
     try {
