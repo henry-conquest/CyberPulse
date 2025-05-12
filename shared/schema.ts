@@ -63,11 +63,31 @@ export const userTenants = pgTable("user_tenants", {
 // Microsoft 365 credentials for tenants
 export const microsoft365Connections = pgTable("microsoft365_connections", {
   id: serial("id").primaryKey(),
-  tenantId: integer("tenant_id").notNull().references(() => tenants.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  tenantId: varchar("tenant_id").notNull(),  // Azure tenant ID (guid)
   tenantName: varchar("tenant_name").notNull(),
   clientId: varchar("client_id").notNull(),
   clientSecret: varchar("client_secret").notNull(),
   tenantDomain: varchar("tenant_domain").notNull(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Microsoft 365 OAuth connections
+export const microsoft365OAuthConnections = pgTable("microsoft365_oauth_connections", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  tenantId: varchar("tenant_id").notNull(),  // Azure tenant ID (guid)
+  tenantName: varchar("tenant_name").notNull(),
+  tenantDomain: varchar("tenant_domain").notNull(),
+  clientId: varchar("client_id").notNull(),
+  clientSecret: varchar("client_secret").notNull(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -153,6 +173,10 @@ export const auditLogs = pgTable("audit_logs", {
 export const insertTenantSchema = createInsertSchema(tenants).omit({ createdAt: true, updatedAt: true });
 export const insertUserTenantSchema = createInsertSchema(userTenants).omit({ createdAt: true });
 export const insertMicrosoft365ConnectionSchema = createInsertSchema(microsoft365Connections).omit({ 
+  createdAt: true, 
+  updatedAt: true 
+});
+export const insertMicrosoft365OAuthConnectionSchema = createInsertSchema(microsoft365OAuthConnections).omit({ 
   createdAt: true, 
   updatedAt: true 
 });

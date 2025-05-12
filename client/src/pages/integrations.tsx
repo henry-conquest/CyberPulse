@@ -1,401 +1,312 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
+import { useLocation, useRoute } from 'wouter';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from "@/hooks/use-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import {
+  Button
+} from "@/components/ui/button";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CheckCircle, Info, Shield, X } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useQueryClient, QueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiRequest } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/useAuth';
 
-// Form schemas
-const ms365Schema = z.object({
-  tenantName: z.string().min(1, "Tenant name is required"),
-  tenantDomain: z.string().min(1, "Tenant domain is required"),
-  clientId: z.string().min(1, "Client ID is required"),
-  clientSecret: z.string().optional(),
-});
-
-const ninjaOneSchema = z.object({
-  instanceUrl: z.string().min(1, "Instance URL is required"),
-  clientId: z.string().min(1, "Client ID is required"),
-  clientSecret: z.string().optional(),
-});
-
-type MS365FormValues = z.infer<typeof ms365Schema>;
-type NinjaOneFormValues = z.infer<typeof ninjaOneSchema>;
-
-export default function Integrations() {
-  const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
-  const [tenants, setTenants] = useState<any[]>([]);
-  const [ms365Connection, setMs365Connection] = useState<any>(null);
-  const [ninjaConnection, setNinjaConnection] = useState<any>(null);
-  const { toast } = useToast();
+export default function IntegrationsPage() {
+  const { user, isAuthenticated } = useAuth();
+  const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('microsoft365');
+  const { toast } = useToast();
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connSuccessDialog, setConnSuccessDialog] = useState(false);
+  const [connErrorDialog, setConnErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Forms
-  const ms365Form = useForm<MS365FormValues>({
-    resolver: zodResolver(ms365Schema),
-    defaultValues: {
-      tenantName: "",
-      tenantDomain: "",
-      clientId: "",
-      clientSecret: "",
-    },
+  // Handle URL parameters on page load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    const success = params.get('success');
+    const error = params.get('error');
+
+    if (tab) {
+      setActiveTab(tab);
+    }
+
+    if (success) {
+      setConnSuccessDialog(true);
+    }
+
+    if (error) {
+      setConnErrorDialog(true);
+      setErrorMessage(error);
+    }
+
+    // Clean URL after processing params
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, newUrl);
+  }, []);
+
+  // Fetch Microsoft 365 connections
+  const {
+    data: microsoft365Connections,
+    isLoading: isLoading365,
+    error: error365
+  } = useQuery({
+    queryKey: ['/api/connections/microsoft365'],
+    enabled: isAuthenticated
   });
 
-  const ninjaForm = useForm<NinjaOneFormValues>({
-    resolver: zodResolver(ninjaOneSchema),
-    defaultValues: {
-      instanceUrl: "",
-      clientId: "",
-      clientSecret: "",
-    },
-  });
-
-  // Parse URL parameters
-  const [location] = useLocation();
-  
-  // Fetch tenants on mount and check for tenant param in URL
-  useEffect(() => {
-    const fetchTenants = async () => {
-      try {
-        const response = await fetch("/api/tenants");
-        const data = await response.json();
-        setTenants(data);
-        
-        // Check if there's a tenant ID in the URL params
-        const params = new URLSearchParams(window.location.search);
-        const tenantParam = params.get('tenant');
-        
-        if (tenantParam && data.some((t: any) => t.id === parseInt(tenantParam))) {
-          // If the tenant from URL exists in our data, select it
-          setSelectedTenantId(parseInt(tenantParam));
-        } else if (data.length > 0) {
-          // Otherwise, select the first tenant
-          setSelectedTenantId(data[0].id);
-        }
-      } catch (error) {
-        console.error("Error fetching tenants:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load tenants",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchTenants();
-  }, [toast, location]);
-
-  // Fetch existing connections when tenant is selected
-  useEffect(() => {
-    const fetchConnections = async () => {
-      if (!selectedTenantId) return;
-
-      try {
-        // Fetch Microsoft 365 connection
-        const ms365Response = await fetch(`/api/tenants/${selectedTenantId}/microsoft365`);
-        const ms365Data = await ms365Response.json();
-        
-        if (ms365Data) {
-          setMs365Connection(ms365Data);
-          ms365Form.reset({
-            tenantName: ms365Data.tenantName || "",
-            tenantDomain: ms365Data.tenantDomain || "",
-            clientId: ms365Data.clientId || "",
-            clientSecret: "", // Don't expose the secret
-          });
-        }
-
-        // Fetch NinjaOne connection
-        const ninjaResponse = await fetch(`/api/tenants/${selectedTenantId}/ninjaone`);
-        const ninjaData = await ninjaResponse.json();
-        
-        if (ninjaData) {
-          setNinjaConnection(ninjaData);
-          ninjaForm.reset({
-            instanceUrl: ninjaData.instanceUrl || "",
-            clientId: ninjaData.clientId || "",
-            clientSecret: "", // Don't expose the secret
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching connections:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load connection details",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchConnections();
-  }, [selectedTenantId, ms365Form, ninjaForm, toast]);
-
-  // Handle Microsoft 365 form submission
-  const onMs365Submit = async (data: MS365FormValues) => {
-    if (!selectedTenantId) return;
-
-    try {
-      const method = ms365Connection ? "PATCH" : "POST";
-      
-      await apiRequest(method, `/api/tenants/${selectedTenantId}/microsoft365`, data);
-
-      toast({
-        title: "Success",
-        description: ms365Connection 
-          ? "Microsoft 365 connection updated"
-          : "Microsoft 365 connection created",
+  // Delete Microsoft 365 connection
+  const deleteMicrosoft365Connection = useMutation({
+    mutationFn: async (connectionId: number) => {
+      return apiRequest(`/api/connections/microsoft365/${connectionId}`, {
+        method: 'DELETE'
       });
-
-      // Refetch connections
-      queryClient.invalidateQueries({ queryKey: [`/api/tenants/${selectedTenantId}/microsoft365`] });
-      
-      // Reset the form
-      ms365Form.reset(data);
-    } catch (error) {
-      console.error("Error saving Microsoft 365 connection:", error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/connections/microsoft365'] });
+      toast({
+        title: "Connection removed",
+        description: "Microsoft 365 connection has been removed successfully.",
+      });
+    },
+    onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to save Microsoft 365 connection",
+        description: "Failed to remove Microsoft 365 connection. Please try again.",
         variant: "destructive",
       });
     }
-  };
+  });
 
-  // Handle NinjaOne form submission
-  const onNinjaSubmit = async (data: NinjaOneFormValues) => {
-    if (!selectedTenantId) return;
-
+  // Connect to Microsoft 365
+  const connectToMicrosoft365 = async () => {
     try {
-      const method = ninjaConnection ? "PATCH" : "POST";
-      
-      await apiRequest(method, `/api/tenants/${selectedTenantId}/ninjaone`, data);
-
-      toast({
-        title: "Success",
-        description: ninjaConnection 
-          ? "NinjaOne connection updated"
-          : "NinjaOne connection created",
+      setIsConnecting(true);
+      const response = await apiRequest('/api/auth/microsoft365/authorize', {
+        method: 'GET'
       });
-
-      // Refetch connections
-      queryClient.invalidateQueries({ queryKey: [`/api/tenants/${selectedTenantId}/ninjaone`] });
       
-      // Reset the form
-      ninjaForm.reset(data);
+      if (response.authUrl) {
+        window.location.href = response.authUrl;
+      }
     } catch (error) {
-      console.error("Error saving NinjaOne connection:", error);
       toast({
         title: "Error",
-        description: "Failed to save NinjaOne connection",
+        description: "Failed to initiate Microsoft 365 connection. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  // Handle connection deletion
+  const handleDeleteConnection = (connectionId: number) => {
+    if (confirm("Are you sure you want to remove this connection? This cannot be undone.")) {
+      deleteMicrosoft365Connection.mutate(connectionId);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <h1 className="text-xl font-bold mb-4">API Integrations</h1>
+    <div className="container mx-auto py-6">
+      <h1 className="text-3xl font-bold mb-6">Integrations</h1>
       
-      <div className="mb-6">
-        <label className="text-sm font-medium mb-2 block">Select Tenant</label>
-        <Select 
-          value={selectedTenantId?.toString()} 
-          onValueChange={(value) => setSelectedTenantId(parseInt(value))}
-        >
-          <SelectTrigger className="w-full max-w-md">
-            <SelectValue placeholder="Select a tenant" />
-          </SelectTrigger>
-          <SelectContent>
-            {tenants.map((tenant) => (
-              <SelectItem key={tenant.id} value={tenant.id.toString()}>
-                {tenant.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="microsoft365">Microsoft 365</TabsTrigger>
+          <TabsTrigger value="ninjaone">NinjaOne</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="microsoft365" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Shield className="mr-2 h-5 w-5" />
+                Microsoft 365 Integration
+              </CardTitle>
+              <CardDescription>
+                Connect to Microsoft 365 to retrieve security insights, secure scores, and compliance data.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading365 ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : error365 ? (
+                <Alert variant="destructive">
+                  <Info className="h-5 w-5" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>
+                    Failed to fetch Microsoft 365 connections. Please refresh the page and try again.
+                  </AlertDescription>
+                </Alert>
+              ) : microsoft365Connections && microsoft365Connections.length > 0 ? (
+                <div className="space-y-4">
+                  {microsoft365Connections.map((connection: any) => (
+                    <div key={connection.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h3 className="font-medium">{connection.tenantName}</h3>
+                        <p className="text-sm text-muted-foreground">{connection.tenantDomain}</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-green-600 flex items-center">
+                          <CheckCircle className="h-4 w-4 mr-1" /> Connected
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteConnection(connection.id)}
+                          disabled={deleteMicrosoft365Connection.isPending}
+                        >
+                          <X className="h-4 w-4" />
+                          <span className="sr-only">Remove</span>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Shield className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Microsoft 365 connections</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Connect your Microsoft 365 tenant to retrieve security insights and compliance data.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="flex justify-end">
+              <Button 
+                onClick={connectToMicrosoft365} 
+                disabled={isConnecting}
+              >
+                {isConnecting ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Connecting...
+                  </>
+                ) : (
+                  "Connect to Microsoft 365"
+                )}
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="ninjaone" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Shield className="mr-2 h-5 w-5" />
+                NinjaOne Integration
+              </CardTitle>
+              <CardDescription>
+                Connect to NinjaOne to retrieve device compliance and security telemetry data.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Shield className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">NinjaOne Integration</h3>
+                <p className="text-muted-foreground mb-4">
+                  Coming soon - NinjaOne integration is under development.
+                </p>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-end">
+              <Button disabled>
+                Connect to NinjaOne
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-      {selectedTenantId ? (
-        <Tabs defaultValue="microsoft365" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="microsoft365">Microsoft 365</TabsTrigger>
-            <TabsTrigger value="ninjaone">NinjaOne</TabsTrigger>
-          </TabsList>
-          
-          {/* Microsoft 365 Tab */}
-          <TabsContent value="microsoft365">
-            <Card>
-              <CardHeader>
-                <CardTitle>Microsoft 365 Integration</CardTitle>
-                <CardDescription>
-                  Connect to Microsoft 365 to retrieve security data for risk assessment.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={ms365Form.handleSubmit(onMs365Submit)} className="space-y-4">
-                  <FormField
-                    control={ms365Form.control}
-                    name="tenantName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tenant Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          The display name of your Microsoft 365 tenant
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={ms365Form.control}
-                    name="tenantDomain"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tenant Domain</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Your Azure AD tenant domain (e.g., contoso.onmicrosoft.com)
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={ms365Form.control}
-                    name="clientId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Client ID</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          The application client ID from your Azure app registration
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={ms365Form.control}
-                    name="clientSecret"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Client Secret</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          {ms365Connection 
-                            ? "Leave blank to keep the existing secret" 
-                            : "The application client secret from your Azure app registration"}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Button type="submit" className="mt-4">
-                    {ms365Connection ? "Update Connection" : "Create Connection"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* NinjaOne Tab */}
-          <TabsContent value="ninjaone">
-            <Card>
-              <CardHeader>
-                <CardTitle>NinjaOne Integration</CardTitle>
-                <CardDescription>
-                  Connect to NinjaOne RMM to retrieve device and compliance data.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={ninjaForm.handleSubmit(onNinjaSubmit)} className="space-y-4">
-                  <FormField
-                    control={ninjaForm.control}
-                    name="instanceUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Instance URL</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Your NinjaOne instance URL (e.g., https://app.ninjarmm.com)
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={ninjaForm.control}
-                    name="clientId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Client ID</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Your NinjaOne API client ID
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={ninjaForm.control}
-                    name="clientSecret"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Client Secret</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          {ninjaConnection 
-                            ? "Leave blank to keep the existing secret" 
-                            : "Your NinjaOne API client secret"}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Button type="submit" className="mt-4">
-                    {ninjaConnection ? "Update Connection" : "Create Connection"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <div className="bg-secondary-50 p-6 rounded-lg text-center">
-          <p className="text-lg text-secondary-600 mb-4">No tenants available</p>
-          <p className="text-secondary-500">Create a tenant first to configure integrations.</p>
-        </div>
-      )}
+      {/* Success Dialog */}
+      <Dialog open={connSuccessDialog} onOpenChange={setConnSuccessDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <CheckCircle className="text-green-500 mr-2 h-5 w-5" />
+              Connection Successful
+            </DialogTitle>
+            <DialogDescription>
+              Your Microsoft 365 tenant has been connected successfully.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p>
+              You can now access security insights and metrics for your Microsoft 365 tenant.
+              View security data on the Security Insights page.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setConnSuccessDialog(false)}>
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Dialog */}
+      <Dialog open={connErrorDialog} onOpenChange={setConnErrorDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-red-500">
+              <Info className="mr-2 h-5 w-5" />
+              Connection Failed
+            </DialogTitle>
+            <DialogDescription>
+              There was an error connecting to Microsoft 365.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              Error details: {errorMessage || "Unknown error occurred"}
+            </p>
+            <p className="mt-4">
+              Please try again or contact support if the issue persists.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConnErrorDialog(false)}>
+              Close
+            </Button>
+            <Button onClick={connectToMicrosoft365}>
+              Try Again
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

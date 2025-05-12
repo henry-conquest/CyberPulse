@@ -227,6 +227,21 @@ export class DatabaseStorage implements IStorage {
       .where(eq(microsoft365Connections.tenantId, tenantId));
     return connection;
   }
+  
+  async getMicrosoft365Connections(): Promise<Microsoft365Connection[]> {
+    return await db
+      .select()
+      .from(microsoft365Connections)
+      .orderBy(desc(microsoft365Connections.createdAt));
+  }
+  
+  async getMicrosoft365ConnectionsByUserId(userId: string): Promise<Microsoft365Connection[]> {
+    return await db
+      .select()
+      .from(microsoft365Connections)
+      .where(eq(microsoft365Connections.userId, userId))
+      .orderBy(desc(microsoft365Connections.createdAt));
+  }
 
   async updateMicrosoft365Connection(id: number, connection: Partial<InsertMicrosoft365Connection>): Promise<Microsoft365Connection> {
     const [updatedConnection] = await db
