@@ -3,6 +3,7 @@ import {
   tenants,
   userTenants,
   microsoft365Connections,
+  microsoft365OAuthConnections,
   ninjaOneConnections,
   reports,
   reportRecipients,
@@ -16,6 +17,8 @@ import {
   type InsertUserTenant,
   type Microsoft365Connection,
   type InsertMicrosoft365Connection,
+  type Microsoft365OAuthConnection,
+  type InsertMicrosoft365OAuthConnection,
   type NinjaOneConnection,
   type InsertNinjaOneConnection,
   type Report,
@@ -60,6 +63,15 @@ export interface IStorage {
   getMicrosoft365ConnectionsByUserId(userId: string): Promise<Microsoft365Connection[]>;
   updateMicrosoft365Connection(id: number, connection: Partial<InsertMicrosoft365Connection>): Promise<Microsoft365Connection>;
   deleteMicrosoft365Connection(id: number): Promise<void>;
+  
+  // Microsoft 365 OAuth connections
+  createMicrosoft365OAuthConnection(connection: InsertMicrosoft365OAuthConnection): Promise<Microsoft365OAuthConnection>;
+  getMicrosoft365OAuthConnection(id: number): Promise<Microsoft365OAuthConnection | undefined>;
+  getMicrosoft365OAuthConnectionByTenantId(tenantId: string): Promise<Microsoft365OAuthConnection | undefined>;
+  getMicrosoft365OAuthConnections(): Promise<Microsoft365OAuthConnection[]>;
+  getMicrosoft365OAuthConnectionsByUserId(userId: string): Promise<Microsoft365OAuthConnection[]>;
+  updateMicrosoft365OAuthConnection(id: number, connection: Partial<InsertMicrosoft365OAuthConnection>): Promise<Microsoft365OAuthConnection>;
+  deleteMicrosoft365OAuthConnection(id: number): Promise<void>;
   
   // NinjaOne connections
   createNinjaOneConnection(connection: InsertNinjaOneConnection): Promise<NinjaOneConnection>;
@@ -254,6 +266,59 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMicrosoft365Connection(id: number): Promise<void> {
     await db.delete(microsoft365Connections).where(eq(microsoft365Connections.id, id));
+  }
+  
+  // Microsoft 365 OAuth connections
+  async createMicrosoft365OAuthConnection(connection: InsertMicrosoft365OAuthConnection): Promise<Microsoft365OAuthConnection> {
+    const [newConnection] = await db
+      .insert(microsoft365OAuthConnections)
+      .values(connection)
+      .returning();
+    return newConnection;
+  }
+
+  async getMicrosoft365OAuthConnection(id: number): Promise<Microsoft365OAuthConnection | undefined> {
+    const [connection] = await db
+      .select()
+      .from(microsoft365OAuthConnections)
+      .where(eq(microsoft365OAuthConnections.id, id));
+    return connection;
+  }
+
+  async getMicrosoft365OAuthConnectionByTenantId(tenantId: string): Promise<Microsoft365OAuthConnection | undefined> {
+    const [connection] = await db
+      .select()
+      .from(microsoft365OAuthConnections)
+      .where(eq(microsoft365OAuthConnections.tenantId, tenantId));
+    return connection;
+  }
+  
+  async getMicrosoft365OAuthConnections(): Promise<Microsoft365OAuthConnection[]> {
+    return await db
+      .select()
+      .from(microsoft365OAuthConnections)
+      .orderBy(desc(microsoft365OAuthConnections.createdAt));
+  }
+  
+  async getMicrosoft365OAuthConnectionsByUserId(userId: string): Promise<Microsoft365OAuthConnection[]> {
+    return await db
+      .select()
+      .from(microsoft365OAuthConnections)
+      .where(eq(microsoft365OAuthConnections.userId, userId))
+      .orderBy(desc(microsoft365OAuthConnections.createdAt));
+  }
+
+  async updateMicrosoft365OAuthConnection(id: number, connection: Partial<InsertMicrosoft365OAuthConnection>): Promise<Microsoft365OAuthConnection> {
+    const [updatedConnection] = await db
+      .update(microsoft365OAuthConnections)
+      .set({ ...connection, updatedAt: new Date() })
+      .where(eq(microsoft365OAuthConnections.id, id))
+      .returning();
+    return updatedConnection;
+  }
+
+  async deleteMicrosoft365OAuthConnection(id: number): Promise<void> {
+    await db.delete(microsoft365OAuthConnections).where(eq(microsoft365OAuthConnections.id, id));
   }
 
   // NinjaOne connections
