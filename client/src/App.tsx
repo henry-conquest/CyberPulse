@@ -59,7 +59,7 @@ function Router() {
         const searchParams = new URLSearchParams(window.location.search);
         const tab = searchParams.get('tab') || undefined;
         const action = searchParams.get('action') || undefined;
-        return <ProtectedRoute component={Integrations} roles={["ADMIN"]} tab={tab} action={action} />;
+        return <ProtectedRoute component={Integrations} roles={[UserRoles.ADMIN]} tab={tab} action={action} />;
       }} />
       
       {/* Tenant-specific routes */}
@@ -91,8 +91,8 @@ function Router() {
       )} />
       
       {/* Admin routes */}
-      <Route path="/users" component={() => <ProtectedRoute component={Users} roles={["ADMIN"]} />} />
-      <Route path="/tenants" component={() => <ProtectedRoute component={Tenants} roles={["ADMIN"]} />} />
+      <Route path="/users" component={() => <ProtectedRoute component={Users} roles={[UserRoles.ADMIN]} />} />
+      <Route path="/tenants" component={() => <ProtectedRoute component={Tenants} roles={[UserRoles.ADMIN]} />} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

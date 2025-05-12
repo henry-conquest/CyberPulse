@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { UserRoles } from "@shared/schema";
 import { 
   Dialog, 
   DialogContent, 
@@ -118,7 +119,7 @@ export default function Companies() {
         <div className="bg-secondary-50 border border-secondary-200 rounded-lg p-8 text-center">
           <h2 className="text-xl font-semibold text-secondary-800 mb-2">No Companies Found</h2>
           <p className="text-secondary-600 mb-6">There are no companies available in your account.</p>
-          {user?.role === "ADMIN" && (
+          {user?.role === UserRoles.ADMIN && (
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -210,7 +211,7 @@ export default function Companies() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-secondary-900">Companies</h1>
-        {user?.role === "ADMIN" && (
+        {user?.role === UserRoles.ADMIN && (
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -325,7 +326,7 @@ export default function Companies() {
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
-              {user?.role === "admin" && (
+              {user?.role === UserRoles.ADMIN && (
                 <Button 
                   variant="outline" 
                   className="w-full"
