@@ -1,671 +1,908 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
-  Shield, 
-  AlertTriangle, 
-  Users, 
-  Key, 
-  Lock, 
-  Server, 
-  HardDrive, 
-  Cloud, 
-  AlertCircle, 
-  Check, 
-  ChevronRight,
-  InfoIcon
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Shield,
+  ShieldAlert,
+  Users,
+  Lock,
+  Smartphone,
+  Cloud,
+  ExternalLink,
+  PieChart,
+  Info
 } from "lucide-react";
+import { 
+  Progress 
+} from "@/components/ui/progress";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useLocation } from "wouter";
+import { 
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 export default function SecurityInsights({ tenantId }: { tenantId: string }) {
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("overview");
   
-  // Fetch security insights
-  const { 
-    data: securityInsights, 
-    isLoading, 
-    isError, 
-    error 
-  } = useQuery({
+  const { data: securityData, isLoading, error } = useQuery({
     queryKey: [`/api/tenants/${tenantId}/microsoft365/security-insights`],
-    retry: 1,
-    refetchOnWindowFocus: false,
+    retry: false,
   });
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error fetching security insights",
+        description: "Could not retrieve security data from Microsoft 365.",
+      });
+    }
+  }, [error, toast]);
+
+  // Helper function to determine badge variant based on value
+  const getBadgeVariant = (value: boolean) => {
+    return value ? "success" : "destructive";
+  };
+
+  // Helper function to calculate color based on percentage
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "text-green-500";
+    if (score >= 60) return "text-yellow-500";
+    if (score >= 40) return "text-orange-500";
+    return "text-red-500";
+  };
+
+  const getScoreBgColor = (score: number) => {
+    if (score >= 80) return "bg-green-100";
+    if (score >= 60) return "bg-yellow-100";
+    if (score >= 40) return "bg-orange-100";
+    return "bg-red-100";
+  };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <div className="w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {error instanceof Error 
-              ? error.message 
-              : "Failed to load security insights. Please ensure your Microsoft 365 connection is configured correctly."}
-          </AlertDescription>
-        </Alert>
-        
-        <div className="text-center mt-8">
-          <Button onClick={() => setLocation(`/integrations?tenant=${tenantId}`)}>
-            Configure Microsoft 365 Connection
-          </Button>
+      <div className="container mx-auto py-10">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4 animate-pulse" />
+            <h3 className="text-xl font-medium">Loading security insights...</h3>
+            <p className="text-muted-foreground mt-2">Please wait while we fetch the latest data from Microsoft 365.</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Helper function to get color based on percentage
-  const getColorByPercentage = (percentage: number) => {
-    if (percentage >= 80) return "bg-green-500";
-    if (percentage >= 60) return "bg-yellow-500";
-    if (percentage >= 40) return "bg-orange-500";
-    return "bg-red-500";
-  };
-
-  // Helper function to get risk level based on percentage
-  const getRiskLevel = (percentage: number) => {
-    if (percentage >= 80) return { level: "Low", color: "bg-green-100 text-green-800" };
-    if (percentage >= 60) return { level: "Moderate", color: "bg-yellow-100 text-yellow-800" };
-    if (percentage >= 40) return { level: "High", color: "bg-orange-100 text-orange-800" };
-    return { level: "Critical", color: "bg-red-100 text-red-800" };
-  };
-
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-secondary-900">Microsoft 365 Security Insights</h1>
-      </div>
-
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="identity">Identity Security</TabsTrigger>
-          <TabsTrigger value="devices">Device Security</TabsTrigger>
-          <TabsTrigger value="cloud">Cloud Security</TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <Card>
+    <div className="container mx-auto py-10">
+      <div className="flex flex-col space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Security Insights</h2>
+            <p className="text-muted-foreground">
+              Comprehensive security insights from your connected Microsoft 365 tenant.
+            </p>
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => window.location.reload()}>
+                  <PieChart className="h-4 w-4" />
+                  Refresh Data
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Refresh the latest security data</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        
+        {error ? (
+          <Card className="border-destructive">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-destructive flex items-center gap-2">
+                <AlertCircle className="h-5 w-5" />
+                Connection Error
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                We couldn't connect to your Microsoft 365 tenant. This could be due to invalid credentials or permissions issues. Please verify your connection settings.
+              </p>
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" className="w-full" onClick={() => window.location.href = `/integrations?tenant=${tenantId}`}>
+                Update Connection Settings
+              </Button>
+            </CardFooter>
+          </Card>
+        ) : (
+          <>
+            {/* Score Overview Card */}
+            <Card className="shadow-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Secure Score</CardTitle>
-                <CardDescription>Overall Microsoft 365 security score</CardDescription>
+                <CardTitle>Security Score Overview</CardTitle>
+                <CardDescription>Current Microsoft Secure Score and risk breakdown</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold">
-                      {securityInsights?.securityMetrics.secureScore || 0} / 
-                      {securityInsights?.securityMetrics.secureScorePercent ? 
-                        ` (${securityInsights.securityMetrics.secureScorePercent}%)` : ""}
-                    </span>
-                    <Badge 
-                      className={getRiskLevel(securityInsights?.securityMetrics.secureScorePercent || 0).color}
-                    >
-                      {getRiskLevel(securityInsights?.securityMetrics.secureScorePercent || 0).level} Risk
-                    </Badge>
-                  </div>
-                  <Progress 
-                    value={securityInsights?.securityMetrics.secureScorePercent || 0} 
-                    className={`h-3 ${getColorByPercentage(securityInsights?.securityMetrics.secureScorePercent || 0)}`}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">MFA Status</CardTitle>
-                <CardDescription>Multi-factor authentication adoption</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold">
-                      {securityInsights?.mfaDetails?.summary.enabled || 0} / {securityInsights?.mfaDetails?.summary.total || 0} Users
-                    </span>
-                    {securityInsights?.mfaDetails?.summary.total > 0 && (
-                      <Badge 
-                        className={getRiskLevel((securityInsights?.mfaDetails?.summary.enabled / securityInsights?.mfaDetails?.summary.total) * 100 || 0).color}
-                      >
-                        {Math.round((securityInsights?.mfaDetails?.summary.enabled / securityInsights?.mfaDetails?.summary.total) * 100)}% Enabled
-                      </Badge>
-                    )}
-                  </div>
-                  {securityInsights?.mfaDetails?.summary.total > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="flex flex-col items-center justify-center p-6 rounded-lg bg-slate-50">
+                    <div className={`text-4xl font-bold ${getScoreColor(securityData?.securityMetrics?.secureScorePercent || 0)}`}>
+                      {Math.round(securityData?.securityMetrics?.secureScorePercent || 0)}%
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">Secure Score</div>
                     <Progress 
-                      value={(securityInsights?.mfaDetails?.summary.enabled / securityInsights?.mfaDetails?.summary.total) * 100 || 0} 
-                      className={`h-3 ${getColorByPercentage((securityInsights?.mfaDetails?.summary.enabled / securityInsights?.mfaDetails?.summary.total) * 100 || 0)}`}
+                      value={securityData?.securityMetrics?.secureScorePercent || 0} 
+                      className="w-full mt-2" 
                     />
-                  ) : (
-                    <Progress value={0} className="h-3 bg-red-500" />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-lg">Identity Security</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span>Global Admins</span>
-                    <Badge variant={securityInsights?.globalAdmins?.count <= 4 ? "outline" : "destructive"}>
-                      {securityInsights?.globalAdmins?.count || 0}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Phish-Resistant MFA</span>
-                    <Badge variant={securityInsights?.securityMetrics?.identityMetrics?.phishResistantMfa ? "success" : "outline"}>
-                      {securityInsights?.securityMetrics?.identityMetrics?.phishResistantMfa ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Risk-Based Sign-On</span>
-                    <Badge variant={securityInsights?.securityMetrics?.identityMetrics?.riskBasedSignOn ? "success" : "outline"}>
-                      {securityInsights?.securityMetrics?.identityMetrics?.riskBasedSignOn ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center space-x-2">
-                  <HardDrive className="h-5 w-5 text-purple-600" />
-                  <CardTitle className="text-lg">Device Security</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span>Disk Encryption</span>
-                    <Badge variant={securityInsights?.securityMetrics?.deviceMetrics?.diskEncryption ? "success" : "outline"}>
-                      {securityInsights?.securityMetrics?.deviceMetrics?.diskEncryption ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Defender for Endpoint</span>
-                    <Badge variant={securityInsights?.securityMetrics?.deviceMetrics?.defenderForEndpoint ? "success" : "outline"}>
-                      {securityInsights?.securityMetrics?.deviceMetrics?.defenderForEndpoint ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Compliant Devices</span>
-                    <Badge 
-                      variant={securityInsights?.deviceCompliance?.compliancePercentage >= 80 ? "success" : "outline"}
-                    >
-                      {securityInsights?.deviceCompliance?.compliancePercentage || 0}%
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center space-x-2">
-                  <Cloud className="h-5 w-5 text-cyan-600" />
-                  <CardTitle className="text-lg">Cloud Security</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span>Data Loss Prevention</span>
-                    <Badge variant={securityInsights?.securityMetrics?.cloudMetrics?.dataLossPrevention ? "success" : "outline"}>
-                      {securityInsights?.securityMetrics?.cloudMetrics?.dataLossPrevention ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Defender for 365</span>
-                    <Badge variant={securityInsights?.securityMetrics?.cloudMetrics?.defenderFor365 ? "success" : "outline"}>
-                      {securityInsights?.securityMetrics?.cloudMetrics?.defenderFor365 ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Email Security</span>
-                    <Badge 
-                      variant={(securityInsights?.securityMetrics?.cloudMetrics?.dkimPolicies && 
-                              securityInsights?.securityMetrics?.cloudMetrics?.dmarcPolicies) ? "success" : "outline"}
-                    >
-                      {(securityInsights?.securityMetrics?.cloudMetrics?.dkimPolicies && 
-                       securityInsights?.securityMetrics?.cloudMetrics?.dmarcPolicies) ? "Configured" : "Insufficient"}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Identity Security Tab */}
-        <TabsContent value="identity">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>MFA Usage by Method</CardTitle>
-                <CardDescription>Distribution of multi-factor authentication methods</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                      <span>Authenticator App</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{securityInsights?.mfaDetails?.methods.app || 0}</span>
-                      <span className="text-sm text-secondary-500">
-                        ({securityInsights?.mfaDetails?.summary.total ? 
-                          Math.round((securityInsights?.mfaDetails?.methods.app / securityInsights?.mfaDetails?.summary.total) * 100) : 0}%)
-                      </span>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {securityData?.securityMetrics?.secureScore || 0} of {securityData?.maxScore || 0} points
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                      <span>Phone</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{securityInsights?.mfaDetails?.methods.phone || 0}</span>
-                      <span className="text-sm text-secondary-500">
-                        ({securityInsights?.mfaDetails?.summary.total ? 
-                          Math.round((securityInsights?.mfaDetails?.methods.phone / securityInsights?.mfaDetails?.summary.total) * 100) : 0}%)
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                      <span>Email</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{securityInsights?.mfaDetails?.methods.email || 0}</span>
-                      <span className="text-sm text-secondary-500">
-                        ({securityInsights?.mfaDetails?.summary.total ? 
-                          Math.round((securityInsights?.mfaDetails?.methods.email / securityInsights?.mfaDetails?.summary.total) * 100) : 0}%)
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                      <span>No MFA</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{securityInsights?.mfaDetails?.methods.none || 0}</span>
-                      <span className="text-sm text-secondary-500">
-                        ({securityInsights?.mfaDetails?.summary.total ? 
-                          Math.round((securityInsights?.mfaDetails?.methods.none / securityInsights?.mfaDetails?.summary.total) * 100) : 0}%)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Global Administrators</CardTitle>
-                <CardDescription>Users with highest level of access</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {securityInsights?.globalAdmins?.admins && securityInsights?.globalAdmins?.admins.length > 0 ? (
-                  <div className="space-y-4">
-                    {securityInsights.globalAdmins.admins.map((admin: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-secondary-50 rounded-md">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-100 text-primary-800">
-                            {admin.displayName.charAt(0).toUpperCase()}
+                  {/* Identity Security Card */}
+                  <HoverCard>
+                    <HoverCardTrigger asChild>
+                      <div className="flex flex-col items-center justify-center p-6 rounded-lg bg-slate-50 cursor-pointer" onClick={() => setActiveTab("identity")}>
+                        <Users className={`h-8 w-8 mb-2 ${getScoreColor(securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled ? 100 - (securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled * 10) : 0)}`} />
+                        <div className="text-sm font-medium">Identity Security</div>
+                        <div className="mt-2 flex items-center gap-1">
+                          <Badge variant={securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled === 0 ? "success" : "destructive"}>
+                            {securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled} Users without MFA
+                          </Badge>
+                        </div>
+                      </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent className="w-80">
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-semibold">Identity Security</h4>
+                        <div className="text-xs text-slate-500">
+                          <div className="flex justify-between py-1">
+                            <span>Global Admins:</span>
+                            <span className="font-medium">{securityData?.securityMetrics?.identityMetrics?.globalAdmins}</span>
                           </div>
-                          <div>
-                            <div className="font-medium">{admin.displayName}</div>
-                            <div className="text-sm text-secondary-500">{admin.email}</div>
+                          <div className="flex justify-between py-1">
+                            <span>Phish-Resistant MFA:</span>
+                            <span className={`font-medium ${securityData?.securityMetrics?.identityMetrics?.phishResistantMfa ? 'text-green-600' : 'text-red-600'}`}>
+                              {securityData?.securityMetrics?.identityMetrics?.phishResistantMfa ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between py-1 border-t border-slate-100 pt-2">
+                            <span>Risk-Based Sign-On:</span>
+                            <span className={`font-medium ${securityData?.securityMetrics?.identityMetrics?.riskBasedSignOn ? 'text-green-600' : 'text-red-600'}`}>
+                              {securityData?.securityMetrics?.identityMetrics?.riskBasedSignOn ? 'Enabled' : 'Disabled'}
+                            </span>
                           </div>
                         </div>
-                        <Badge variant="outline" className="ml-auto">Global Admin</Badge>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-4 text-center text-secondary-500">
-                    No global administrators found
-                  </div>
-                )}
-                
-                {securityInsights?.globalAdmins?.count > 4 && (
-                  <Alert className="mt-4" variant="warning">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>High number of global admins</AlertTitle>
-                    <AlertDescription>
-                      Having {securityInsights.globalAdmins.count} global admins increases security risks. 
-                      Microsoft recommends keeping this number under 4.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                    </HoverCardContent>
+                  </HoverCard>
 
-          <div className="mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Advanced Identity Protection</CardTitle>
-                <CardDescription>Azure AD security features and configurations</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="flex flex-col space-y-2 p-4 bg-secondary-50 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <Key className="h-5 w-5 text-purple-600" />
-                      <span className="font-medium">Phish-Resistant MFA</span>
-                    </div>
-                    <p className="text-sm text-secondary-600">
-                      {securityInsights?.securityMetrics?.identityMetrics?.phishResistantMfa ? 
-                        "Enabled - Users are protected against phishing attacks with FIDO2 keys or certificate-based authentication." : 
-                        "Disabled - Consider enabling phishing-resistant MFA methods for stronger protection."}
-                    </p>
-                    <Badge className="self-start mt-2" variant={securityInsights?.securityMetrics?.identityMetrics?.phishResistantMfa ? "success" : "outline"}>
-                      {securityInsights?.securityMetrics?.identityMetrics?.phishResistantMfa ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex flex-col space-y-2 p-4 bg-secondary-50 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <Lock className="h-5 w-5 text-blue-600" />
-                      <span className="font-medium">Risk-Based Sign-On</span>
-                    </div>
-                    <p className="text-sm text-secondary-600">
-                      {securityInsights?.securityMetrics?.identityMetrics?.riskBasedSignOn ? 
-                        "Enabled - Authentication requirements adapt based on detected risk signals." : 
-                        "Disabled - Consider enabling to add extra protection during suspicious sign-in attempts."}
-                    </p>
-                    <Badge className="self-start mt-2" variant={securityInsights?.securityMetrics?.identityMetrics?.riskBasedSignOn ? "success" : "outline"}>
-                      {securityInsights?.securityMetrics?.identityMetrics?.riskBasedSignOn ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex flex-col space-y-2 p-4 bg-secondary-50 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <Shield className="h-5 w-5 text-green-600" />
-                      <span className="font-medium">Role-Based Access</span>
-                    </div>
-                    <p className="text-sm text-secondary-600">
-                      {securityInsights?.securityMetrics?.identityMetrics?.roleBasedAccessControl ? 
-                        "Enabled - Users have appropriate access based on job responsibilities." : 
-                        "Not Configured - Consider implementing RBAC for better access control."}
-                    </p>
-                    <Badge className="self-start mt-2" variant={securityInsights?.securityMetrics?.identityMetrics?.roleBasedAccessControl ? "success" : "outline"}>
-                      {securityInsights?.securityMetrics?.identityMetrics?.roleBasedAccessControl ? "Enabled" : "Not Configured"}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+                  {/* Device Security Card */}
+                  <HoverCard>
+                    <HoverCardTrigger asChild>
+                      <div className="flex flex-col items-center justify-center p-6 rounded-lg bg-slate-50 cursor-pointer" onClick={() => setActiveTab("devices")}>
+                        <Smartphone className={`h-8 w-8 mb-2 ${getScoreColor(securityData?.securityMetrics?.deviceMetrics?.deviceScore || 0)}`} />
+                        <div className="text-sm font-medium">Device Security</div>
+                        <div className="mt-2 flex items-center gap-1">
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.deviceMetrics?.diskEncryption)}>
+                            {securityData?.securityMetrics?.deviceMetrics?.diskEncryption ? 'Disk Encrypted' : 'Not Encrypted'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent className="w-80">
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-semibold">Device Security</h4>
+                        <div className="text-xs text-slate-500">
+                          <div className="flex justify-between py-1">
+                            <span>Defender for Endpoint:</span>
+                            <span className={`font-medium ${securityData?.securityMetrics?.deviceMetrics?.defenderForEndpoint ? 'text-green-600' : 'text-red-600'}`}>
+                              {securityData?.securityMetrics?.deviceMetrics?.defenderForEndpoint ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span>Software Updated:</span>
+                            <span className={`font-medium ${securityData?.securityMetrics?.deviceMetrics?.softwareUpdated ? 'text-green-600' : 'text-red-600'}`}>
+                              {securityData?.securityMetrics?.deviceMetrics?.softwareUpdated ? 'Yes' : 'No'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between py-1 border-t border-slate-100 pt-2">
+                            <span>Managed Detection & Response:</span>
+                            <span className={`font-medium ${securityData?.securityMetrics?.deviceMetrics?.managedDetectionResponse ? 'text-green-600' : 'text-red-600'}`}>
+                              {securityData?.securityMetrics?.deviceMetrics?.managedDetectionResponse ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
 
-        {/* Device Security Tab */}
-        <TabsContent value="devices">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Device Compliance</CardTitle>
-                <CardDescription>Overview of managed device compliance status</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold">
-                      {securityInsights?.deviceCompliance?.compliant || 0} / {securityInsights?.deviceCompliance?.total || 0} Devices
-                    </span>
-                    {securityInsights?.deviceCompliance?.total > 0 && (
-                      <Badge 
-                        className={getRiskLevel(securityInsights?.deviceCompliance?.compliancePercentage || 0).color}
-                      >
-                        {securityInsights?.deviceCompliance?.compliancePercentage || 0}% Compliant
-                      </Badge>
-                    )}
-                  </div>
-                  <Progress 
-                    value={securityInsights?.deviceCompliance?.compliancePercentage || 0} 
-                    className={`h-3 ${getColorByPercentage(securityInsights?.deviceCompliance?.compliancePercentage || 0)}`}
-                  />
-                  
-                  <div className="grid grid-cols-2 gap-4 mt-6">
-                    <div className="bg-secondary-50 p-3 rounded-lg">
-                      <div className="text-sm text-secondary-600">Compliant</div>
-                      <div className="text-2xl font-bold text-green-600">{securityInsights?.deviceCompliance?.compliant || 0}</div>
-                    </div>
-                    <div className="bg-secondary-50 p-3 rounded-lg">
-                      <div className="text-sm text-secondary-600">Non-Compliant</div>
-                      <div className="text-2xl font-bold text-red-600">{securityInsights?.deviceCompliance?.nonCompliant || 0}</div>
-                    </div>
-                  </div>
+                  {/* Cloud Security Card */}
+                  <HoverCard>
+                    <HoverCardTrigger asChild>
+                      <div className="flex flex-col items-center justify-center p-6 rounded-lg bg-slate-50 cursor-pointer" onClick={() => setActiveTab("cloud")}>
+                        <Cloud className={`h-8 w-8 mb-2 ${getScoreColor(securityData?.securityMetrics?.cloudMetrics?.saasProtection ? 80 : 40)}`} />
+                        <div className="text-sm font-medium">Cloud Security</div>
+                        <div className="mt-2 flex items-center gap-1">
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.defenderFor365)}>
+                            Defender for 365
+                          </Badge>
+                        </div>
+                      </div>
+                    </HoverCardTrigger>
+                    <HoverCardContent className="w-80">
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-semibold">Cloud Security</h4>
+                        <div className="text-xs text-slate-500">
+                          <div className="flex justify-between py-1">
+                            <span>Data Loss Prevention:</span>
+                            <span className={`font-medium ${securityData?.securityMetrics?.cloudMetrics?.dataLossPrevention ? 'text-green-600' : 'text-red-600'}`}>
+                              {securityData?.securityMetrics?.cloudMetrics?.dataLossPrevention ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span>DKIM Policies:</span>
+                            <span className={`font-medium ${securityData?.securityMetrics?.cloudMetrics?.dkimPolicies ? 'text-green-600' : 'text-red-600'}`}>
+                              {securityData?.securityMetrics?.cloudMetrics?.dkimPolicies ? 'Configured' : 'Missing'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between py-1">
+                            <span>DMARC Policies:</span>
+                            <span className={`font-medium ${securityData?.securityMetrics?.cloudMetrics?.dmarcPolicies ? 'text-green-600' : 'text-red-600'}`}>
+                              {securityData?.securityMetrics?.cloudMetrics?.dmarcPolicies ? 'Configured' : 'Missing'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Device Security Features</CardTitle>
-                <CardDescription>Status of key device security controls</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <Lock className="h-5 w-5 text-blue-600" />
-                        <span className="font-medium">Disk Encryption</span>
+            {/* Detailed Tabs */}
+            <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="identity">Identity</TabsTrigger>
+                <TabsTrigger value="devices">Devices</TabsTrigger>
+                <TabsTrigger value="cloud">Cloud</TabsTrigger>
+              </TabsList>
+              
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center">
+                        <Shield className="mr-2 h-5 w-5 text-primary" />
+                        Security Status
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Overall Security Score</span>
+                          <span className={`text-sm font-medium ${getScoreColor(securityData?.securityMetrics?.secureScorePercent || 0)}`}>
+                            {Math.round(securityData?.securityMetrics?.secureScorePercent || 0)}%
+                          </span>
+                        </div>
+                        <Progress value={securityData?.securityMetrics?.secureScorePercent || 0} className="h-2" />
+                        
+                        <div className="pt-2 space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Identity Protection</span>
+                            <span className={getScoreColor(securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled === 0 ? 100 : 50)}>
+                              {securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled === 0 ? 'Strong' : 'Needs Review'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Device Security</span>
+                            <span className={getScoreColor(securityData?.securityMetrics?.deviceMetrics?.deviceScore || 0)}>
+                              {securityData?.securityMetrics?.deviceMetrics?.deviceScore >= 70 ? 'Strong' : 'Needs Review'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Cloud Security</span>
+                            <span className={getScoreColor(
+                              (securityData?.securityMetrics?.cloudMetrics?.defenderFor365 && 
+                               securityData?.securityMetrics?.cloudMetrics?.dkimPolicies && 
+                               securityData?.securityMetrics?.cloudMetrics?.dmarcPolicies) ? 80 : 40
+                            )}>
+                              {(securityData?.securityMetrics?.cloudMetrics?.defenderFor365 && 
+                                securityData?.securityMetrics?.cloudMetrics?.dkimPolicies && 
+                                securityData?.securityMetrics?.cloudMetrics?.dmarcPolicies) ? 'Strong' : 'Needs Review'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <Badge variant={securityInsights?.deviceCompliance?.diskEncryption ? "success" : "destructive"}>
-                        {securityInsights?.deviceCompliance?.diskEncryption ? "Enabled" : "Disabled"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-secondary-600 pl-7">
-                      {securityInsights?.deviceCompliance?.diskEncryption ?
-                        "Device data is protected with encryption" :
-                        "Unencrypted devices are vulnerable to data theft if lost or stolen"}
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <Shield className="h-5 w-5 text-green-600" />
-                        <span className="font-medium">Defender for Endpoint</span>
-                      </div>
-                      <Badge variant={securityInsights?.deviceCompliance?.defenderEnabled ? "success" : "destructive"}>
-                        {securityInsights?.deviceCompliance?.defenderEnabled ? "Enabled" : "Disabled"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-secondary-600 pl-7">
-                      {securityInsights?.deviceCompliance?.defenderEnabled ?
-                        "Advanced threat protection is actively monitoring devices" :
-                        "Devices lack advanced threat detection and response capabilities"}
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <Server className="h-5 w-5 text-purple-600" />
-                        <span className="font-medium">System Updates</span>
-                      </div>
-                      <Badge variant={securityInsights?.securityMetrics?.deviceMetrics?.softwareUpdated ? "success" : "outline"}>
-                        {securityInsights?.securityMetrics?.deviceMetrics?.softwareUpdated ? "Up-to-date" : "Updates Needed"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-secondary-600 pl-7">
-                      {securityInsights?.securityMetrics?.deviceMetrics?.softwareUpdated ?
-                        "Devices are running current software versions" :
-                        "Some devices require updates to patch security vulnerabilities"}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+                    </CardContent>
+                  </Card>
 
-        {/* Cloud Security Tab */}
-        <TabsContent value="cloud">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Cloud Security Features</CardTitle>
-                <CardDescription>Status of Microsoft 365 cloud security controls</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <Shield className="h-5 w-5 text-blue-600" />
-                        <span className="font-medium">Defender for Office 365</span>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center">
+                        <ShieldAlert className="mr-2 h-5 w-5 text-primary" />
+                        Threats Overview
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className={`p-3 rounded-lg ${getScoreBgColor(100 - (securityData?.securityMetrics?.threatMetrics?.identityThreats || 0) * 10)} text-center`}>
+                            <div className="text-lg font-semibold">
+                              {securityData?.securityMetrics?.threatMetrics?.identityThreats || 0}
+                            </div>
+                            <div className="text-xs">Identity Threats</div>
+                          </div>
+                          <div className={`p-3 rounded-lg ${getScoreBgColor(100 - (securityData?.securityMetrics?.threatMetrics?.deviceThreats || 0) * 10)} text-center`}>
+                            <div className="text-lg font-semibold">
+                              {securityData?.securityMetrics?.threatMetrics?.deviceThreats || 0}
+                            </div>
+                            <div className="text-xs">Device Threats</div>
+                          </div>
+                          <div className={`p-3 rounded-lg ${getScoreBgColor(100 - (securityData?.securityMetrics?.threatMetrics?.otherThreats || 0) * 10)} text-center`}>
+                            <div className="text-lg font-semibold">
+                              {securityData?.securityMetrics?.threatMetrics?.otherThreats || 0}
+                            </div>
+                            <div className="text-xs">Other Threats</div>
+                          </div>
+                        </div>
+                        
+                        <div className="pt-2">
+                          <h4 className="text-sm font-medium mb-2">Protection Status</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="flex items-center">
+                                <Badge variant={getBadgeVariant(securityData?.securityMetrics?.deviceMetrics?.defenderForEndpoint)} className="mr-2">
+                                  {securityData?.securityMetrics?.deviceMetrics?.defenderForEndpoint ? 'Active' : 'Inactive'}
+                                </Badge>
+                                Defender for Endpoint
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="flex items-center">
+                                <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.defenderFor365)} className="mr-2">
+                                  {securityData?.securityMetrics?.cloudMetrics?.defenderFor365 ? 'Active' : 'Inactive'}
+                                </Badge>
+                                Defender for 365
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <Badge variant={securityInsights?.securityMetrics?.cloudMetrics?.defenderFor365 ? "success" : "destructive"}>
-                        {securityInsights?.securityMetrics?.cloudMetrics?.defenderFor365 ? "Enabled" : "Disabled"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-secondary-600 pl-7">
-                      Advanced threat protection for email and collaboration tools
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <Lock className="h-5 w-5 text-green-600" />
-                        <span className="font-medium">Data Loss Prevention</span>
-                      </div>
-                      <Badge variant={securityInsights?.securityMetrics?.cloudMetrics?.dataLossPrevention ? "success" : "destructive"}>
-                        {securityInsights?.securityMetrics?.cloudMetrics?.dataLossPrevention ? "Enabled" : "Disabled"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-secondary-600 pl-7">
-                      Controls to prevent data leakage in documents and communications
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <InfoIcon className="h-5 w-5 text-purple-600" />
-                        <span className="font-medium">Sensitivity Labels</span>
-                      </div>
-                      <Badge variant={securityInsights?.securityMetrics?.cloudMetrics?.sensitivityLabels ? "success" : "outline"}>
-                        {securityInsights?.securityMetrics?.cloudMetrics?.sensitivityLabels ? "Configured" : "Not Configured"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-secondary-600 pl-7">
-                      Classification and protection of sensitive information
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                    </CardContent>
+                  </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Email Security Configuration</CardTitle>
-                <CardDescription>Status of email authentication and anti-spoofing controls</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <Check className="h-5 w-5 text-blue-600" />
-                        <span className="font-medium">DKIM Policies</span>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center">
+                        <Lock className="mr-2 h-5 w-5 text-primary" />
+                        Critical Controls
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm flex items-center">
+                            <div className={`w-2 h-2 rounded-full ${
+                              securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled === 0 ? 'bg-green-500' : 'bg-red-500'
+                            } mr-2`}></div>
+                            Multi-Factor Authentication
+                          </span>
+                          <Badge variant={
+                            securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled === 0 ? 'success' : 'destructive'
+                          }>
+                            {securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled === 0 ? 'Complete' : `${securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled} Users Missing`}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm flex items-center">
+                            <div className={`w-2 h-2 rounded-full ${
+                              securityData?.securityMetrics?.deviceMetrics?.diskEncryption ? 'bg-green-500' : 'bg-red-500'
+                            } mr-2`}></div>
+                            Disk Encryption
+                          </span>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.deviceMetrics?.diskEncryption)}>
+                            {securityData?.securityMetrics?.deviceMetrics?.diskEncryption ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm flex items-center">
+                            <div className={`w-2 h-2 rounded-full ${
+                              securityData?.securityMetrics?.cloudMetrics?.dmarcPolicies ? 'bg-green-500' : 'bg-red-500'
+                            } mr-2`}></div>
+                            DMARC Policies
+                          </span>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.dmarcPolicies)}>
+                            {securityData?.securityMetrics?.cloudMetrics?.dmarcPolicies ? 'Configured' : 'Missing'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm flex items-center">
+                            <div className={`w-2 h-2 rounded-full ${
+                              securityData?.securityMetrics?.cloudMetrics?.dataLossPrevention ? 'bg-green-500' : 'bg-red-500'
+                            } mr-2`}></div>
+                            Data Loss Prevention
+                          </span>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.dataLossPrevention)}>
+                            {securityData?.securityMetrics?.cloudMetrics?.dataLossPrevention ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm flex items-center">
+                            <div className={`w-2 h-2 rounded-full ${
+                              securityData?.securityMetrics?.identityMetrics?.singleSignOn ? 'bg-green-500' : 'bg-red-500'
+                            } mr-2`}></div>
+                            Single Sign-On
+                          </span>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.identityMetrics?.singleSignOn)}>
+                            {securityData?.securityMetrics?.identityMetrics?.singleSignOn ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
                       </div>
-                      <Badge variant={securityInsights?.securityMetrics?.cloudMetrics?.dkimPolicies ? "success" : "destructive"}>
-                        {securityInsights?.securityMetrics?.cloudMetrics?.dkimPolicies ? "Configured" : "Missing"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-secondary-600 pl-7">
-                      Email authentication to prevent sender address forgery
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <Check className="h-5 w-5 text-green-600" />
-                        <span className="font-medium">DMARC Policies</span>
-                      </div>
-                      <Badge variant={securityInsights?.securityMetrics?.cloudMetrics?.dmarcPolicies ? "success" : "destructive"}>
-                        {securityInsights?.securityMetrics?.cloudMetrics?.dmarcPolicies ? "Configured" : "Missing"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-secondary-600 pl-7">
-                      Domain-based policy that helps prevent email spoofing
-                    </p>
-                  </div>
-                  
-                  <div className="flex flex-col space-y-2">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <Shield className="h-5 w-5 text-purple-600" />
-                        <span className="font-medium">Anti-Phishing Protection</span>
-                      </div>
-                      <Badge variant={securityInsights?.securityMetrics?.cloudMetrics?.defenderFor365 ? "success" : "outline"}>
-                        {securityInsights?.securityMetrics?.cloudMetrics?.defenderFor365 ? "Enhanced" : "Basic"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-secondary-600 pl-7">
-                      {securityInsights?.securityMetrics?.cloudMetrics?.defenderFor365 ?
-                        "Enhanced protection against sophisticated phishing attacks" :
-                        "Basic protection may not detect advanced phishing attempts"}
-                    </p>
-                  </div>
+                    </CardContent>
+                  </Card>
                 </div>
-                
-                {(!securityInsights?.securityMetrics?.cloudMetrics?.dkimPolicies || 
-                  !securityInsights?.securityMetrics?.cloudMetrics?.dmarcPolicies) && (
-                  <Alert className="mt-6" variant="warning">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Email Security Gaps Detected</AlertTitle>
-                    <AlertDescription>
-                      Missing email authentication policies increase the risk of spoofing and phishing attacks.
-                      Implementing both DKIM and DMARC is recommended.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+              </TabsContent>
+              
+              {/* Identity Tab */}
+              <TabsContent value="identity" className="space-y-4 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Users className="h-5 w-5 mr-2" />
+                      Identity Security
+                    </CardTitle>
+                    <CardDescription>
+                      Overview of your organization's identity and access management security.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="border rounded-lg p-4 bg-slate-50">
+                        <h3 className="text-sm font-medium mb-2">Multi-Factor Authentication</h3>
+                        <div className="flex items-end space-x-2">
+                          <div className="text-3xl font-bold">
+                            {securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled}
+                          </div>
+                          <div className="text-sm text-muted-foreground">users without MFA</div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-4">
+                          {securityData?.securityMetrics?.identityMetrics?.mfaNotEnabled === 0 
+                            ? 'All users have MFA enabled. Great work!' 
+                            : 'Some users do not have MFA enabled. This is a critical security risk.'}
+                        </p>
+                      </div>
+                      
+                      <div className="border rounded-lg p-4 bg-slate-50">
+                        <h3 className="text-sm font-medium mb-2">Global Administrators</h3>
+                        <div className="flex items-end space-x-2">
+                          <div className="text-3xl font-bold">
+                            {securityData?.securityMetrics?.identityMetrics?.globalAdmins}
+                          </div>
+                          <div className="text-sm text-muted-foreground">admin accounts</div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-4">
+                          {securityData?.securityMetrics?.identityMetrics?.globalAdmins <= 2 
+                            ? 'You have an appropriate number of global admin accounts.' 
+                            : 'You have more global admins than recommended. Consider reducing this number.'}
+                        </p>
+                      </div>
+                      
+                      <div className="border rounded-lg p-4 bg-slate-50">
+                        <h3 className="text-sm font-medium mb-2">Phishing Resistance</h3>
+                        <div className="mt-2">
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.identityMetrics?.phishResistantMfa)}>
+                            {securityData?.securityMetrics?.identityMetrics?.phishResistantMfa 
+                              ? 'Phish-Resistant MFA Enabled' 
+                              : 'Phish-Resistant MFA Not Enabled'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-4">
+                          {securityData?.securityMetrics?.identityMetrics?.phishResistantMfa 
+                            ? 'Your organization is using phishing-resistant MFA methods like FIDO2 security keys.' 
+                            : 'Consider implementing phishing-resistant MFA methods for better security.'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-lg font-medium mt-6">Identity Features Status</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.identityMetrics?.riskBasedSignOn ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>Risk-Based Sign-On</span>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.identityMetrics?.riskBasedSignOn)}>
+                            {securityData?.securityMetrics?.identityMetrics?.riskBasedSignOn ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.identityMetrics?.roleBasedAccessControl ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>Role-Based Access Control</span>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.identityMetrics?.roleBasedAccessControl)}>
+                            {securityData?.securityMetrics?.identityMetrics?.roleBasedAccessControl ? 'Implemented' : 'Not Implemented'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.identityMetrics?.singleSignOn ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>Single Sign-On</span>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.identityMetrics?.singleSignOn)}>
+                            {securityData?.securityMetrics?.identityMetrics?.singleSignOn ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.identityMetrics?.managedIdentityProtection ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>Managed Identity Protection</span>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Info className="h-4 w-4 ml-1 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="w-64 text-xs">Microsoft Entra ID Identity Protection provides automated detection and remediation of identity-based risks.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.identityMetrics?.managedIdentityProtection)}>
+                            {securityData?.securityMetrics?.identityMetrics?.managedIdentityProtection ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.cloudMetrics?.conditionalAccess ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>Conditional Access Policies</span>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.conditionalAccess)}>
+                            {securityData?.securityMetrics?.cloudMetrics?.conditionalAccess ? 'Configured' : 'Not Configured'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="border-t pt-4">
+                    <a 
+                      href="https://security.microsoft.com/identityprotection" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary flex items-center"
+                    >
+                      Open Microsoft Identity Security Portal
+                      <ExternalLink className="ml-1 h-3 w-3" />
+                    </a>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+              
+              {/* Devices Tab */}
+              <TabsContent value="devices" className="space-y-4 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Smartphone className="h-5 w-5 mr-2" />
+                      Device Security
+                    </CardTitle>
+                    <CardDescription>
+                      Overview of your organization's device management and security.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="border rounded-lg p-4 bg-slate-50">
+                        <h3 className="text-sm font-medium mb-2">Device Security Score</h3>
+                        <div className={`text-3xl font-bold ${getScoreColor(securityData?.securityMetrics?.deviceMetrics?.deviceScore || 0)}`}>
+                          {securityData?.securityMetrics?.deviceMetrics?.deviceScore || 0}%
+                        </div>
+                        <Progress 
+                          value={securityData?.securityMetrics?.deviceMetrics?.deviceScore || 0} 
+                          className="w-full mt-2" 
+                        />
+                        <p className="text-xs text-muted-foreground mt-4">
+                          This score represents the overall security posture of your devices.
+                        </p>
+                      </div>
+                      
+                      <div className="border rounded-lg p-4 bg-slate-50">
+                        <h3 className="text-sm font-medium mb-2">Disk Encryption</h3>
+                        <div className="flex items-center mt-2">
+                          <div className={`w-4 h-4 rounded-full ${securityData?.securityMetrics?.deviceMetrics?.diskEncryption ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                          <span className="text-sm font-medium">
+                            {securityData?.securityMetrics?.deviceMetrics?.diskEncryption ? 'Encrypted' : 'Not Encrypted'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-4">
+                          {securityData?.securityMetrics?.deviceMetrics?.diskEncryption 
+                            ? 'Device encryption is enabled to protect data if devices are lost or stolen.' 
+                            : 'Device encryption is not enabled. This is a critical security risk.'}
+                        </p>
+                      </div>
+                      
+                      <div className="border rounded-lg p-4 bg-slate-50">
+                        <h3 className="text-sm font-medium mb-2">Microsoft Defender</h3>
+                        <div className="flex items-center mt-2">
+                          <div className={`w-4 h-4 rounded-full ${securityData?.securityMetrics?.deviceMetrics?.defenderForEndpoint ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                          <span className="text-sm font-medium">
+                            {securityData?.securityMetrics?.deviceMetrics?.defenderForEndpoint ? 'Enabled' : 'Not Enabled'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-4">
+                          {securityData?.securityMetrics?.deviceMetrics?.defenderForEndpoint 
+                            ? 'Microsoft Defender for Endpoint is providing advanced threat protection.' 
+                            : 'Microsoft Defender for Endpoint is not enabled, leaving devices vulnerable.'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-lg font-medium mt-6">Device Security Features</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.deviceMetrics?.deviceHardening ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>Device Hardening</span>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Info className="h-4 w-4 ml-1 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="w-64 text-xs">Device hardening includes security configurations like secure boot, TPM, and other advanced security features.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.deviceMetrics?.deviceHardening)}>
+                            {securityData?.securityMetrics?.deviceMetrics?.deviceHardening ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.deviceMetrics?.softwareUpdated ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>Software Updated</span>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.deviceMetrics?.softwareUpdated)}>
+                            {securityData?.securityMetrics?.deviceMetrics?.softwareUpdated ? 'Yes' : 'No'}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.deviceMetrics?.managedDetectionResponse ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>Managed Detection & Response</span>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Info className="h-4 w-4 ml-1 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="w-64 text-xs">MDR services provide 24/7 threat hunting, detection, and response capabilities from security experts.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.deviceMetrics?.managedDetectionResponse)}>
+                            {securityData?.securityMetrics?.deviceMetrics?.managedDetectionResponse ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="border-t pt-4">
+                    <a 
+                      href="https://security.microsoft.com/endpoints" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary flex items-center"
+                    >
+                      Open Microsoft Endpoint Manager
+                      <ExternalLink className="ml-1 h-3 w-3" />
+                    </a>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+              
+              {/* Cloud Tab */}
+              <TabsContent value="cloud" className="space-y-4 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Cloud className="h-5 w-5 mr-2" />
+                      Cloud Security
+                    </CardTitle>
+                    <CardDescription>
+                      Overview of your organization's cloud services security posture.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="border rounded-lg p-4 bg-slate-50">
+                        <h3 className="text-sm font-medium mb-2">Email Protection</h3>
+                        <div className="flex flex-col space-y-2 mt-2">
+                          <div className="flex justify-between">
+                            <span className="text-xs">DKIM</span>
+                            <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.dkimPolicies)}>
+                              {securityData?.securityMetrics?.cloudMetrics?.dkimPolicies ? 'Enabled' : 'Disabled'}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs">DMARC</span>
+                            <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.dmarcPolicies)}>
+                              {securityData?.securityMetrics?.cloudMetrics?.dmarcPolicies ? 'Enabled' : 'Disabled'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-4">
+                          Email authentication helps prevent email spoofing and phishing attacks.
+                        </p>
+                      </div>
+                      
+                      <div className="border rounded-lg p-4 bg-slate-50">
+                        <h3 className="text-sm font-medium mb-2">Data Protection</h3>
+                        <div className="flex flex-col space-y-2 mt-2">
+                          <div className="flex justify-between">
+                            <span className="text-xs">DLP</span>
+                            <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.dataLossPrevention)}>
+                              {securityData?.securityMetrics?.cloudMetrics?.dataLossPrevention ? 'Enabled' : 'Disabled'}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs">Sensitivity Labels</span>
+                            <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.sensitivityLabels)}>
+                              {securityData?.securityMetrics?.cloudMetrics?.sensitivityLabels ? 'Configured' : 'Not Configured'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-4">
+                          Data Loss Prevention helps protect sensitive information and prevent data breaches.
+                        </p>
+                      </div>
+                      
+                      <div className="border rounded-lg p-4 bg-slate-50">
+                        <h3 className="text-sm font-medium mb-2">Cloud Defender</h3>
+                        <div className="flex items-center mt-2">
+                          <div className={`w-4 h-4 rounded-full ${securityData?.securityMetrics?.cloudMetrics?.defenderFor365 ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                          <span className="text-sm font-medium">
+                            {securityData?.securityMetrics?.cloudMetrics?.defenderFor365 ? 'Enabled' : 'Disabled'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-4">
+                          Microsoft Defender for Office 365 protects against advanced threats like phishing and malware.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-lg font-medium mt-6">Cloud Security Features</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.cloudMetrics?.saasProtection ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>SaaS Protection</span>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.saasProtection)}>
+                            {securityData?.securityMetrics?.cloudMetrics?.saasProtection ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.cloudMetrics?.backupArchiving ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>Backup & Archiving</span>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.backupArchiving)}>
+                            {securityData?.securityMetrics?.cloudMetrics?.backupArchiving ? 'Configured' : 'Not Configured'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.cloudMetrics?.suitableFirewall ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>Cloud Firewall</span>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.suitableFirewall)}>
+                            {securityData?.securityMetrics?.cloudMetrics?.suitableFirewall ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.cloudMetrics?.compliancePolicies ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>Compliance Policies</span>
+                          </div>
+                          <Badge variant={getBadgeVariant(securityData?.securityMetrics?.cloudMetrics?.compliancePolicies)}>
+                            {securityData?.securityMetrics?.cloudMetrics?.compliancePolicies ? 'Configured' : 'Not Configured'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center">
+                            <div className={`w-3 h-3 rounded-full ${securityData?.securityMetrics?.cloudMetrics?.byodPolicies ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+                            <span>BYOD Policies</span>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Info className="h-4 w-4 ml-1 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="w-64 text-xs">Bring Your Own Device policies govern how personal devices can securely access company resources.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                          <Badge variant={securityData?.securityMetrics?.cloudMetrics?.byodPolicies ? 'success' : 'destructive'}>
+                            {securityData?.securityMetrics?.cloudMetrics?.byodPolicies || 'Not Configured'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="border-t pt-4">
+                    <a 
+                      href="https://security.microsoft.com/cloudapps/dashboard" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary flex items-center"
+                    >
+                      Open Microsoft Cloud App Security
+                      <ExternalLink className="ml-1 h-3 w-3" />
+                    </a>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
+      </div>
     </div>
   );
 }
