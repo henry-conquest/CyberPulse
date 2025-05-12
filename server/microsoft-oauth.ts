@@ -268,8 +268,23 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
   });
   
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error_description || 'Failed to refresh access token');
+    try {
+      const errorData = await response.json();
+      const errorDescription = errorData.error_description || errorData.error || 'Unknown error';
+      
+      // Provide specific error messages for common refresh token issues
+      if (errorDescription.includes('invalid_grant') || errorDescription.includes('expired')) {
+        throw new Error('Refresh token has expired. Please reconnect your Microsoft 365 account.');
+      } else if (errorDescription.includes('invalid_client')) {
+        throw new Error('Invalid client credentials. Please check your Client ID and Client Secret.');
+      } else {
+        throw new Error(`Failed to refresh access token: ${errorDescription}`);
+      }
+    } catch (e) {
+      // If we can't parse the error as JSON, use text or status code
+      const errorText = await response.text().catch(() => "No response body");
+      throw new Error(`Failed to refresh access token: ${response.status} ${errorText}`);
+    }
   }
   
   return await response.json();
@@ -292,21 +307,27 @@ export async function getTenantInfo(accessToken: string): Promise<TenantInfo> {
     
     console.log("Organization API response status:", response.status);
     
-    const data = await response.json();
-    console.log("Organization API response received");
-    
-    if (response.ok && data.value && data.value.length > 0) {
-      console.log("Organization data found:", data.value[0].displayName);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Organization API error:", response.status, errorText);
+      // Continue to fallback, don't throw error here
+    } else {
+      const data = await response.json();
+      console.log("Organization API response received");
       
-      const domains = Array.isArray(data.value[0].verifiedDomains) 
-        ? data.value[0].verifiedDomains.map((d: any) => d.name)
-        : [];
+      if (data.value && data.value.length > 0) {
+        console.log("Organization data found:", data.value[0].displayName);
         
-      return {
-        id: data.value[0].id,
-        displayName: data.value[0].displayName,
-        domains: domains
-      };
+        const domains = Array.isArray(data.value[0].verifiedDomains) 
+          ? data.value[0].verifiedDomains.map((d: any) => d.name)
+          : [];
+          
+        return {
+          id: data.value[0].id,
+          displayName: data.value[0].displayName,
+          domains: domains
+        };
+      }
     }
     
     console.log("No organization data found, falling back to /me endpoint");
@@ -329,11 +350,28 @@ export async function getTenantInfo(accessToken: string): Promise<TenantInfo> {
     console.log("Me API response status:", meResponse.status);
     
     if (!meResponse.ok) {
-      console.error("Failed to fetch user information");
-      throw new Error('Failed to fetch tenant information');
+      const errorText = await meResponse.text().catch(() => "No response body");
+      console.error("Failed to fetch user information:", meResponse.status, errorText);
+      
+      // Provide more specific error messages based on status code
+      if (meResponse.status === 401) {
+        throw new Error('Authentication failed. Your access token might be invalid or expired. Please try connecting again.');
+      } else if (meResponse.status === 403) {
+        throw new Error('Permission denied. Your account lacks the required permissions to access user information.');
+      } else if (meResponse.status >= 500) {
+        throw new Error('Microsoft service error. The Microsoft Graph API is experiencing issues. Please try again later.');
+      } else {
+        throw new Error(`Failed to fetch tenant information: ${meResponse.status} ${errorText}`);
+      }
     }
     
-    const meData = await meResponse.json();
+    let meData: any;
+    try {
+      meData = await meResponse.json();
+    } catch (error) {
+      console.error("Failed to parse user data response:", error);
+      throw new Error('Invalid response from Microsoft Graph API. Unable to parse user data.');
+    }
     console.log("User data found:", meData.displayName);
     
     // Extract tenant ID from the user's identity provider
@@ -365,7 +403,25 @@ export async function getTenantInfo(accessToken: string): Promise<TenantInfo> {
     };
   } catch (error) {
     console.error("Error fetching user data:", error);
-    throw new Error('Failed to fetch tenant information. Please check your permissions and try again.');
+    
+    // Create a more specific error message
+    let errorMessage = 'Failed to fetch tenant information.';
+    
+    if (error instanceof Error) {
+      // If it's already a properly formatted error from our earlier checks, pass it through
+      if (error.message.includes('Authentication failed') || 
+          error.message.includes('Permission denied') || 
+          error.message.includes('Microsoft service error') ||
+          error.message.includes('Failed to fetch tenant information:') ||
+          error.message.includes('Invalid response')) {
+        throw error;
+      }
+      
+      // Otherwise, append the original error message for debugging
+      errorMessage += ` Error details: ${error.message}`;
+    }
+    
+    throw new Error(`${errorMessage} Please check your permissions and try again.`);
   }
 }
 
