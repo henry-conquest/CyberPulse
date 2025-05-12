@@ -443,7 +443,9 @@ export async function fetchSecurityDataForTenant(tenantId: number) {
     };
 
     // Calculate risk scores based on mock data
+    console.log("Calculating risk scores for mock data");
     const mockRiskScores = calculateRiskScores(mockSecurityData);
+    console.log("Calculated mock risk scores:", mockRiskScores);
     
     return {
       securityData: mockSecurityData,
