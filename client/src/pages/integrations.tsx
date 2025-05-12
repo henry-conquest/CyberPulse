@@ -159,10 +159,49 @@ export default function IntegrationsPage() {
     }
   });
 
-  // Connect to Microsoft 365
-  const connectToMicrosoft365 = async () => {
+  // Get companies for dropdown
+  const { 
+    data: companies,
+    isLoading: isLoadingCompanies,
+  } = useQuery({
+    queryKey: ['/api/tenants'],
+    enabled: isAuthenticated
+  });
+  
+  // Define form schema for Microsoft 365 connection
+  const connectionFormSchema = z.object({
+    clientId: z.string().min(1, "Client ID is required"),
+    clientSecret: z.string().min(1, "Client Secret is required"),
+    redirectUri: z.string().url("Must be a valid URL").min(1, "Redirect URI is required"),
+    companyId: z.string().min(1, "Please select a company to connect to")
+  });
+
+  // Form for Microsoft 365 connection
+  const form = useForm<z.infer<typeof connectionFormSchema>>({
+    resolver: zodResolver(connectionFormSchema),
+    defaultValues: {
+      clientId: "",
+      clientSecret: "",
+      redirectUri: "",
+      companyId: ""
+    }
+  });
+  
+  // Connect dialog state
+  const [connectDialogOpen, setConnectDialogOpen] = useState(false);
+  
+  // Handle form submission
+  const onSubmit = async (data: z.infer<typeof connectionFormSchema>) => {
     try {
       setIsConnecting(true);
+      
+      // Store credentials in session storage temporarily (they'll be used in the callback)
+      sessionStorage.setItem('ms_graph_client_id', data.clientId);
+      sessionStorage.setItem('ms_graph_client_secret', data.clientSecret);
+      sessionStorage.setItem('ms_graph_redirect_uri', data.redirectUri);
+      sessionStorage.setItem('ms_graph_company_id', data.companyId);
+      
+      // Get the authorization URL with these credentials
       const response = await fetch('/api/auth/microsoft365/authorize', {
         method: 'GET',
         headers: {
@@ -174,10 +213,10 @@ export default function IntegrationsPage() {
         throw new Error('Failed to get authorization URL');
       }
       
-      const data = await response.json();
+      const responseData = await response.json();
       
-      if (data.authUrl) {
-        window.location.href = data.authUrl;
+      if (responseData.authUrl) {
+        window.location.href = responseData.authUrl;
       } else {
         throw new Error('No authorization URL received');
       }
@@ -190,7 +229,13 @@ export default function IntegrationsPage() {
       console.error('OAuth connection error:', error);
     } finally {
       setIsConnecting(false);
+      setConnectDialogOpen(false);
     }
+  };
+  
+  // Open connect dialog
+  const openConnectDialog = () => {
+    setConnectDialogOpen(true);
   };
 
   // Handle connection deletion
@@ -324,7 +369,7 @@ export default function IntegrationsPage() {
             </CardContent>
             <CardFooter className="flex justify-end">
               <Button 
-                onClick={connectToMicrosoft365} 
+                onClick={openConnectDialog} 
                 disabled={isConnecting}
               >
                 {isConnecting ? (
@@ -333,7 +378,7 @@ export default function IntegrationsPage() {
                     Connecting...
                   </>
                 ) : (
-                  "Connect to Microsoft 365"
+                  "Connect a Tenant"
                 )}
               </Button>
             </CardFooter>
@@ -368,6 +413,142 @@ export default function IntegrationsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Connection Dialog */}
+      <Dialog open={connectDialogOpen} onOpenChange={setConnectDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              Connect Microsoft 365 Tenant
+            </DialogTitle>
+            <DialogDescription>
+              Enter your Microsoft Graph API credentials and select the company to connect to.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              <FormField
+                control={form.control}
+                name="clientId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Client ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter Microsoft Graph Client ID"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      The client ID from your Azure app registration
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="clientSecret"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Client Secret</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Enter Microsoft Graph Client Secret"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      The client secret from your Azure app registration
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="redirectUri"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Redirect URI</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://your-domain.com/api/auth/microsoft365/callback"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Must match exactly what's configured in Azure
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="companyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a company" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {isLoadingCompanies ? (
+                          <div className="flex justify-center p-2">
+                            <div className="animate-spin h-4 w-4 border-b-2 border-primary"></div>
+                          </div>
+                        ) : companies && companies.length > 0 ? (
+                          companies.map((company: any) => (
+                            <SelectItem key={company.id} value={company.id.toString()}>
+                              {company.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="text-center p-2 text-muted-foreground">
+                            No companies available
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Company to associate with this Microsoft 365 tenant
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter className="pt-4">
+                <Button variant="outline" type="button" onClick={() => setConnectDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={form.formState.isSubmitting || isConnecting}
+                >
+                  {form.formState.isSubmitting || isConnecting ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Connecting...
+                    </>
+                  ) : (
+                    "Connect"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Success Dialog */}
       <Dialog open={connSuccessDialog} onOpenChange={setConnSuccessDialog}>
@@ -419,7 +600,7 @@ export default function IntegrationsPage() {
             <Button variant="outline" onClick={() => setConnErrorDialog(false)}>
               Close
             </Button>
-            <Button onClick={connectToMicrosoft365}>
+            <Button onClick={openConnectDialog}>
               Try Again
             </Button>
           </DialogFooter>

@@ -62,9 +62,14 @@ export function validateState(state: string): string | null {
 /**
  * Get Microsoft OAuth authorization URL
  */
-export function getAuthorizationUrl(state: string): string {
-  const clientId = process.env.MS_GRAPH_CLIENT_ID || "";
-  const redirectUri = process.env.MS_GRAPH_REDIRECT_URI || "";
+export function getAuthorizationUrl(
+  state: string, 
+  clientId?: string,
+  redirectUri?: string
+): string {
+  // Use provided values or fall back to environment variables
+  const finalClientId = clientId || process.env.MS_GRAPH_CLIENT_ID || "";
+  const finalRedirectUri = redirectUri || process.env.MS_GRAPH_REDIRECT_URI || "";
   
   // Define required scopes
   const scopes = [
@@ -74,9 +79,9 @@ export function getAuthorizationUrl(state: string): string {
   
   // Build the authorization URL
   const authUrl = new URL('https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
-  authUrl.searchParams.append('client_id', clientId);
+  authUrl.searchParams.append('client_id', finalClientId);
   authUrl.searchParams.append('response_type', 'code');
-  authUrl.searchParams.append('redirect_uri', redirectUri);
+  authUrl.searchParams.append('redirect_uri', finalRedirectUri);
   authUrl.searchParams.append('scope', scopes);
   authUrl.searchParams.append('state', state);
   authUrl.searchParams.append('response_mode', 'query');
@@ -87,10 +92,16 @@ export function getAuthorizationUrl(state: string): string {
 /**
  * Exchange authorization code for access and refresh tokens
  */
-export async function exchangeCodeForToken(code: string): Promise<TokenResponse> {
-  const clientId = process.env.MS_GRAPH_CLIENT_ID || "";
-  const clientSecret = process.env.MS_GRAPH_CLIENT_SECRET || "";
-  const redirectUri = process.env.MS_GRAPH_REDIRECT_URI || "";
+export async function exchangeCodeForToken(
+  code: string,
+  clientId?: string,
+  clientSecret?: string,
+  redirectUri?: string
+): Promise<TokenResponse> {
+  // Use provided values or fall back to environment variables
+  const finalClientId = clientId || process.env.MS_GRAPH_CLIENT_ID || "";
+  const finalClientSecret = clientSecret || process.env.MS_GRAPH_CLIENT_SECRET || "";
+  const finalRedirectUri = redirectUri || process.env.MS_GRAPH_REDIRECT_URI || "";
   
   const tokenUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
   
@@ -100,10 +111,10 @@ export async function exchangeCodeForToken(code: string): Promise<TokenResponse>
       'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
+      client_id: finalClientId,
+      client_secret: finalClientSecret,
       code: code,
-      redirect_uri: redirectUri,
+      redirect_uri: finalRedirectUri,
       grant_type: 'authorization_code'
     }).toString()
   });
@@ -186,11 +197,16 @@ export async function storeOAuthConnection(
   tenantDomain: string,
   accessToken: string,
   refreshToken: string,
-  expiresIn: number
+  expiresIn: number,
+  clientId?: string,
+  clientSecret?: string,
+  companyId?: string
 ): Promise<void> {
   // Check if connection already exists
   const existingConnection = await storage.getMicrosoft365OAuthConnectionByTenantId(tenantId);
   
+  const finalClientId = clientId || process.env.MS_GRAPH_CLIENT_ID || "";
+  const finalClientSecret = clientSecret || process.env.MS_GRAPH_CLIENT_SECRET || "";
   const expiresAt = new Date(Date.now() + (expiresIn * 1000));
   
   if (existingConnection) {
@@ -200,11 +216,12 @@ export async function storeOAuthConnection(
       tenantId,
       tenantName,
       tenantDomain,
-      clientId: process.env.MS_GRAPH_CLIENT_ID || "",
-      clientSecret: process.env.MS_GRAPH_CLIENT_SECRET || "",
+      clientId: finalClientId,
+      clientSecret: finalClientSecret,
       accessToken,
       refreshToken,
-      expiresAt
+      expiresAt,
+      companyId: companyId ? Number(companyId) : undefined
     });
   } else {
     // Create new connection
@@ -213,11 +230,12 @@ export async function storeOAuthConnection(
       tenantId,
       tenantName,
       tenantDomain,
-      clientId: process.env.MS_GRAPH_CLIENT_ID || "",
-      clientSecret: process.env.MS_GRAPH_CLIENT_SECRET || "",
+      clientId: finalClientId,
+      clientSecret: finalClientSecret,
       accessToken,
       refreshToken,
-      expiresAt
+      expiresAt,
+      companyId: companyId ? Number(companyId) : undefined
     });
   }
 }
