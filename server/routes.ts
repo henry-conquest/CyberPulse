@@ -453,11 +453,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(reports);
   }));
   
-  // Get reports by tenant and optionally filtered by year
+  // Get reports by tenant and optionally filtered by year and quarter
   app.get("/api/reports/by-tenant", isAuthenticated, asyncHandler(async (req, res) => {
     const userId = (req.user as any).claims.sub;
     const tenantId = parseInt(req.query.tenantId as string);
     const year = req.query.year ? parseInt(req.query.year as string) : null;
+    const quarter = req.query.quarter ? parseInt(req.query.quarter as string) : null;
     
     if (!tenantId) {
       return res.status(400).json({ message: "Tenant ID is required" });
@@ -476,6 +477,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Filter by year if specified
     if (year) {
       reports = reports.filter(report => report.year === year);
+    }
+    
+    // Filter by quarter if specified
+    if (quarter) {
+      reports = reports.filter(report => report.quarter === quarter);
     }
     
     res.json(reports);

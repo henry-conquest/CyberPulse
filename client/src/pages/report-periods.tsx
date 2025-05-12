@@ -161,13 +161,14 @@ export default function ReportPeriods() {
   const { user } = useAuth();
   const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedQuarter, setSelectedQuarter] = useState<number | null>(null);
   
   const { data: tenants, isLoading: isLoadingTenants } = useQuery<Tenant[]>({
     queryKey: ["/api/tenants"],
   });
   
   const { data: reports, isLoading: isLoadingReports } = useQuery<Report[]>({
-    queryKey: ["/api/reports/by-tenant", selectedTenantId, selectedYear],
+    queryKey: [`/api/reports/by-tenant?tenantId=${selectedTenantId}${selectedYear ? `&year=${selectedYear}` : ''}${selectedQuarter ? `&quarter=${selectedQuarter}` : ''}`],
     enabled: !!selectedTenantId,
   });
 
@@ -225,6 +226,24 @@ export default function ReportPeriods() {
                     {year}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="w-full sm:w-auto">
+            <Select 
+              value={selectedQuarter?.toString() || ""} 
+              onValueChange={(value) => value ? setSelectedQuarter(parseInt(value)) : setSelectedQuarter(null)}
+            >
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Quarter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Quarters</SelectItem>
+                <SelectItem value="1">Q1</SelectItem>
+                <SelectItem value="2">Q2</SelectItem>
+                <SelectItem value="3">Q3</SelectItem>
+                <SelectItem value="4">Q4</SelectItem>
               </SelectContent>
             </Select>
           </div>
