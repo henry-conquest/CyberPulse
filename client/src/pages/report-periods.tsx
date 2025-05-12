@@ -44,6 +44,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface Report {
   id: number;
+  tenantId: number;
   title: string;
   quarter: number;
   year: number;
