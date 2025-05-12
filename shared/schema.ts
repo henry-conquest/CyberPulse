@@ -63,15 +63,11 @@ export const userTenants = pgTable("user_tenants", {
 // Microsoft 365 credentials for tenants
 export const microsoft365Connections = pgTable("microsoft365_connections", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  tenantId: varchar("tenant_id").notNull(),  // Azure tenant ID (guid)
+  tenantId: integer("tenant_id").notNull().references(() => tenants.id),
   tenantName: varchar("tenant_name").notNull(),
   clientId: varchar("client_id").notNull(),
   clientSecret: varchar("client_secret").notNull(),
   tenantDomain: varchar("tenant_domain").notNull(),
-  accessToken: text("access_token").notNull(),
-  refreshToken: text("refresh_token").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
