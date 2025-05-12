@@ -209,7 +209,10 @@ export class MicrosoftGraphService {
   async getGlobalAdmins(): Promise<number> {
     try {
       if (!this.client) {
-        throw new Error("Microsoft Graph client not initialized");
+        this.initializeClient();
+        if (!this.client) {
+          throw new Error("Microsoft Graph client not initialized");
+        }
       }
 
       // Get global admin role
@@ -230,16 +233,51 @@ export class MicrosoftGraphService {
       }
       
       return 0;
-    } catch (error) {
-      console.error('Error fetching global admins:', error);
-      throw error;
+    } catch (error: any) {
+      // Check for authentication errors
+      if (error.statusCode === 401 || 
+          (error.message && error.message.includes("authentication")) ||
+          (error.message && error.message.includes("authorized"))) {
+        console.error(`Authentication error in getGlobalAdmins for tenant ${this.connection.tenantId}:`, error.message);
+        
+        // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        // Return a default value when authentication fails to prevent UI crashes
+        console.log("Returning default global admin value (0) due to authentication error");
+        return 0;
+      }
+      
+      // For permissions errors, log but return default values
+      if (error.statusCode === 403 || 
+          (error.message && error.message.includes("permission"))) {
+        console.error(`Permission error in getGlobalAdmins for tenant ${this.connection.tenantId}:`, error.message);
+        // Return a default value for permission errors
+        return 0;
+      }
+      
+      // Handle other errors
+      console.error(`Error fetching global admins for tenant ${this.connection.tenantId}:`, error);
+      return 0; // Return default value for other errors too
     }
   }
 
   async getMFAMethodDetails(): Promise<{ phoneMFA: number, emailMFA: number, appMFA: number, noMFA: number, users: any[] }> {
     try {
       if (!this.client) {
-        throw new Error("Microsoft Graph client not initialized");
+        this.initializeClient();
+        if (!this.client) {
+          throw new Error("Microsoft Graph client not initialized");
+        }
       }
 
       // Get users with MFA registration details
@@ -273,16 +311,69 @@ export class MicrosoftGraphService {
       });
 
       return { phoneMFA, emailMFA, appMFA, noMFA, users };
-    } catch (error) {
-      console.error('Error fetching MFA method details:', error);
-      throw error;
+    } catch (error: any) {
+      // Check for authentication errors
+      if (error.statusCode === 401 || 
+          (error.message && error.message.includes("authentication")) ||
+          (error.message && error.message.includes("authorized"))) {
+        console.error(`Authentication error in getMFAMethodDetails for tenant ${this.connection.tenantId}:`, error.message);
+        
+        // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        // Return a default value when authentication fails to prevent UI crashes
+        console.log("Returning default MFA method details due to authentication error");
+        return { 
+          phoneMFA: 0, 
+          emailMFA: 0, 
+          appMFA: 0, 
+          noMFA: 0, 
+          users: [] 
+        };
+      }
+      
+      // For permissions errors, log but return default values
+      if (error.statusCode === 403 || 
+          (error.message && error.message.includes("permission"))) {
+        console.error(`Permission error in getMFAMethodDetails for tenant ${this.connection.tenantId}:`, error.message);
+        // Return a default value for permission errors
+        return { 
+          phoneMFA: 0, 
+          emailMFA: 0, 
+          appMFA: 0, 
+          noMFA: 0, 
+          users: [] 
+        };
+      }
+      
+      // Handle other errors
+      console.error(`Error fetching MFA method details for tenant ${this.connection.tenantId}:`, error);
+      return { 
+        phoneMFA: 0, 
+        emailMFA: 0, 
+        appMFA: 0, 
+        noMFA: 0, 
+        users: [] 
+      };
     }
   }
 
   async getGlobalAdminDetails(): Promise<{ count: number, admins: any[] }> {
     try {
       if (!this.client) {
-        throw new Error("Microsoft Graph client not initialized");
+        this.initializeClient();
+        if (!this.client) {
+          throw new Error("Microsoft Graph client not initialized");
+        }
       }
 
       // Get global admin role
@@ -305,16 +396,51 @@ export class MicrosoftGraphService {
       }
       
       return { count: 0, admins: [] };
-    } catch (error) {
-      console.error('Error fetching global admin details:', error);
-      throw error;
+    } catch (error: any) {
+      // Check for authentication errors
+      if (error.statusCode === 401 || 
+          (error.message && error.message.includes("authentication")) ||
+          (error.message && error.message.includes("authorized"))) {
+        console.error(`Authentication error in getGlobalAdminDetails for tenant ${this.connection.tenantId}:`, error.message);
+        
+        // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        // Return a default value when authentication fails to prevent UI crashes
+        console.log("Returning default global admin details due to authentication error");
+        return { count: 0, admins: [] };
+      }
+      
+      // For permissions errors, log but return default values
+      if (error.statusCode === 403 || 
+          (error.message && error.message.includes("permission"))) {
+        console.error(`Permission error in getGlobalAdminDetails for tenant ${this.connection.tenantId}:`, error.message);
+        // Return a default value for permission errors
+        return { count: 0, admins: [] };
+      }
+      
+      // Handle other errors
+      console.error(`Error fetching global admin details for tenant ${this.connection.tenantId}:`, error);
+      return { count: 0, admins: [] };
     }
   }
 
   async getEntraIdLicenses(): Promise<{ hasP2: boolean }> {
     try {
       if (!this.client) {
-        throw new Error("Microsoft Graph client not initialized");
+        this.initializeClient();
+        if (!this.client) {
+          throw new Error("Microsoft Graph client not initialized");
+        }
       }
       
       // Check for Azure AD Premium P2 license
@@ -331,16 +457,51 @@ export class MicrosoftGraphService {
         license.capabilityStatus === 'Enabled');
         
       return { hasP2 };
-    } catch (error) {
-      console.error('Error fetching Entra ID licenses:', error);
-      throw error;
+    } catch (error: any) {
+      // Check for authentication errors
+      if (error.statusCode === 401 || 
+          (error.message && error.message.includes("authentication")) ||
+          (error.message && error.message.includes("authorized"))) {
+        console.error(`Authentication error in getEntraIdLicenses for tenant ${this.connection.tenantId}:`, error.message);
+        
+        // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        // Return a default value when authentication fails to prevent UI crashes
+        console.log("Returning default license value (false) due to authentication error");
+        return { hasP2: false };
+      }
+      
+      // For permissions errors, log but return default values
+      if (error.statusCode === 403 || 
+          (error.message && error.message.includes("permission"))) {
+        console.error(`Permission error in getEntraIdLicenses for tenant ${this.connection.tenantId}:`, error.message);
+        // Return a default value for permission errors
+        return { hasP2: false };
+      }
+      
+      // Handle other errors
+      console.error(`Error fetching Entra ID licenses for tenant ${this.connection.tenantId}:`, error);
+      return { hasP2: false };
     }
   }
   
   async getAccessReviewsStatus(): Promise<{ isEnabled: boolean }> {
     try {
       if (!this.client) {
-        throw new Error("Microsoft Graph client not initialized");
+        this.initializeClient();
+        if (!this.client) {
+          throw new Error("Microsoft Graph client not initialized");
+        }
       }
       
       // Check for access reviews
@@ -353,8 +514,44 @@ export class MicrosoftGraphService {
       const isEnabled = response.value && response.value.length > 0;
         
       return { isEnabled };
-    } catch (error) {
-      console.error('Error fetching access reviews status:', error);
+    } catch (error: any) {
+      // Check for authentication errors
+      if (error.statusCode === 401 || 
+          (error.message && error.message.includes("authentication")) ||
+          (error.message && error.message.includes("authorized"))) {
+        console.error(`Authentication error in getAccessReviewsStatus for tenant ${this.connection.tenantId}:`, error.message);
+        
+        // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        // Return a default value when authentication fails to prevent UI crashes
+        console.log("Returning default access reviews status (false) due to authentication error");
+        return { isEnabled: false };
+      }
+      
+      // Handle permission errors - this is expected for tenants without Entra ID P2
+      if (error.statusCode === 403 || 
+          (error.message && (
+            error.message.includes("permission") || 
+            error.message.includes("Access Reviews") || 
+            error.message.includes("IdentityGovernance")
+          ))) {
+        console.log(`Permission/license error in getAccessReviewsStatus for tenant ${this.connection.tenantId} - likely no P2 license`);
+        // Return false for permission errors - this is expected behavior for tenants without P2
+        return { isEnabled: false };
+      }
+      
+      // Handle other errors
+      console.error(`Error fetching access reviews status for tenant ${this.connection.tenantId}:`, error);
       // If error is due to access review feature not being available, return false
       return { isEnabled: false };
     }
