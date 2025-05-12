@@ -156,11 +156,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Redirect to the integrations page with success message
-      res.redirect('/integrations?oauth=success');
+      res.redirect('/integrations?tab=microsoft365&success=true');
       
     } catch (error) {
       console.error("OAuth callback error:", error);
-      res.redirect('/integrations?oauth=error');
+      const errorMsg = error instanceof Error ? encodeURIComponent(error.message) : 'Unknown error occurred';
+      res.redirect(`/integrations?tab=microsoft365&error=${errorMsg}`);
     }
   }));
   
