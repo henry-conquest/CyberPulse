@@ -30,10 +30,9 @@ export default function EditReport() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  const router = useRouter();
-  const params = useParams();
-  const tenantId = parseInt(params.tenantId);
-  const reportId = parseInt(params.reportId);
+  const [, params] = useRoute<{ tenantId: string, reportId: string }>("/tenants/:tenantId/reports/:reportId/edit");
+  const tenantId = params ? parseInt(params.tenantId) : 0;
+  const reportId = params ? parseInt(params.reportId) : 0;
   
   // Check if user is authorized (admin or analyst)
   const isAuthorized = user?.role === UserRoles.ADMIN || user?.role === UserRoles.ANALYST;
@@ -68,9 +67,12 @@ export default function EditReport() {
   // Handle form submission
   const onSubmit = async (values: FormValues) => {
     try {
-      await apiRequest(`/api/tenants/${tenantId}/reports/${reportId}`, {
+      await fetch(`/api/tenants/${tenantId}/reports/${reportId}`, {
         method: "PATCH",
-        data: values,
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(values)
       });
       
       // Invalidate report queries to refresh data

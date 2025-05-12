@@ -18,6 +18,7 @@ import Integrations from "./pages/integrations";
 
 import { useAuth } from "@/hooks/useAuth";
 import Layout from "@/components/layout/Layout";
+import { UserRoles } from "@shared/schema";
 
 function ProtectedRoute({ component: Component, roles, ...rest }: { 
   component: React.ComponentType<any>;

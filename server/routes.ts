@@ -586,6 +586,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       recipients,
     });
   }));
+  
+  // Update a report's summary and recommendations
+  app.patch("/api/tenants/:tenantId/reports/:id", isAuthenticated, asyncHandler(async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    const tenantId = parseInt(req.params.tenantId);
+    const reportId = parseInt(req.params.id);
+    
+    // Check if user has role permissions (admin or analyst)
+    const user = await storage.getUser(userId);
+    const isAuthorized = user?.role === UserRoles.ADMIN || user?.role === UserRoles.ANALYST;
+    
+    if (!isAuthorized) {
+      return res.status(403).json({ message: "Only administrators and analysts can edit report content" });
+    }
+    
+    // Check if user has access to this tenant
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
+    
+    if (!hasAccess) {
+      return res.status(403).json({ message: "You don't have access to this tenant" });
+    }
+    
+    // Get the report
+    const report = await storage.getReport(reportId);
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+    
+    // Verify the report belongs to the requested tenant
+    if (report.tenantId !== tenantId) {
+      return res.status(404).json({ message: "Report not found for this tenant" });
+    }
+    
+    // Extract only the fields we want to update
+    const { summary, recommendations, analystComments } = req.body;
+    
+    // Update the report
+    const updatedReport = await storage.updateReport(reportId, {
+      summary,
+      recommendations,
+      analystComments
+    });
+    
+    // Create audit log
+    await storage.createAuditLog({
+      userId,
+      tenantId,
+      action: "update_report_content",
+      details: `Updated summary and recommendations for ${report.title}`,
+    });
+    
+    res.json(updatedReport);
+  }));
 
   app.patch("/api/reports/:id", isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
     const userId = (req.user as any).claims.sub;
