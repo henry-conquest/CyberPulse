@@ -461,71 +461,7 @@ export default function ReportView({ id }: ReportViewProps) {
             </CardContent>
           </Card>
           
-          {/* Report Summary */}
-          <Card className="mb-6">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Executive Summary</CardTitle>
-                {canEdit && report.status !== "sent" && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setLocation(`/tenants/${tenantId}/reports/${report.id}/edit`)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="prose prose-sm max-w-none">
-                {/* Debug info */}
-                <div className="bg-yellow-100 p-2 mb-4 rounded">
-                  <p><strong>Debug: Summary field value:</strong> {JSON.stringify(report?.summary)}</p>
-                </div>
 
-                {report?.summary ? (
-                  <div dangerouslySetInnerHTML={{ __html: report.summary.replace(/\n/g, '<br />') }} />
-                ) : (
-                  <p className="text-secondary-500 italic">No summary available for this report.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Recommendations */}
-          <Card className="mb-6">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Key Recommendations</CardTitle>
-                {canEdit && report.status !== "sent" && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setLocation(`/tenants/${tenantId}/reports/${report.id}/edit`)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="prose prose-sm max-w-none">
-                {/* Debug info */}
-                <div className="bg-yellow-100 p-2 mb-4 rounded">
-                  <p><strong>Debug: Recommendations field value:</strong> {JSON.stringify(report?.recommendations)}</p>
-                </div>
-
-                {report?.recommendations ? (
-                  <div dangerouslySetInnerHTML={{ __html: report.recommendations.replace(/\n/g, '<br />') }} />
-                ) : (
-                  <p className="text-secondary-500 italic">No recommendations available for this report.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
           
           {/* Analyst Comments */}
           <div className="mb-6">

@@ -18,8 +18,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Form schema
 const formSchema = z.object({
-  summary: z.string().min(1, "Summary is required"),
-  recommendations: z.string().min(1, "Recommendations are required"),
   analystComments: z.string().optional(),
 });
 
@@ -57,8 +55,6 @@ export default function EditReport() {
   useEffect(() => {
     if (report) {
       form.reset({
-        summary: report.summary || "",
-        recommendations: report.recommendations || "",
         analystComments: report.analystComments || "",
       });
     }
@@ -132,53 +128,12 @@ export default function EditReport() {
         <CardHeader>
           <CardTitle>Edit Report</CardTitle>
           <CardDescription>
-            Update summary and recommendations for {report.title} - Q{report.quarter} {report.year}
+            Update analyst comments for {report.title} - Q{report.quarter} {report.year}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="summary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Summary</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Enter a summary of the security assessment..."
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Provide a concise summary of the security assessment and its findings.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="recommendations"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Recommendations</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Enter recommendations based on the findings..."
-                        className="min-h-[150px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Provide detailed recommendations to address the security concerns found in the assessment.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               
               <FormField
                 control={form.control}
