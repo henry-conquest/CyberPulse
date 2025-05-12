@@ -210,25 +210,11 @@ export default function Settings() {
     changePasswordMutation.mutate(data);
   };
   
-  // Microsoft 365 connection
-  const connectToMicrosoft365 = async () => {
+  // Microsoft 365 connection - redirect to integrations page
+  const connectToMicrosoft365 = () => {
     setIsConnectingToM365(true);
-    try {
-      const response = await apiRequest('GET', '/api/auth/microsoft365/authorize');
-      const data = await response.json();
-      if (data.authUrl) {
-        window.location.href = data.authUrl;
-      } else {
-        throw new Error("Failed to get authorization URL");
-      }
-    } catch (error) {
-      toast({
-        title: "Connection Error",
-        description: error instanceof Error ? error.message : "Failed to connect to Microsoft 365",
-        variant: "destructive",
-      });
-      setIsConnectingToM365(false);
-    }
+    // Redirect to integrations page with tab=microsoft365 to show the connection form
+    window.location.href = '/integrations?tab=microsoft365';
   };
   
   // Disconnect Microsoft 365
