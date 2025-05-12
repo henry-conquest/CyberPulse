@@ -32,6 +32,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { CheckCircle, Info, Shield, X } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from '@/lib/queryClient';
@@ -82,6 +102,16 @@ export default function IntegrationsPage() {
     queryKey: ['/api/connections/microsoft365'],
     enabled: isAuthenticated
   });
+  
+  // Fetch Microsoft 365 OAuth connections
+  const {
+    data: microsoft365OAuthConnections,
+    isLoading: isLoadingOAuth,
+    error: errorOAuth
+  } = useQuery({
+    queryKey: ['/api/connections/microsoft365/oauth'],
+    enabled: isAuthenticated
+  });
 
   // Delete Microsoft 365 connection
   const deleteMicrosoft365Connection = useMutation({
@@ -105,17 +135,51 @@ export default function IntegrationsPage() {
       });
     }
   });
+  
+  // Delete Microsoft 365 OAuth connection
+  const deleteMicrosoft365OAuthConnection = useMutation({
+    mutationFn: async (connectionId: number) => {
+      return apiRequest(`/api/connections/microsoft365/oauth/${connectionId}`, {
+        method: 'DELETE'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/connections/microsoft365/oauth'] });
+      toast({
+        title: "Connection removed",
+        description: "Microsoft 365 OAuth connection has been removed successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to remove Microsoft 365 OAuth connection. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
 
   // Connect to Microsoft 365
   const connectToMicrosoft365 = async () => {
     try {
       setIsConnecting(true);
-      const response = await apiRequest('/api/auth/microsoft365/authorize', {
-        method: 'GET'
+      const response = await fetch('/api/auth/microsoft365/authorize', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
-      if (response.authUrl) {
-        window.location.href = response.authUrl;
+      if (!response.ok) {
+        throw new Error('Failed to get authorization URL');
+      }
+      
+      const data = await response.json();
+      
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error('No authorization URL received');
       }
     } catch (error) {
       toast({
@@ -123,6 +187,7 @@ export default function IntegrationsPage() {
         description: "Failed to initiate Microsoft 365 connection. Please try again.",
         variant: "destructive",
       });
+      console.error('OAuth connection error:', error);
     } finally {
       setIsConnecting(false);
     }
@@ -132,6 +197,13 @@ export default function IntegrationsPage() {
   const handleDeleteConnection = (connectionId: number) => {
     if (confirm("Are you sure you want to remove this connection? This cannot be undone.")) {
       deleteMicrosoft365Connection.mutate(connectionId);
+    }
+  };
+  
+  // Handle OAuth connection deletion
+  const handleDeleteOAuthConnection = (connectionId: number) => {
+    if (confirm("Are you sure you want to remove this OAuth connection? This cannot be undone.")) {
+      deleteMicrosoft365OAuthConnection.mutate(connectionId);
     }
   };
 
@@ -157,11 +229,11 @@ export default function IntegrationsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoading365 ? (
+              {isLoading365 || isLoadingOAuth ? (
                 <div className="flex justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-              ) : error365 ? (
+              ) : error365 || errorOAuth ? (
                 <Alert variant="destructive">
                   <Info className="h-5 w-5" />
                   <AlertTitle>Error</AlertTitle>
@@ -169,38 +241,84 @@ export default function IntegrationsPage() {
                     Failed to fetch Microsoft 365 connections. Please refresh the page and try again.
                   </AlertDescription>
                 </Alert>
-              ) : microsoft365Connections && microsoft365Connections.length > 0 ? (
-                <div className="space-y-4">
-                  {microsoft365Connections.map((connection: any) => (
-                    <div key={connection.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium">{connection.tenantName}</h3>
-                        <p className="text-sm text-muted-foreground">{connection.tenantDomain}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-green-600 flex items-center">
-                          <CheckCircle className="h-4 w-4 mr-1" /> Connected
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteConnection(connection.id)}
-                          disabled={deleteMicrosoft365Connection.isPending}
-                        >
-                          <X className="h-4 w-4" />
-                          <span className="sr-only">Remove</span>
-                        </Button>
+              ) : (
+                <div className="space-y-6">
+                  {/* Regular connections */}
+                  {microsoft365Connections && microsoft365Connections.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">Direct Connections</h3>
+                      <div className="space-y-4">
+                        {microsoft365Connections.map((connection: any) => (
+                          <div key={connection.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div>
+                              <h3 className="font-medium">{connection.tenantName}</h3>
+                              <p className="text-sm text-muted-foreground">{connection.tenantDomain}</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-green-600 flex items-center">
+                                <CheckCircle className="h-4 w-4 mr-1" /> Connected
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteConnection(connection.id)}
+                                disabled={deleteMicrosoft365Connection.isPending}
+                              >
+                                <X className="h-4 w-4" />
+                                <span className="sr-only">Remove</span>
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <Shield className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Microsoft 365 connections</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Connect your Microsoft 365 tenant to retrieve security insights and compliance data.
-                  </p>
+                  )}
+                  
+                  {/* OAuth connections */}
+                  {microsoft365OAuthConnections && microsoft365OAuthConnections.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">OAuth Connections</h3>
+                      <div className="space-y-4">
+                        {microsoft365OAuthConnections.map((connection: any) => (
+                          <div key={connection.id} className="flex items-center justify-between p-4 border rounded-lg bg-slate-50">
+                            <div>
+                              <h3 className="font-medium">{connection.tenantName}</h3>
+                              <p className="text-sm text-muted-foreground">{connection.tenantDomain}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Expires: {new Date(connection.expiresAt).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-blue-600 flex items-center">
+                                <CheckCircle className="h-4 w-4 mr-1" /> OAuth Connected
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteOAuthConnection(connection.id)}
+                                disabled={deleteMicrosoft365OAuthConnection.isPending}
+                              >
+                                <X className="h-4 w-4" />
+                                <span className="sr-only">Remove</span>
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* No connections */}
+                  {(!microsoft365Connections || microsoft365Connections.length === 0) && 
+                   (!microsoft365OAuthConnections || microsoft365OAuthConnections.length === 0) && (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <Shield className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No Microsoft 365 connections</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Connect your Microsoft 365 tenant to retrieve security insights and compliance data.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
