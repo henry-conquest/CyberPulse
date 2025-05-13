@@ -79,6 +79,81 @@ const RiskSeverity = ({ score }: { score: number }) => {
   );
 };
 
+// Device Score component
+const DeviceScoreCard = ({
+  deviceScore,
+  deviceScorePercent,
+  maxScore = 10
+}: {
+  deviceScore: number;
+  deviceScorePercent: number;
+  maxScore?: number;
+}) => {
+  // Calculate gradient colors based on score
+  const getScoreColor = (percent: number) => {
+    if (percent >= 70) return "#22c55e"; // green
+    if (percent >= 40) return "#eab308"; // yellow
+    return "#ef4444"; // red
+  };
+
+  // Get appropriate icon for the score
+  const getScoreIcon = (percent: number) => {
+    if (percent >= 70) return <Check className="h-6 w-6 text-green-500" />;
+    if (percent >= 40) return <AlertTriangle className="h-6 w-6 text-amber-500" />;
+    return <XCircle className="h-6 w-6 text-red-500" />;
+  };
+
+  // Get score description
+  const getScoreDescription = (percent: number) => {
+    if (percent >= 70) return "Good";
+    if (percent >= 40) return "Needs Improvement";
+    return "Critical";
+  };
+
+  const scoreColor = getScoreColor(deviceScorePercent);
+  
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <Laptop className="h-5 w-5 text-green-500" />
+          <CardTitle className="text-lg">Microsoft 365 Device Score</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center">
+          <div className="w-32 h-32 mr-6">
+            <CircularProgressbar
+              value={deviceScorePercent}
+              text={`${deviceScorePercent}%`}
+              styles={buildStyles({
+                pathColor: scoreColor,
+                textColor: scoreColor,
+                trailColor: "#e5e7eb",
+                textSize: "22px",
+              })}
+            />
+          </div>
+          <div>
+            <div className="flex items-center mb-2">
+              {getScoreIcon(deviceScorePercent)}
+              <span className="ml-2 font-medium text-lg">{getScoreDescription(deviceScorePercent)}</span>
+            </div>
+            <p className="text-gray-600">
+              Score: <span className="font-medium">{deviceScore}</span> / {maxScore}
+            </p>
+            <p className="text-gray-600 mt-1">
+              {deviceScorePercent < 40 && "Critical device security issues"}
+              {deviceScorePercent >= 40 && deviceScorePercent < 70 && "Device security needs attention"}
+              {deviceScorePercent >= 70 && "Good device security posture"}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 // SecureScore component
 const SecureScoreCard = ({ 
   secureScore, 
@@ -257,6 +332,10 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
   const secureScore = parseFloat(securityData.secureScore || "0");
   const secureScorePercent = parseInt(securityData.secureScorePercent || "0");
   const maxScore = 278; // Standard max score for Microsoft Secure Score
+  
+  // Extract device score data
+  const deviceScore = parseInt(securityData.deviceMetrics?.deviceScore || "0"); 
+  const deviceScorePercent = deviceScore * 10; // Convert to percentage (deviceScore is out of 10)
 
   // Get risk scores
   const {
