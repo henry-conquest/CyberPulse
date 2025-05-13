@@ -47,6 +47,15 @@ export default function Dashboard({ tenantId }: DashboardProps) {
     queryKey: [`/api/tenants/${tenantId}/security-data`],
     enabled: !!tenantId,
   });
+  
+  // Fetch latest report for this tenant to get current secure score
+  const { data: reports } = useQuery({
+    queryKey: [`/api/reports/by-tenant?tenantId=${tenantId}`],
+    enabled: !!tenantId,
+  });
+  
+  // Get the latest report (most recent quarter)
+  const latestReport = reports ? reports[0] : null;
 
   // Format threat data for the threat table
   const threats: Threat[] = !securityData ? [] : [
