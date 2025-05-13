@@ -1573,7 +1573,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check if category changed
-    const categoryChanged = existingRecommendation.category !== req.body.category;
+    const oldCategory = existingRecommendation.category;
+    const categoryChanged = oldCategory !== req.body.category;
     
     // Update the global recommendation
     const recommendation = await storage.updateGlobalRecommendation(Number(id), req.body);
@@ -1584,9 +1585,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get all tenant widget recommendations using this global recommendation
         const tenantWidgetRecs = await storage.getTenantWidgetRecommendationsByGlobalId(Number(id));
         
+        console.log(`Category changed for recommendation ${id} from ${oldCategory} to ${req.body.category}`);
+        console.log(`Found ${tenantWidgetRecs.length} tenant widget recommendations to update`);
+        
         // Update each tenant widget recommendation to use the new category as widget type
         // Always use UPPERCASE for widget types to maintain consistency
         for (const twRec of tenantWidgetRecs) {
+          console.log(`Updating tenant widget recommendation ${twRec.id} from ${twRec.widgetType} to ${req.body.category.toUpperCase()}`);
           await storage.updateTenantWidgetRecommendation(twRec.id, {
             ...twRec,
             widgetType: req.body.category.toUpperCase()
@@ -1984,6 +1989,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
+  // Debug endpoint to examine all tenant widget recommendations (development only)
+  if (process.env.NODE_ENV === 'development') {
+    app.get('/api/debug/tenant-widget-recommendations', async (_req, res) => {
+      try {
+        // Get all widget recommendations from the database directly
+        const result = await db.select().from(tenantWidgetRecommendations);
+        
+        // Log the results for debugging
+        console.log("All tenant widget recommendations:", JSON.stringify(result, null, 2));
+        
+        res.status(200).json(result);
+      } catch (error) {
+        console.error("Error fetching debug data:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
+  }
+  
   const httpServer = createServer(app);
   return httpServer;
 }
