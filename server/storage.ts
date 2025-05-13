@@ -8,6 +8,7 @@ import {
   reports,
   reportRecipients,
   recommendations,
+  globalRecommendations,
   auditLogs,
   secureScoreHistory,
   type User,
@@ -28,6 +29,8 @@ import {
   type InsertReportRecipient,
   type Recommendation,
   type InsertRecommendation,
+  type GlobalRecommendation,
+  type InsertGlobalRecommendation,
   type AuditLog,
   type InsertAuditLog,
   type SecureScoreHistory,
@@ -101,6 +104,13 @@ export interface IStorage {
   getRecommendationsByTenantId(tenantId: number): Promise<Recommendation[]>;
   updateRecommendation(id: number, recommendation: Partial<InsertRecommendation>): Promise<Recommendation>;
   deleteRecommendation(id: number): Promise<void>;
+  
+  // Global Recommendations
+  getGlobalRecommendations(): Promise<GlobalRecommendation[]>;
+  getGlobalRecommendationsByCategory(category: string): Promise<GlobalRecommendation[]>;
+  createGlobalRecommendation(recommendation: InsertGlobalRecommendation): Promise<GlobalRecommendation>;
+  updateGlobalRecommendation(id: number, data: Partial<InsertGlobalRecommendation>): Promise<GlobalRecommendation>;
+  deleteGlobalRecommendation(id: number): Promise<boolean>;
   
   // Audit logs
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
@@ -582,6 +592,55 @@ export class DatabaseStorage implements IStorage {
 
   async deleteRecommendation(id: number): Promise<void> {
     await db.delete(recommendations).where(eq(recommendations.id, id));
+  }
+  
+  // Global Recommendations
+  async getGlobalRecommendations(): Promise<GlobalRecommendation[]> {
+    return await db
+      .select()
+      .from(globalRecommendations)
+      .where(eq(globalRecommendations.active, true))
+      .orderBy(asc(globalRecommendations.priority), asc(globalRecommendations.title));
+  }
+  
+  async getGlobalRecommendationsByCategory(category: string): Promise<GlobalRecommendation[]> {
+    return await db
+      .select()
+      .from(globalRecommendations)
+      .where(
+        and(
+          eq(globalRecommendations.category, category),
+          eq(globalRecommendations.active, true)
+        )
+      )
+      .orderBy(asc(globalRecommendations.priority), asc(globalRecommendations.title));
+  }
+  
+  async createGlobalRecommendation(recommendation: InsertGlobalRecommendation): Promise<GlobalRecommendation> {
+    const [newRecommendation] = await db
+      .insert(globalRecommendations)
+      .values(recommendation)
+      .returning();
+    return newRecommendation;
+  }
+  
+  async updateGlobalRecommendation(id: number, data: Partial<InsertGlobalRecommendation>): Promise<GlobalRecommendation> {
+    const [updatedRecommendation] = await db
+      .update(globalRecommendations)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(globalRecommendations.id, id))
+      .returning();
+    return updatedRecommendation;
+  }
+  
+  async deleteGlobalRecommendation(id: number): Promise<boolean> {
+    try {
+      await db.delete(globalRecommendations).where(eq(globalRecommendations.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting global recommendation:', error);
+      return false;
+    }
   }
 
   // Audit logs
