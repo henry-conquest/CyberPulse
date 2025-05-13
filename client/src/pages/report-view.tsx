@@ -797,6 +797,13 @@ export default function ReportView({ id }: ReportViewProps) {
                       currentPercent={securityData?.secureScorePercent || 0}
                       previousPercent={securityData?.previousSecureScorePercent}
                     />
+                    {/* Added debug output for troubleshooting */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <pre className="text-xs mt-2 p-2 bg-gray-100 rounded max-h-20 overflow-auto">
+                        secureScore: {JSON.stringify(securityData?.secureScore)}<br/>
+                        secureScorePercent: {JSON.stringify(securityData?.secureScorePercent)}
+                      </pre>
+                    )}
                   </div>
                 </div>
                 
