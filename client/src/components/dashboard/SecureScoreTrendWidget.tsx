@@ -99,7 +99,7 @@ export default function SecureScoreTrendWidget({ tenantId, limit = 90 }: SecureS
   }
 
   // No data state
-  if (!data || data.length === 0) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -118,22 +118,22 @@ export default function SecureScoreTrendWidget({ tenantId, limit = 90 }: SecureS
   }
 
   // Process data for the chart
-  const chartData = [...data]
+  const chartData = Array.isArray(data) ? [...data]
     .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime())
     .map(item => ({
       ...item,
       formattedDate: format(new Date(item.recordedAt), "MMM d")
-    }));
+    })) : [];
 
   // Calculate trend
-  const { trend, change } = calculateTrend(chartData);
+  const { trend, change } = calculateTrend(Array.isArray(data) ? data : []);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
           <CardTitle className="text-lg">Secure Score Trend</CardTitle>
-          <CardDescription>Historical secure score data (last {chartData.length} days)</CardDescription>
+          <CardDescription>Historical secure score data (last {chartData ? chartData.length : 0} days)</CardDescription>
         </div>
         {trend !== "none" && (
           <div className={`flex items-center ${trend === "up" ? "text-green-500" : "text-red-500"}`}>
@@ -153,8 +153,8 @@ export default function SecureScoreTrendWidget({ tenantId, limit = 90 }: SecureS
           <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={getScoreColor(chartData[chartData.length - 1]?.scorePercent || 0)} stopOpacity={0.8} />
-                <stop offset="95%" stopColor={getScoreColor(chartData[chartData.length - 1]?.scorePercent || 0)} stopOpacity={0.1} />
+                <stop offset="5%" stopColor={getScoreColor(chartData && chartData.length > 0 ? chartData[chartData.length - 1]?.scorePercent || 0 : 0)} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={getScoreColor(chartData && chartData.length > 0 ? chartData[chartData.length - 1]?.scorePercent || 0 : 0)} stopOpacity={0.1} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
@@ -176,7 +176,7 @@ export default function SecureScoreTrendWidget({ tenantId, limit = 90 }: SecureS
             <Area
               type="monotone"
               dataKey="scorePercent"
-              stroke={getScoreColor(chartData[chartData.length - 1]?.scorePercent || 0)}
+              stroke={getScoreColor(chartData && chartData.length > 0 ? chartData[chartData.length - 1]?.scorePercent || 0 : 0)}
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#scoreGradient)"
