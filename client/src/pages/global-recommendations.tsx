@@ -129,7 +129,7 @@ export default function GlobalRecommendations() {
         description: "Recommendation created successfully",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to create recommendation",
@@ -151,7 +151,7 @@ export default function GlobalRecommendations() {
         description: "Recommendation updated successfully",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to update recommendation",
@@ -174,7 +174,7 @@ export default function GlobalRecommendations() {
         description: "Recommendation deleted successfully",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to delete recommendation",
@@ -207,13 +207,13 @@ export default function GlobalRecommendations() {
       priority: recommendation.priority,
       category: recommendation.category,
       icon: recommendation.icon || "",
-      active: recommendation.active,
+      active: recommendation.active ?? true,
     });
     setIsEditDialogOpen(true);
   };
   
   // Handle delete button click
-  const handleDeleteClick = (recommendation: any) => {
+  const handleDeleteClick = (recommendation: GlobalRecommendation) => {
     setSelectedRecommendation(recommendation);
     setIsDeleteDialogOpen(true);
   };
@@ -328,7 +328,7 @@ export default function GlobalRecommendations() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRecommendations.map((recommendation: any) => (
+                  {filteredRecommendations.map((recommendation: GlobalRecommendation) => (
                     <TableRow key={recommendation.id}>
                       <TableCell className="font-medium">
                         {recommendation.title}
