@@ -62,7 +62,7 @@ import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { RecommendationCategory, RecommendationPriority } from "@shared/schema";
+import { RecommendationCategory, RecommendationPriority, GlobalRecommendation } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
 // Validation schema for the form
@@ -82,7 +82,7 @@ export default function GlobalRecommendations() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedRecommendation, setSelectedRecommendation] = useState<any>(null);
+  const [selectedRecommendation, setSelectedRecommendation] = useState<GlobalRecommendation | null>(null);
   const [currentTab, setCurrentTab] = useState("all");
   
   const { toast } = useToast();
@@ -102,7 +102,7 @@ export default function GlobalRecommendations() {
   });
   
   // Query to fetch all global recommendations
-  const { data: recommendations = [], isLoading } = useQuery({
+  const { data: recommendations = [], isLoading } = useQuery<GlobalRecommendation[]>({
     queryKey: ["/api/global-recommendations"],
   });
   
@@ -111,7 +111,7 @@ export default function GlobalRecommendations() {
     if (currentTab === "all") return recommendations;
     
     return recommendations.filter(
-      (rec: any) => rec.category === currentTab
+      (rec: GlobalRecommendation) => rec.category === currentTab
     );
   }, [recommendations, currentTab]);
   
@@ -141,10 +141,7 @@ export default function GlobalRecommendations() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: FormValues }) => {
-      return apiRequest(`/api/global-recommendations/${id}`, {
-        method: "PUT",
-        data,
-      });
+      return apiRequest("PUT", `/api/global-recommendations/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
@@ -166,9 +163,7 @@ export default function GlobalRecommendations() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id: number) => {
-      return apiRequest(`/api/global-recommendations/${id}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/global-recommendations/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
@@ -204,7 +199,7 @@ export default function GlobalRecommendations() {
   };
   
   // Handle edit button click
-  const handleEditClick = (recommendation: any) => {
+  const handleEditClick = (recommendation: GlobalRecommendation) => {
     setSelectedRecommendation(recommendation);
     form.reset({
       title: recommendation.title,
