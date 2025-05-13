@@ -315,13 +315,13 @@ export const RecommendationStatus = {
 } as const;
 
 export const RecommendationCategory = {
-  SECURE_SCORE: "SecureScore",
-  DEVICE_SCORE: "DeviceScore",
-  IDENTITY: "identity",
-  TRAINING: "training",
-  DEVICE: "device",
-  CLOUD: "cloud",
-  THREAT: "threat",
+  SECURE_SCORE: "SECURE_SCORE",
+  DEVICE_SCORE: "DEVICE_SCORE",
+  IDENTITY: "IDENTITY",
+  TRAINING: "TRAINING",
+  DEVICE: "DEVICE",
+  CLOUD: "CLOUD",
+  THREAT: "THREAT",
 } as const;
 
 export const RiskLevel = {
