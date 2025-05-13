@@ -149,8 +149,8 @@ export default function GlobalRecommendations() {
       // If we need to associate with specific tenants
       if (!data.applyToAllTenants && data.tenantIds && data.tenantIds.length > 0) {
         // Parse the response as JSON to get the ID
-        const recommendationData = response as any;
-        const recommendationId = recommendationData.id;
+        const responseJson = await response.json();
+        const recommendationId = responseJson.id;
         
         // Create associations for each tenant
         await Promise.all(data.tenantIds.map(async (tenantId) => {
