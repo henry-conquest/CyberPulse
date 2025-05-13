@@ -1805,6 +1805,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
+  // Tenant Widget Recommendations Endpoints
+  
+  // Get all tenant widget recommendations for a tenant
+  app.get('/api/tenants/:tenantId/widget-recommendations', isAuthenticated, asyncHandler(async (req, res) => {
+    const { tenantId } = req.params;
+    
+    try {
+      const widgetRecommendations = await storage.getTenantWidgetRecommendationsByTenantId(Number(tenantId));
+      res.json(widgetRecommendations);
+    } catch (error) {
+      console.error("Error fetching tenant widget recommendations:", error);
+      res.status(500).json({ message: "Failed to fetch tenant widget recommendations" });
+    }
+  }));
+  
+  // Get tenant widget recommendations by widget type
+  app.get('/api/tenants/:tenantId/widget-recommendations/:widgetType', isAuthenticated, asyncHandler(async (req, res) => {
+    const { tenantId, widgetType } = req.params;
+    
+    try {
+      const widgetRecommendations = await storage.getTenantWidgetRecommendationsByWidgetType(Number(tenantId), widgetType);
+      res.json(widgetRecommendations);
+    } catch (error) {
+      console.error("Error fetching tenant widget recommendations by type:", error);
+      res.status(500).json({ message: "Failed to fetch tenant widget recommendations by type" });
+    }
+  }));
+  
+  // Create tenant widget recommendation
+  app.post('/api/tenants/:tenantId/widget-recommendations', isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
+    const { tenantId } = req.params;
+    const userId = (req.user as any).claims.sub;
+    const recommendationData = req.body;
+    
+    try {
+      // Validate the input
+      const validatedData = insertTenantWidgetRecommendationSchema.parse({
+        ...recommendationData,
+        tenantId: Number(tenantId),
+      });
+      
+      const newRecommendation = await storage.createTenantWidgetRecommendation(validatedData);
+      
+      // Log the action
+      await storage.createAuditLog({
+        userId,
+        action: "create_tenant_widget_recommendation",
+        details: `Created tenant widget recommendation for tenant ID ${tenantId}, widget type: ${validatedData.widgetType}`,
+        tenantId: Number(tenantId)
+      });
+      
+      res.status(201).json(newRecommendation);
+    } catch (error) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Invalid recommendation data", errors: error.errors });
+      }
+      console.error("Error creating tenant widget recommendation:", error);
+      res.status(500).json({ message: "Failed to create tenant widget recommendation" });
+    }
+  }));
+  
+  // Update tenant widget recommendation
+  app.put('/api/tenants/:tenantId/widget-recommendations/:id', isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
+    const { tenantId, id } = req.params;
+    const userId = (req.user as any).claims.sub;
+    const recommendationData = req.body;
+    
+    try {
+      // Check if recommendation exists
+      const existingRecommendation = await storage.getTenantWidgetRecommendation(Number(id));
+      
+      if (!existingRecommendation) {
+        return res.status(404).json({ message: "Tenant widget recommendation not found" });
+      }
+      
+      // Verify this recommendation belongs to the specified tenant
+      if (existingRecommendation.tenantId !== Number(tenantId)) {
+        return res.status(403).json({ message: "Unauthorized access to recommendation" });
+      }
+      
+      // Update the recommendation
+      const updatedRecommendation = await storage.updateTenantWidgetRecommendation(
+        Number(id),
+        recommendationData
+      );
+      
+      // Log the action
+      await storage.createAuditLog({
+        userId,
+        action: "update_tenant_widget_recommendation",
+        details: `Updated tenant widget recommendation ID ${id} for tenant ID ${tenantId}`,
+        tenantId: Number(tenantId)
+      });
+      
+      res.json(updatedRecommendation);
+    } catch (error) {
+      console.error("Error updating tenant widget recommendation:", error);
+      res.status(500).json({ message: "Failed to update tenant widget recommendation" });
+    }
+  }));
+  
+  // Delete tenant widget recommendation
+  app.delete('/api/tenants/:tenantId/widget-recommendations/:id', isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
+    const { tenantId, id } = req.params;
+    const userId = (req.user as any).claims.sub;
+    
+    try {
+      // Check if recommendation exists
+      const existingRecommendation = await storage.getTenantWidgetRecommendation(Number(id));
+      
+      if (!existingRecommendation) {
+        return res.status(404).json({ message: "Tenant widget recommendation not found" });
+      }
+      
+      // Verify this recommendation belongs to the specified tenant
+      if (existingRecommendation.tenantId !== Number(tenantId)) {
+        return res.status(403).json({ message: "Unauthorized access to recommendation" });
+      }
+      
+      // Delete the recommendation
+      await storage.deleteTenantWidgetRecommendation(Number(id));
+      
+      // Log the action
+      await storage.createAuditLog({
+        userId,
+        action: "delete_tenant_widget_recommendation",
+        details: `Deleted tenant widget recommendation ID ${id} for tenant ID ${tenantId}`,
+        tenantId: Number(tenantId)
+      });
+      
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error deleting tenant widget recommendation:", error);
+      res.status(500).json({ message: "Failed to delete tenant widget recommendation" });
+    }
+  }));
+
   const httpServer = createServer(app);
   return httpServer;
 }
