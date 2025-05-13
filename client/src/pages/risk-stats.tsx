@@ -302,20 +302,58 @@ const DeviceRecommendationsDialog = ({
   deviceScore,
   deviceScorePercent,
   deviceMetrics,
-  securityData
+  securityData,
+  tenantId
 }: {
   deviceScore: number;
   deviceScorePercent: number;
   deviceMetrics: any;
   securityData: any;
+  tenantId: number;
 }) => {
   // State for priority filter
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  
+  // Fetch tenant widget recommendations
+  const { data: tenantWidgetRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
+    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`],
+  });
+  
+  // Fetch global recommendations referenced by tenant widgets
+  const { data: globalRecommendations = [] } = useQuery<GlobalRecommendation[]>({
+    queryKey: ['/api/global-recommendations'],
+  });
   
   // Generate appropriate recommendations based on security status
   const getRecommendations = () => {
     const recommendations = [];
     
+    // Add tenant-specific recommendations first
+    if (tenantWidgetRecommendations.length > 0 && globalRecommendations.length > 0) {
+      // For each tenant widget recommendation, find the corresponding global recommendation
+      tenantWidgetRecommendations.forEach(widgetRec => {
+        const globalRec = globalRecommendations.find(rec => rec.id === widgetRec.globalRecommendationId);
+        if (globalRec) {
+          // Use global recommendation data or override with tenant-specific values if available
+          const priorityMap: Record<string, string> = {
+            "HIGH": "High",
+            "MEDIUM": "Medium", 
+            "LOW": "Low",
+            "INFO": "Info"
+          };
+          
+          recommendations.push({
+            icon: <Info className="h-5 w-5 text-blue-500" />,
+            title: widgetRec.title || globalRec.title,
+            description: widgetRec.description || globalRec.description,
+            priority: priorityMap[widgetRec.priority || globalRec.priority] || "Info",
+            isCustom: true
+          });
+        }
+      });
+    }
+    
+    // Add default recommendations
     if (!deviceMetrics?.diskEncryption) {
       recommendations.push({
         icon: <HardDrive className="h-5 w-5 text-red-500" />,
