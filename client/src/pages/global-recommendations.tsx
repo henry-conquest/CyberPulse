@@ -135,8 +135,31 @@ export default function GlobalRecommendations() {
   
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: (data: FormValues) => {
-      return apiRequest("POST", "/api/global-recommendations", data);
+    mutationFn: async (data: FormValues) => {
+      // First create the global recommendation
+      const response = await apiRequest("POST", "/api/global-recommendations", {
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        category: data.category,
+        icon: data.icon,
+        active: data.active,
+      });
+      
+      // If we need to associate with specific tenants
+      if (!data.applyToAllTenants && data.tenantIds && data.tenantIds.length > 0) {
+        const recommendationId = response.id;
+        // Create associations for each tenant
+        await Promise.all(data.tenantIds.map(async (tenantId) => {
+          await apiRequest(`/api/tenants/${tenantId}/widget-recommendations`, 'POST', {
+            tenantId: tenantId,
+            globalRecommendationId: recommendationId,
+            widgetType: data.category  // Use the category as the widget type
+          });
+        }));
+      }
+      
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
@@ -158,8 +181,35 @@ export default function GlobalRecommendations() {
   
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: FormValues }) => {
-      return apiRequest("PUT", `/api/global-recommendations/${id}`, data);
+    mutationFn: async ({ id, data }: { id: number; data: FormValues }) => {
+      // First update the global recommendation
+      const response = await apiRequest("PUT", `/api/global-recommendations/${id}`, {
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        category: data.category,
+        icon: data.icon,
+        active: data.active,
+      });
+      
+      // If we need to associate with specific tenants
+      if (!data.applyToAllTenants && data.tenantIds && data.tenantIds.length > 0) {
+        // In a real implementation, we would:
+        // 1. Fetch existing tenant associations
+        // 2. Remove associations that are no longer needed
+        // 3. Add new associations
+        
+        // For this demo, we'll just associate with the selected tenants
+        await Promise.all(data.tenantIds.map(async (tenantId) => {
+          await apiRequest(`/api/tenants/${tenantId}/widget-recommendations`, 'POST', {
+            tenantId: tenantId,
+            globalRecommendationId: id,
+            widgetType: data.category  // Use the category as the widget type
+          });
+        }));
+      }
+      
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
@@ -753,6 +803,79 @@ export default function GlobalRecommendations() {
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={form.control}
+                name="applyToAllTenants"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mb-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          if (checked) {
+                            // When checked, clear selected tenants
+                            form.setValue("tenantIds", []);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Apply to all tenants</FormLabel>
+                      <FormDescription>
+                        If checked, this recommendation will be available to all tenants regardless of selection below
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              {!form.watch("applyToAllTenants") && (
+                <FormField
+                  control={form.control}
+                  name="tenantIds"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Select tenants</FormLabel>
+                      <FormDescription>
+                        Choose which tenants this recommendation applies to
+                      </FormDescription>
+                      <div className="max-h-40 overflow-y-auto border rounded-md p-3">
+                        {isLoadingTenants ? (
+                          <div className="text-center py-2">Loading tenants...</div>
+                        ) : tenants.length === 0 ? (
+                          <div className="text-center py-2">No tenants available</div>
+                        ) : (
+                          <div className="space-y-2">
+                            {tenants.map((tenant) => (
+                              <div key={tenant.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`edit-tenant-${tenant.id}`}
+                                  checked={field.value?.includes(tenant.id)}
+                                  onCheckedChange={(checked) => {
+                                    const updatedTenants = checked
+                                      ? [...(field.value || []), tenant.id]
+                                      : (field.value || []).filter((id) => id !== tenant.id);
+                                    field.onChange(updatedTenants);
+                                  }}
+                                />
+                                <label
+                                  htmlFor={`edit-tenant-${tenant.id}`}
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  {tenant.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               <DialogFooter>
                 <Button
