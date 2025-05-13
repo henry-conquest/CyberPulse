@@ -151,7 +151,7 @@ export default function GlobalRecommendations() {
         const recommendationId = response.id;
         // Create associations for each tenant
         await Promise.all(data.tenantIds.map(async (tenantId) => {
-          await apiRequest(`/api/tenants/${tenantId}/widget-recommendations`, 'POST', {
+          await apiRequest("POST", `/api/tenants/${tenantId}/widget-recommendations`, {
             tenantId: tenantId,
             globalRecommendationId: recommendationId,
             widgetType: data.category  // Use the category as the widget type
