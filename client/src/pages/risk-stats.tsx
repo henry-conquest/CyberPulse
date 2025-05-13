@@ -1108,11 +1108,11 @@ const RiskCategory = ({
               score < 75 ? "bg-amber-100" : 
               "bg-red-100"
             )} 
-            indicatorClassName={cn(
-              score < 50 ? "bg-green-500" : 
-              score < 75 ? "bg-amber-500" : 
-              "bg-red-500"
-            )} 
+            style={{
+              '--progress-color': score < 50 ? "#22c55e" : 
+                                score < 75 ? "#eab308" : 
+                                "#ef4444"
+            } as React.CSSProperties}
           />
         </div>
         <p className="text-sm text-gray-600">{description}</p>
