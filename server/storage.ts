@@ -791,6 +791,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tenantWidgetRecommendations.globalRecommendationId, globalRecommendationId))
       .orderBy(tenantWidgetRecommendations.tenantId);
   }
+  
+  async getAllTenantWidgetRecommendations(): Promise<TenantWidgetRecommendation[]> {
+    return await db
+      .select()
+      .from(tenantWidgetRecommendations)
+      .orderBy(tenantWidgetRecommendations.tenantId);
+  }
 
   async getTenantWidgetRecommendation(id: number): Promise<TenantWidgetRecommendation | undefined> {
     const [recommendation] = await db

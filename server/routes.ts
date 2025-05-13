@@ -1993,10 +1993,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Debug endpoint to examine all tenant widget recommendations (development only)
   if (process.env.NODE_ENV === 'development') {
-    app.get('/api/debug/tenant-widget-recommendations', async (_req, res) => {
+    app.get('/api/debug/tenant-widget-recommendations', isAuthenticated, async (_req, res) => {
       try {
         // Get all widget recommendations from the database directly
-        const result = await db.select().from(tenantWidgetRecommendations);
+        const result = await storage.getAllTenantWidgetRecommendations();
         
         // Log the results for debugging
         console.log("All tenant widget recommendations:", JSON.stringify(result, null, 2));
