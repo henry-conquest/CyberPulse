@@ -1858,7 +1858,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { tenantId, widgetType } = req.params;
     
     try {
-      const widgetRecommendations = await storage.getTenantWidgetRecommendationsByWidgetType(Number(tenantId), widgetType);
+      // Normalizing widget type to uppercase for case-insensitive search
+      const normalizedWidgetType = widgetType.toUpperCase();
+      const widgetRecommendations = await storage.getTenantWidgetRecommendationsByWidgetType(Number(tenantId), normalizedWidgetType);
       res.json(widgetRecommendations);
     } catch (error) {
       console.error("Error fetching tenant widget recommendations by type:", error);

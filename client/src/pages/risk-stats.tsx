@@ -198,7 +198,7 @@ const RecommendationSelector = ({
         await apiRequest(`/api/tenants/${tenantId}/widget-recommendations`, 'POST', {
           tenantId,
           globalRecommendationId,
-          widgetType
+          widgetType: widgetType.toUpperCase() // Ensure widget type is always uppercase for consistency
         });
       }
       
