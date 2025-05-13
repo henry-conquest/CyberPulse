@@ -96,6 +96,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             Companies
           </NavItem>
           
+          <NavItem 
+            href="/global-recommendations" 
+            icon={<ListChecks className="h-5 w-5" />}
+            isActive={location === "/global-recommendations"}
+          >
+            Recommendations
+          </NavItem>
+          
           {currentTenantId && (
             <NavItem 
               href={`/tenants/${currentTenantId}/report-periods`} 
@@ -137,14 +145,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               Integrations
             </NavItem>
             
-            <NavItem 
-              href="/global-recommendations" 
-              icon={<ListChecks className="h-5 w-5" />}
-              isActive={location === "/global-recommendations"}
-            >
-              Global Recommendations
-            </NavItem>
-            
+
             <NavItem 
               href="/settings" 
               icon={<Settings className="h-5 w-5" />}
