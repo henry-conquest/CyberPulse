@@ -258,6 +258,8 @@ export type ReportRecipient = typeof reportRecipients.$inferSelect;
 export type InsertReportRecipient = z.infer<typeof insertReportRecipientSchema>;
 export type Recommendation = typeof recommendations.$inferSelect;
 export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
+export type GlobalRecommendation = typeof globalRecommendations.$inferSelect;
+export type InsertGlobalRecommendation = z.infer<typeof insertGlobalRecommendationSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 
@@ -282,6 +284,7 @@ export const RecommendationPriority = {
   HIGH: "high",
   MEDIUM: "medium",
   LOW: "low",
+  INFO: "info",
 } as const;
 
 export const RecommendationStatus = {
@@ -292,6 +295,8 @@ export const RecommendationStatus = {
 } as const;
 
 export const RecommendationCategory = {
+  SECURE_SCORE: "SecureScore",
+  DEVICE_SCORE: "DeviceScore",
   IDENTITY: "identity",
   TRAINING: "training",
   DEVICE: "device",
