@@ -60,6 +60,16 @@ export default function Dashboard({ tenantId }: DashboardProps) {
   
   // Get the latest report (most recent quarter)
   const latestReport = reports && reports.length > 0 ? reports[0] : null;
+  
+  // Debug: Log the report data to see what we're getting
+  useEffect(() => {
+    if (latestReport) {
+      console.log('Latest report data:', latestReport);
+      console.log('secureScore:', latestReport.secureScore);
+      console.log('secureScorePercent:', latestReport.secureScorePercent);
+      console.log('security_data:', latestReport.security_data);
+    }
+  }, [latestReport]);
 
   // Format threat data for the threat table
   const threats: Threat[] = !securityData ? [] : [
@@ -256,11 +266,20 @@ Cyber Security and the threats associated are a continuous moving target, howeve
       {/* Microsoft Secure Score Widget */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-4">Microsoft Secure Score</h2>
-        {latestReport && latestReport.secureScore && latestReport.secureScorePercent ? (
-          <ReportBasedSecureScoreWidget 
-            secureScore={parseFloat(latestReport.secureScore)} 
-            secureScorePercent={parseInt(latestReport.secureScorePercent)}
-          />
+        {latestReport && latestReport.security_data ? (
+          (() => {
+            // Parse the security data if it's a string
+            const securityData = typeof latestReport.security_data === 'string' 
+              ? JSON.parse(latestReport.security_data)
+              : latestReport.security_data;
+              
+            return (
+              <ReportBasedSecureScoreWidget 
+                secureScore={parseFloat(securityData.secureScore)} 
+                secureScorePercent={parseInt(securityData.secureScorePercent)}
+              />
+            );
+          })()
         ) : (
           <Card className="border-amber-200 bg-amber-50">
             <CardHeader>
