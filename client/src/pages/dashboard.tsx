@@ -14,6 +14,7 @@ import SecurityItem from "@/components/dashboard/SecurityItem";
 import ThreatTable, { Threat } from "@/components/dashboard/ThreatTable";
 import AnalystComments from "@/components/dashboard/AnalystComments";
 import SecureScoreWidget from "@/components/dashboard/SecureScoreWidget";
+import SecureScoreTrendWidget from "@/components/dashboard/SecureScoreTrendWidget";
 
 interface DashboardProps {
   tenantId?: string;
@@ -347,6 +348,11 @@ Cyber Security and the threats associated are a continuous moving target, howeve
             </div>
           </CardContent>
         </Card>
+      </div>
+      
+      {/* Secure Score History Trend */}
+      <div className="mb-6">
+        <SecureScoreTrendWidget tenantId={parseInt(tenantId)} />
       </div>
       
       {/* Detailed Risk Sections */}
