@@ -158,6 +158,18 @@ export const globalRecommendations = pgTable("global_recommendations", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Tenant-specific widget recommendations
+export const tenantWidgetRecommendations = pgTable("tenant_widget_recommendations", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().references(() => tenants.id),
+  globalRecommendationId: integer("global_recommendation_id").notNull().references(() => globalRecommendations.id),
+  widgetType: varchar("widget_type").notNull(), // "SecureScore", "DeviceScore", "Identity", "Cloud", "Threat"
+  active: boolean("active").default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Security recommendations
 export const recommendations = pgTable("recommendations", {
   id: serial("id").primaryKey(),
@@ -237,6 +249,12 @@ export const insertGlobalRecommendationSchema = createInsertSchema(globalRecomme
   updatedAt: true
 });
 
+export const insertTenantWidgetRecommendationSchema = createInsertSchema(tenantWidgetRecommendations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ timestamp: true });
 
 // Types
@@ -260,6 +278,8 @@ export type Recommendation = typeof recommendations.$inferSelect;
 export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
 export type GlobalRecommendation = typeof globalRecommendations.$inferSelect;
 export type InsertGlobalRecommendation = z.infer<typeof insertGlobalRecommendationSchema>;
+export type TenantWidgetRecommendation = typeof tenantWidgetRecommendations.$inferSelect;
+export type InsertTenantWidgetRecommendation = z.infer<typeof insertTenantWidgetRecommendationSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 
@@ -308,4 +328,13 @@ export const RiskLevel = {
   LOW: "low",
   MEDIUM: "medium",
   HIGH: "high",
+} as const;
+
+export const WidgetType = {
+  SECURE_SCORE: "SecureScore",
+  DEVICE_SCORE: "DeviceScore", 
+  IDENTITY: "Identity",
+  DEVICE: "Device",
+  CLOUD: "Cloud",
+  THREAT: "Threat",
 } as const;
