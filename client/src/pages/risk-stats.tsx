@@ -708,10 +708,12 @@ const SecureScoreRecommendationsDialog = ({
 const SecureScoreCard = ({ 
   secureScore, 
   secureScorePercent,
+  securityData,
   maxScore = 278
 }: { 
   secureScore: number; 
   secureScorePercent: number;
+  securityData?: any;
   maxScore?: number;
 }) => {
   // Calculate gradient colors based on score
@@ -1015,6 +1017,7 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
           <SecureScoreCard
             secureScore={secureScore}
             secureScorePercent={secureScorePercent}
+            securityData={securityData}
             maxScore={maxScore}
           />
         </div>
