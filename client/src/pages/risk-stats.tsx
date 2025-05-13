@@ -639,14 +639,16 @@ const SecureScoreRecommendationsDialog = ({
       return priorityMap[priority.toUpperCase()] || "Info";
     };
     
-    // Get all relevant recommendations, including both secure score and device score ones
-    // that might have been recently re-categorized
-    const allTenantRecs = [...tenantWidgetRecommendations, ...deviceScoreRecommendations];
+    // Only use recommendations that match the current widget type
+    // Ensure we're using case-insensitive comparison for widget types to avoid issues
+    const relevantRecommendations = tenantWidgetRecommendations.filter(
+      rec => rec.widgetType.toUpperCase() === "SECURE_SCORE"
+    );
     
     // Add tenant-specific recommendations first
-    if (allTenantRecs.length > 0 && globalRecommendations.length > 0) {
+    if (relevantRecommendations.length > 0 && globalRecommendations.length > 0) {
       // For each tenant widget recommendation, find the corresponding global recommendation
-      allTenantRecs.forEach(widgetRec => {
+      relevantRecommendations.forEach(widgetRec => {
         const globalRec = globalRecommendations.find(rec => rec.id === widgetRec.globalRecommendationId);
         
         // Only show recommendations if they match the secure score category
