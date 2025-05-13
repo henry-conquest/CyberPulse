@@ -105,14 +105,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               Report Periods
             </NavItem>
           )}
-          
-          <NavItem 
-            href="/settings" 
-            icon={<Settings className="h-5 w-5" />}
-            isActive={location === "/settings"}
-          >
-            Settings
-          </NavItem>
         </div>
         
         {isAdmin && (
@@ -151,6 +143,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               isActive={location === "/global-recommendations"}
             >
               Global Recommendations
+            </NavItem>
+            
+            <NavItem 
+              href="/settings" 
+              icon={<Settings className="h-5 w-5" />}
+              isActive={location === "/settings"}
+            >
+              Settings
             </NavItem>
           </div>
         )}
