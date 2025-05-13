@@ -445,13 +445,25 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
         </Card>
       </div>
 
-      {/* Microsoft Secure Score Card */}
-      <div className="mb-8">
-        <SecureScoreCard
-          secureScore={secureScore}
-          secureScorePercent={secureScorePercent}
-          maxScore={maxScore}
-        />
+      {/* Microsoft Score Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Microsoft Secure Score Card */}
+        <div>
+          <SecureScoreCard
+            secureScore={secureScore}
+            secureScorePercent={secureScorePercent}
+            maxScore={maxScore}
+          />
+        </div>
+        
+        {/* Microsoft Device Score Card */}
+        <div>
+          <DeviceScoreCard
+            deviceScore={deviceScore}
+            deviceScorePercent={deviceScorePercent}
+            maxScore={10}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
