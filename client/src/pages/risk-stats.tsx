@@ -102,11 +102,13 @@ const RiskSeverity = ({ score }: { score: number }) => {
 const DeviceRecommendationsDialog = ({
   deviceScore,
   deviceScorePercent,
-  deviceMetrics
+  deviceMetrics,
+  securityData
 }: {
   deviceScore: number;
   deviceScorePercent: number;
   deviceMetrics: any;
+  securityData: any;
 }) => {
   // State for priority filter
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
