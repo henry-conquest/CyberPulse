@@ -343,21 +343,20 @@ const DeviceRecommendationsDialog = ({
       return priorityMap[priority.toUpperCase()] || "Info";
     };
     
-    // Get all relevant recommendations, including both device score and secure score ones
-    // that might have been recently re-categorized
-    const allTenantRecs = [...tenantWidgetRecommendations, ...secureScoreRecommendations];
+    // Only use device score recommendations based on their widget type
+    // This ensures we only display recommendations properly assigned to this widget
+    const deviceScoreRecs = tenantWidgetRecommendations.filter(
+      rec => rec.widgetType.toUpperCase() === 'DEVICE_SCORE'
+    );
     
     // Add tenant-specific recommendations first
-    if (allTenantRecs.length > 0 && globalRecommendations.length > 0) {
+    if (deviceScoreRecs.length > 0 && globalRecommendations.length > 0) {
       // For each tenant widget recommendation, find the corresponding global recommendation
-      allTenantRecs.forEach(widgetRec => {
+      deviceScoreRecs.forEach(widgetRec => {
         const globalRec = globalRecommendations.find(rec => rec.id === widgetRec.globalRecommendationId);
         
-        // Only show recommendations if they match the device score category
-        // (case-insensitive comparison)
-        if (globalRec && 
-            (globalRec.category.toUpperCase() === 'DEVICE_SCORE' || 
-             widgetRec.widgetType.toUpperCase() === 'DEVICE_SCORE')) {
+        // Display all valid device score recommendations
+        if (globalRec) {
           
           recommendations.push({
             icon: <Info className="h-5 w-5 text-blue-500" />,
@@ -651,11 +650,9 @@ const SecureScoreRecommendationsDialog = ({
       relevantRecommendations.forEach(widgetRec => {
         const globalRec = globalRecommendations.find(rec => rec.id === widgetRec.globalRecommendationId);
         
-        // Only show recommendations if they match the secure score category
-        // (case-insensitive comparison)
-        if (globalRec && 
-            (globalRec.category.toUpperCase() === 'SECURE_SCORE' || 
-             widgetRec.widgetType.toUpperCase() === 'SECURE_SCORE')) {
+        // Display all valid secure score recommendations
+        // We've already filtered by widget type, so no need for additional checks
+        if (globalRec) {
           
           recommendations.push({
             icon: <Info className="h-5 w-5 text-blue-500" />,
