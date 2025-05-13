@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { Check, AlertTriangle, XCircle, Loader2 } from "lucide-react";
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
 
 export default function SecureScorePage() {
   const params = useParams();
@@ -109,7 +110,14 @@ export default function SecureScorePage() {
 
   return (
     <div className="max-w-xl mx-auto my-8">
-      <h1 className="text-2xl font-bold mb-6">Microsoft Secure Score</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Microsoft Secure Score</h1>
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/tenants/${tenantId}/dashboard`}>
+            Back to Dashboard
+          </Link>
+        </Button>
+      </div>
       
       <Card>
         <CardHeader className="pb-2">
