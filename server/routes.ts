@@ -1525,6 +1525,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   }));
 
+  // Global Recommendations
+  app.get('/api/global-recommendations', isAuthenticated, asyncHandler(async (req, res) => {
+    const recommendations = await storage.getGlobalRecommendations();
+    res.json(recommendations);
+  }));
+  
+  app.get('/api/global-recommendations/category/:category', isAuthenticated, asyncHandler(async (req, res) => {
+    const { category } = req.params;
+    const recommendations = await storage.getGlobalRecommendationsByCategory(category);
+    res.json(recommendations);
+  }));
+  
+  app.post('/api/global-recommendations', isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
+    const user = req.user as any;
+    const userId = user.claims.sub;
+    
+    const recommendation = {
+      ...req.body,
+      createdBy: userId
+    };
+    
+    const newRecommendation = await storage.createGlobalRecommendation(recommendation);
+    
+    // Create audit log
+    await storage.createAuditLog({
+      userId,
+      action: "create_global_recommendation",
+      details: `Created global recommendation: ${newRecommendation.title}`,
+    });
+    
+    res.status(201).json(newRecommendation);
+  }));
+  
+  app.put('/api/global-recommendations/:id', isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = (req.user as any).claims.sub;
+    
+    const existingRecommendation = await storage.getGlobalRecommendations().then(
+      recs => recs.find(r => r.id === Number(id))
+    );
+    
+    if (!existingRecommendation) {
+      return res.status(404).json({ message: "Global recommendation not found" });
+    }
+    
+    const recommendation = await storage.updateGlobalRecommendation(Number(id), req.body);
+    
+    // Create audit log
+    await storage.createAuditLog({
+      userId,
+      action: "update_global_recommendation",
+      details: `Updated global recommendation: ${recommendation.title}`,
+    });
+    
+    res.json(recommendation);
+  }));
+  
+  app.delete('/api/global-recommendations/:id', isAuthenticated, isAuthorized([UserRoles.ADMIN, UserRoles.ANALYST]), asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = (req.user as any).claims.sub;
+    
+    const existingRecommendation = await storage.getGlobalRecommendations().then(
+      recs => recs.find(r => r.id === Number(id))
+    );
+    
+    if (!existingRecommendation) {
+      return res.status(404).json({ message: "Global recommendation not found" });
+    }
+    
+    const success = await storage.deleteGlobalRecommendation(Number(id));
+    
+    if (success) {
+      // Create audit log
+      await storage.createAuditLog({
+        userId,
+        action: "delete_global_recommendation",
+        details: `Deleted global recommendation: ${existingRecommendation.title}`,
+      });
+      
+      res.status(204).end();
+    } else {
+      res.status(500).json({ message: 'Failed to delete recommendation' });
+    }
+  }));
+
   // Secure Score History
   app.get("/api/tenants/:id/secure-score-history", isAuthenticated, asyncHandler(async (req, res) => {
     const userId = (req.user as any).claims.sub;
