@@ -20,6 +20,7 @@ import SecureScoreWidget from "@/components/dashboard/SecureScoreWidget";
 import SecureScoreTrendWidget from "@/components/dashboard/SecureScoreTrendWidget";
 import CurrentSecureScoreWidget from "@/components/dashboard/CurrentSecureScoreWidget";
 import LiveSecureScoreWidget from "@/components/dashboard/LiveSecureScoreWidget";
+import ReportBasedSecureScoreWidget from "@/components/dashboard/ReportBasedSecureScoreWidget";
 
 interface DashboardProps {
   tenantId?: string;
@@ -255,7 +256,33 @@ Cyber Security and the threats associated are a continuous moving target, howeve
       {/* Microsoft Secure Score Widget */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-4">Microsoft Secure Score</h2>
-        {tenantId && <LiveSecureScoreWidget tenantId={parseInt(tenantId)} />}
+        {latestReport && latestReport.secureScore && latestReport.secureScorePercent ? (
+          <ReportBasedSecureScoreWidget 
+            secureScore={parseFloat(latestReport.secureScore)} 
+            secureScorePercent={parseInt(latestReport.secureScorePercent)}
+          />
+        ) : (
+          <Card className="border-amber-200 bg-amber-50">
+            <CardHeader>
+              <CardTitle className="text-lg text-amber-700">Secure Score Not Available</CardTitle>
+              <CardDescription className="text-amber-600">
+                No report data with secure score information found
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-amber-700 mb-4">
+                Generate a quarterly report to view your Microsoft Secure Score.
+              </p>
+              <Button 
+                onClick={handleGenerateReport}
+                className="flex items-center"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Generate Report
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
       
       {/* Current Threats */}
