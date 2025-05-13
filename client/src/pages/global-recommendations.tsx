@@ -62,8 +62,17 @@ import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RecommendationCategory, RecommendationPriority, GlobalRecommendation } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+
+// Define tenant interface
+interface Tenant {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // Validation schema for the form
 const formSchema = z.object({
@@ -73,6 +82,8 @@ const formSchema = z.object({
   category: z.string().min(1, "Category is required"),
   icon: z.string().optional(),
   active: z.boolean().default(true),
+  tenantIds: z.array(z.number()).optional(),
+  applyToAllTenants: z.boolean().default(true),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -98,7 +109,14 @@ export default function GlobalRecommendations() {
       category: "",
       icon: "",
       active: true,
+      tenantIds: [],
+      applyToAllTenants: true,
     },
+  });
+  
+  // Query to fetch all tenants
+  const { data: tenants = [], isLoading: isLoadingTenants } = useQuery<Tenant[]>({
+    queryKey: ["/api/tenants"],
   });
   
   // Query to fetch all global recommendations
@@ -208,6 +226,8 @@ export default function GlobalRecommendations() {
       category: recommendation.category,
       icon: recommendation.icon || "",
       active: recommendation.active ?? true,
+      tenantIds: [], // We'll need to fetch this data in a real implementation
+      applyToAllTenants: true, // Default to all tenants for existing recommendations
     });
     setIsEditDialogOpen(true);
   };
@@ -274,6 +294,8 @@ export default function GlobalRecommendations() {
               category: "",
               icon: "",
               active: true,
+              tenantIds: [],
+              applyToAllTenants: true,
             });
             setIsAddDialogOpen(true);
           }}
@@ -495,6 +517,79 @@ export default function GlobalRecommendations() {
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={form.control}
+                name="applyToAllTenants"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mb-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          if (checked) {
+                            // When checked, clear selected tenants
+                            form.setValue("tenantIds", []);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Apply to all tenants</FormLabel>
+                      <FormDescription>
+                        If checked, this recommendation will be available to all tenants regardless of selection below
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              {!form.watch("applyToAllTenants") && (
+                <FormField
+                  control={form.control}
+                  name="tenantIds"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Select tenants</FormLabel>
+                      <FormDescription>
+                        Choose which tenants this recommendation applies to
+                      </FormDescription>
+                      <div className="max-h-40 overflow-y-auto border rounded-md p-3">
+                        {isLoadingTenants ? (
+                          <div className="text-center py-2">Loading tenants...</div>
+                        ) : tenants.length === 0 ? (
+                          <div className="text-center py-2">No tenants available</div>
+                        ) : (
+                          <div className="space-y-2">
+                            {tenants.map((tenant) => (
+                              <div key={tenant.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`tenant-${tenant.id}`}
+                                  checked={field.value?.includes(tenant.id)}
+                                  onCheckedChange={(checked) => {
+                                    const updatedTenants = checked
+                                      ? [...(field.value || []), tenant.id]
+                                      : (field.value || []).filter((id) => id !== tenant.id);
+                                    field.onChange(updatedTenants);
+                                  }}
+                                />
+                                <label
+                                  htmlFor={`tenant-${tenant.id}`}
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  {tenant.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               <DialogFooter>
                 <Button
