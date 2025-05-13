@@ -10,6 +10,8 @@ import {
   insertReportSchema,
   insertReportRecipientSchema,
   insertRecommendationSchema,
+  insertTenantWidgetRecommendationSchema,
+  insertGlobalRecommendationSchema,
   UserRoles,
   ReportStatus,
   RecommendationStatus,

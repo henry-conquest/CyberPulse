@@ -188,9 +188,7 @@ const RecommendationSelector = ({
       
       // Remove recommendations that are no longer selected
       for (const rec of recommendationsToRemove) {
-        await apiRequest(`/api/tenants/${tenantId}/widget-recommendations/${rec.id}`, {
-          method: 'DELETE'
-        });
+        await apiRequest(`/api/tenants/${tenantId}/widget-recommendations/${rec.id}`, 'DELETE');
       }
       
       // Add new recommendations
@@ -198,13 +196,10 @@ const RecommendationSelector = ({
       const recommendationsToAdd = selectedRecommendations.filter(id => !existingIds.includes(id));
       
       for (const globalRecommendationId of recommendationsToAdd) {
-        await apiRequest(`/api/tenants/${tenantId}/widget-recommendations`, {
-          method: 'POST',
-          data: {
-            tenantId,
-            globalRecommendationId,
-            widgetType
-          }
+        await apiRequest(`/api/tenants/${tenantId}/widget-recommendations`, 'POST', {
+          tenantId,
+          globalRecommendationId,
+          widgetType
         });
       }
       
