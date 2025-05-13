@@ -353,6 +353,40 @@ Cyber Security and the threats associated are a continuous moving target, howeve
       {/* Secure Score History Trend */}
       {tenantId && (
         <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-xl font-semibold">Secure Score History</h2>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={async () => {
+                try {
+                  const response = await fetch(`/api/tenants/${tenantId}/test-secure-score-history`);
+                  if (response.ok) {
+                    toast({
+                      title: "Success",
+                      description: "Test secure score history data generated. Refreshing page...",
+                    });
+                    setTimeout(() => window.location.reload(), 1000);
+                  } else {
+                    toast({
+                      title: "Error",
+                      description: "Failed to generate test data",
+                      variant: "destructive"
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error generating test data:", error);
+                  toast({
+                    title: "Error",
+                    description: "Failed to generate test data",
+                    variant: "destructive"
+                  });
+                }
+              }}
+            >
+              Generate Test Data
+            </Button>
+          </div>
           <SecureScoreTrendWidget tenantId={parseInt(tenantId)} />
         </div>
       )}

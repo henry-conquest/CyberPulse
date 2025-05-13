@@ -1575,6 +1575,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const logs = await storage.getAuditLogsByTenantId(tenantId);
     res.json(logs);
   }));
+  
+  // Populate test secure score history data for a tenant (development only)
+  app.get("/api/tenants/:id/test-secure-score-history", isAuthenticated, isAuthorized([UserRoles.ADMIN]), asyncHandler(async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    const tenantId = parseInt(req.params.id);
+    
+    // Check if user has access to this tenant
+    const hasAccess = await hasTenantAccess(userId, tenantId);
+    if (!hasAccess) {
+      return res.status(403).json({ message: "You don't have access to this tenant" });
+    }
+    
+    try {
+      const tenant = await storage.getTenant(tenantId);
+      if (!tenant) {
+        return res.status(404).json({ message: "Tenant not found" });
+      }
+      
+      // Get the quarter for this record
+      const now = new Date();
+      const { quarter, year } = getQuarterInfo(now);
+      
+      // Delete any existing data first
+      await db.delete(secureScoreHistory).where(eq(secureScoreHistory.tenantId, tenantId));
+      
+      // Generate test data for the last 90 days
+      const entries = [];
+      for (let i = 0; i < 90; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        
+        // Create a slightly varying score that generally improves over time
+        const baseScore = 200 + (i * 0.5); // Starts around 200 and increases as we go back in time
+        const randomVariation = Math.random() * 10 - 5; // Random variation between -5 and +5
+        const score = Math.max(180, Math.min(285, baseScore + randomVariation));
+        const scorePercent = Math.round((score / 285) * 100);
+        
+        entries.push({
+          tenantId,
+          score,
+          scorePercent,
+          maxScore: 285,
+          recordedAt: date,
+          reportQuarter: quarter,
+          reportYear: year
+        });
+      }
+      
+      // Insert the data in batches
+      const batchSize = 30;
+      for (let i = 0; i < entries.length; i += batchSize) {
+        const batch = entries.slice(i, i + batchSize);
+        await db.insert(secureScoreHistory).values(batch);
+      }
+      
+      res.json({ 
+        message: "Test secure score history data generated successfully",
+        count: entries.length
+      });
+    } catch (error) {
+      console.error("Error generating test secure score history:", error);
+      res.status(500).json({ 
+        message: "Failed to generate test secure score history", 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  }));
 
   const httpServer = createServer(app);
   return httpServer;
