@@ -159,12 +159,11 @@ const RecommendationSelector = ({
   
   // Filter global recommendations by widget type category
   const filteredRecommendations = globalRecommendations.filter(rec => {
-    if (widgetType === 'SECURE_SCORE') {
-      return rec.category === 'SECURE_SCORE';
-    } else if (widgetType === 'DEVICE_SCORE') {
-      return rec.category === 'DEVICE_SCORE';
-    }
-    return false;
+    const upperCategory = rec.category.toUpperCase();
+    const upperWidgetType = widgetType.toUpperCase();
+    
+    // Case-insensitive comparison
+    return upperCategory === upperWidgetType;
   });
   
   // Toggle recommendation selection
@@ -319,6 +318,11 @@ const DeviceRecommendationsDialog = ({
     queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`],
   });
   
+  // Fetch secure score recommendations too so we can show them if the category was changed
+  const { data: secureScoreRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
+    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`],
+  });
+  
   // Fetch global recommendations referenced by tenant widgets
   const { data: globalRecommendations = [] } = useQuery<GlobalRecommendation[]>({
     queryKey: ['/api/global-recommendations'],
@@ -328,25 +332,38 @@ const DeviceRecommendationsDialog = ({
   const getRecommendations = () => {
     const recommendations = [];
     
+    // Helper function to convert priority to display format
+    const convertPriority = (priority: string): string => {
+      const priorityMap: Record<string, string> = {
+        "HIGH": "High",
+        "MEDIUM": "Medium", 
+        "LOW": "Low",
+        "INFO": "Info"
+      };
+      return priorityMap[priority.toUpperCase()] || "Info";
+    };
+    
+    // Get all relevant recommendations, including both device score and secure score ones
+    // that might have been recently re-categorized
+    const allTenantRecs = [...tenantWidgetRecommendations, ...secureScoreRecommendations];
+    
     // Add tenant-specific recommendations first
-    if (tenantWidgetRecommendations.length > 0 && globalRecommendations.length > 0) {
+    if (allTenantRecs.length > 0 && globalRecommendations.length > 0) {
       // For each tenant widget recommendation, find the corresponding global recommendation
-      tenantWidgetRecommendations.forEach(widgetRec => {
+      allTenantRecs.forEach(widgetRec => {
         const globalRec = globalRecommendations.find(rec => rec.id === widgetRec.globalRecommendationId);
-        if (globalRec) {
-          // Use global recommendation data or override with tenant-specific values if available
-          const priorityMap: Record<string, string> = {
-            "HIGH": "High",
-            "MEDIUM": "Medium", 
-            "LOW": "Low",
-            "INFO": "Info"
-          };
+        
+        // Only show recommendations if they match the device score category
+        // (case-insensitive comparison)
+        if (globalRec && 
+            (globalRec.category.toUpperCase() === 'DEVICE_SCORE' || 
+             widgetRec.widgetType.toUpperCase() === 'DEVICE_SCORE')) {
           
           recommendations.push({
             icon: <Info className="h-5 w-5 text-blue-500" />,
             title: widgetRec.title || globalRec.title,
             description: widgetRec.description || globalRec.description,
-            priority: priorityMap[widgetRec.priority || globalRec.priority] || "Info",
+            priority: convertPriority(widgetRec.priority || globalRec.priority),
             isCustom: true
           });
         }
@@ -580,19 +597,74 @@ const SecureScoreRecommendationsDialog = ({
   secureScore,
   secureScorePercent,
   maxScore,
-  securityData
+  securityData,
+  tenantId
 }: {
   secureScore: number;
   secureScorePercent: number;
   maxScore: number;
   securityData: any;
+  tenantId: number;
 }) => {
   // State for priority filter
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   
+  // Fetch tenant widget recommendations
+  const { data: tenantWidgetRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
+    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`],
+  });
+  
+  // Fetch device score recommendations too so we can show them if the category was changed
+  const { data: deviceScoreRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
+    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`],
+  });
+  
+  // Fetch global recommendations referenced by tenant widgets
+  const { data: globalRecommendations = [] } = useQuery<GlobalRecommendation[]>({
+    queryKey: ['/api/global-recommendations'],
+  });
+  
   // Generate appropriate recommendations based on security status
   const getRecommendations = () => {
     const recommendations = [];
+    
+    // Helper function to convert priority to display format
+    const convertPriority = (priority: string): string => {
+      const priorityMap: Record<string, string> = {
+        "HIGH": "High",
+        "MEDIUM": "Medium", 
+        "LOW": "Low",
+        "INFO": "Info"
+      };
+      return priorityMap[priority.toUpperCase()] || "Info";
+    };
+    
+    // Get all relevant recommendations, including both secure score and device score ones
+    // that might have been recently re-categorized
+    const allTenantRecs = [...tenantWidgetRecommendations, ...deviceScoreRecommendations];
+    
+    // Add tenant-specific recommendations first
+    if (allTenantRecs.length > 0 && globalRecommendations.length > 0) {
+      // For each tenant widget recommendation, find the corresponding global recommendation
+      allTenantRecs.forEach(widgetRec => {
+        const globalRec = globalRecommendations.find(rec => rec.id === widgetRec.globalRecommendationId);
+        
+        // Only show recommendations if they match the secure score category
+        // (case-insensitive comparison)
+        if (globalRec && 
+            (globalRec.category.toUpperCase() === 'SECURE_SCORE' || 
+             widgetRec.widgetType.toUpperCase() === 'SECURE_SCORE')) {
+          
+          recommendations.push({
+            icon: <Info className="h-5 w-5 text-blue-500" />,
+            title: widgetRec.title || globalRec.title,
+            description: widgetRec.description || globalRec.description,
+            priority: convertPriority(widgetRec.priority || globalRec.priority),
+            isCustom: true
+          });
+        }
+      });
+    }
     
     if (!securityData?.identitySecure) {
       recommendations.push({
