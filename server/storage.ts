@@ -423,14 +423,54 @@ export class DatabaseStorage implements IStorage {
     await db.delete(ninjaOneConnections).where(eq(ninjaOneConnections.id, id));
   }
 
+  // Helper function to normalize security data structure
+  private normalizeSecurityData(reportData: any): any {
+    if (!reportData) return reportData;
+    
+    // Clone to avoid mutating original
+    const data = { ...reportData };
+    
+    // If securityData is provided and it's an object with nested securityData
+    if (data.securityData && typeof data.securityData === 'object') {
+      // If we have double nesting of securityData, unwrap it
+      if (data.securityData.securityData && typeof data.securityData.securityData === 'object') {
+        console.log("Unwrapping doubly nested securityData");
+        data.securityData = data.securityData.securityData;
+      }
+      
+      // Make sure secureScore and secureScorePercent are at the top level of securityData
+      if (data.securityData.secureScore === undefined && 
+          data.securityData.securityData?.secureScore !== undefined) {
+        data.securityData.secureScore = data.securityData.securityData.secureScore;
+      }
+      
+      if (data.securityData.secureScorePercent === undefined && 
+          data.securityData.securityData?.secureScorePercent !== undefined) {
+        data.securityData.secureScorePercent = data.securityData.securityData.secureScorePercent;
+      }
+    }
+    
+    return data;
+  }
+  
   // Reports
   async createReport(report: InsertReport): Promise<Report> {
-    const [newReport] = await db.insert(reports).values(report).returning();
+    // Normalize security data before storing
+    const normalizedReport = this.normalizeSecurityData(report);
+    console.log("Creating report with normalized security data");
+    
+    const [newReport] = await db.insert(reports).values(normalizedReport).returning();
     return newReport;
   }
 
   async getReport(id: number): Promise<Report | undefined> {
     const [report] = await db.select().from(reports).where(eq(reports.id, id));
+    
+    if (report) {
+      // Normalize security data when retrieving
+      return this.normalizeSecurityData(report);
+    }
+    
     return report;
   }
 
@@ -467,12 +507,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateReport(id: number, report: Partial<InsertReport>): Promise<Report> {
+    // Normalize security data before updating
+    const normalizedReport = this.normalizeSecurityData(report);
+    console.log("Updating report with normalized security data");
+    
     const [updatedReport] = await db
       .update(reports)
-      .set({ ...report, updatedAt: new Date() })
+      .set({ ...normalizedReport, updatedAt: new Date() })
       .where(eq(reports.id, id))
       .returning();
-    return updatedReport;
+      
+    // Also normalize the returned data
+    return this.normalizeSecurityData(updatedReport);
   }
 
   async deleteReport(id: number): Promise<void> {

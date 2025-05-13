@@ -332,9 +332,25 @@ export default function ReportView({ id }: ReportViewProps) {
   }
 
   // Get security data from the report
-  // The securityData structure in reports is just the securityData object (not nested)
-  const securityData = report.securityData || {};
-  console.log("Report security data:", securityData);
+  // The securityData can be structured in different ways, so we need to handle both cases
+  let securityData = {};
+  
+  // Case 1: securityData is directly what we need (newer structure)
+  if (report.securityData && 
+      (report.securityData.secureScore !== undefined || 
+       report.securityData.secureScorePercent !== undefined)) {
+    securityData = report.securityData;
+  } 
+  // Case 2: securityData might be nested (older structure)
+  else if (report.securityData && report.securityData.securityData) {
+    securityData = report.securityData.securityData;
+  }
+  // Case 3: using the report object directly as a fallback
+  else if (report.securityData) {
+    securityData = report.securityData;
+  }
+  
+  console.log("Report security data (processed):", securityData);
 
   // Check permissions
   const isAdmin = user?.role === "admin";

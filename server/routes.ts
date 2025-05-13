@@ -980,6 +980,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Get recipients
     const recipients = await storage.getReportRecipients(reportId);
     
+    // Log the report structure for debugging
+    console.log(`Report ${reportId} structure:`, {
+      id: report.id,
+      title: report.title,
+      securityDataKeys: report.securityData ? Object.keys(report.securityData) : 'null',
+      secureScore: report.securityData?.secureScore,
+      secureScorePercent: report.securityData?.secureScorePercent
+    });
+    
     res.json({
       ...report,
       recipients,

@@ -655,6 +655,15 @@ export async function createQuarterlyReport(tenantId: number, quarter: 1 | 2 | 3
       securityData: securityData.securityData,
     };
     
+    // Add debugging for the securityData structure
+    console.log("Creating/updating report with security data structure:", {
+      securityDataType: typeof securityData.securityData,
+      securityDataIsNull: securityData.securityData === null,
+      securityDataKeys: securityData.securityData ? Object.keys(securityData.securityData) : [],
+      secureScore: securityData.securityData?.secureScore,
+      secureScorePercent: securityData.securityData?.secureScorePercent
+    });
+    
     let report;
     if (existingReport && forceRefresh) {
       // Update existing report
