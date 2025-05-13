@@ -126,6 +126,14 @@ export interface IStorage {
   getSecureScoreHistoryForPeriod(tenantId: number, startDate: Date, endDate: Date): Promise<SecureScoreHistory[]>;
   getLatestSecureScoreForTenant(tenantId: number): Promise<SecureScoreHistory | undefined>;
   deleteSecureScoreHistoryByTenantId(tenantId: number): Promise<void>;
+  
+  // Tenant Widget Recommendations
+  createTenantWidgetRecommendation(recommendation: InsertTenantWidgetRecommendation): Promise<TenantWidgetRecommendation>;
+  getTenantWidgetRecommendationsByTenantId(tenantId: number): Promise<TenantWidgetRecommendation[]>;
+  getTenantWidgetRecommendationsByWidgetType(tenantId: number, widgetType: string): Promise<TenantWidgetRecommendation[]>;
+  getTenantWidgetRecommendation(id: number): Promise<TenantWidgetRecommendation | undefined>;
+  updateTenantWidgetRecommendation(id: number, recommendation: Partial<InsertTenantWidgetRecommendation>): Promise<TenantWidgetRecommendation>;
+  deleteTenantWidgetRecommendation(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -714,6 +722,88 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(secureScoreHistory.recordedAt))
       .limit(1);
     return latestScore;
+  }
+
+  // Tenant Widget Recommendations
+  async createTenantWidgetRecommendation(recommendation: InsertTenantWidgetRecommendation): Promise<TenantWidgetRecommendation> {
+    const [newRecommendation] = await db
+      .insert(tenantWidgetRecommendations)
+      .values(recommendation)
+      .returning();
+    return newRecommendation;
+  }
+
+  async getTenantWidgetRecommendationsByTenantId(tenantId: number): Promise<TenantWidgetRecommendation[]> {
+    return await db
+      .select({
+        twr: tenantWidgetRecommendations,
+        gr: globalRecommendations
+      })
+      .from(tenantWidgetRecommendations)
+      .innerJoin(
+        globalRecommendations,
+        eq(tenantWidgetRecommendations.globalRecommendationId, globalRecommendations.id)
+      )
+      .where(eq(tenantWidgetRecommendations.tenantId, tenantId))
+      .orderBy(globalRecommendations.priority, tenantWidgetRecommendations.widgetType)
+      .then(rows => rows.map(row => ({
+        ...row.twr,
+        title: row.gr.title,
+        description: row.gr.description,
+        priority: row.gr.priority
+      })));
+  }
+
+  async getTenantWidgetRecommendationsByWidgetType(tenantId: number, widgetType: string): Promise<TenantWidgetRecommendation[]> {
+    return await db
+      .select({
+        twr: tenantWidgetRecommendations,
+        gr: globalRecommendations
+      })
+      .from(tenantWidgetRecommendations)
+      .innerJoin(
+        globalRecommendations,
+        eq(tenantWidgetRecommendations.globalRecommendationId, globalRecommendations.id)
+      )
+      .where(
+        and(
+          eq(tenantWidgetRecommendations.tenantId, tenantId),
+          eq(tenantWidgetRecommendations.widgetType, widgetType)
+        )
+      )
+      .orderBy(globalRecommendations.priority)
+      .then(rows => rows.map(row => ({
+        ...row.twr,
+        title: row.gr.title,
+        description: row.gr.description,
+        priority: row.gr.priority
+      })));
+  }
+
+  async getTenantWidgetRecommendation(id: number): Promise<TenantWidgetRecommendation | undefined> {
+    const [recommendation] = await db
+      .select()
+      .from(tenantWidgetRecommendations)
+      .where(eq(tenantWidgetRecommendations.id, id));
+    return recommendation;
+  }
+
+  async updateTenantWidgetRecommendation(
+    id: number, 
+    recommendation: Partial<InsertTenantWidgetRecommendation>
+  ): Promise<TenantWidgetRecommendation> {
+    const [updatedRecommendation] = await db
+      .update(tenantWidgetRecommendations)
+      .set({ ...recommendation, updatedAt: new Date() })
+      .where(eq(tenantWidgetRecommendations.id, id))
+      .returning();
+    return updatedRecommendation;
+  }
+
+  async deleteTenantWidgetRecommendation(id: number): Promise<void> {
+    await db
+      .delete(tenantWidgetRecommendations)
+      .where(eq(tenantWidgetRecommendations.id, id));
   }
 }
 
