@@ -146,27 +146,7 @@ export default function GlobalRecommendations() {
         active: data.active,
       });
       
-      // If we need to associate with specific tenants
-      if (!data.applyToAllTenants && data.tenantIds && data.tenantIds.length > 0) {
-        try {
-          // Get the recommendation ID
-          const responseClone = await response.clone().json();
-          const newId = responseClone.id;
-          
-          if (newId) {
-            // Create associations for each tenant
-            for (const tenantId of data.tenantIds) {
-              await apiRequest("POST", `/api/tenants/${tenantId}/widget-recommendations`, {
-                tenantId: tenantId,
-                globalRecommendationId: newId,
-                widgetType: data.category  // Use the category as the widget type
-              });
-            }
-          }
-        } catch (error) {
-          console.error("Error associating tenants:", error);
-        }
-      }
+      // We'll handle tenant associations in a future version
       
       return response;
     },
@@ -201,26 +181,7 @@ export default function GlobalRecommendations() {
         active: data.active,
       });
       
-      // If we need to associate with specific tenants
-      if (!data.applyToAllTenants && data.tenantIds && data.tenantIds.length > 0) {
-        try {
-          // In a real implementation, we would:
-          // 1. Fetch existing tenant associations
-          // 2. Remove associations that are no longer needed
-          // 3. Add new associations
-          
-          // For this demo, we'll just associate with the selected tenants
-          for (const tenantId of data.tenantIds) {
-            await apiRequest("POST", `/api/tenants/${tenantId}/widget-recommendations`, {
-              tenantId: tenantId,
-              globalRecommendationId: id,
-              widgetType: data.category  // Use the category as the widget type
-            });
-          }
-        } catch (error) {
-          console.error("Error associating tenants:", error);
-        }
-      }
+      // We'll handle tenant associations in a future version
       
       return response;
     },
