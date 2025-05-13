@@ -1597,7 +1597,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           for (const twRec of tenantWidgetRecs) {
             console.log(`Updating tenant widget recommendation ${twRec.id} from ${twRec.widgetType} to ${req.body.category.toUpperCase()}`);
             await storage.updateTenantWidgetRecommendation(twRec.id, {
-              ...twRec,
               widgetType: req.body.category.toUpperCase()
             });
           }
@@ -1614,12 +1613,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existingRecommendation.priority !== req.body.priority) {
           console.log(`Priority changed for recommendation ${id} from ${existingRecommendation.priority} to ${req.body.priority}`);
           
-          // Update shared priority information in all tenant widget recommendations
-          for (const twRec of tenantWidgetRecs) {
-            await storage.updateTenantWidgetRecommendation(twRec.id, {
-              priority: req.body.priority
-            });
-          }
+          // The tenant widget recommendations don't store their own priority,
+          // They inherit it from the global recommendation that was just updated.
+          // So we don't need to update each tenant widget recommendation's priority here.
+          // The UI fetches global recommendations to get priority information.
+          console.log(`Priority updated for global recommendation ${id}. This will automatically reflect in widget displays.`);
           
           // Add to audit log for priority change
           await storage.createAuditLog({
