@@ -148,7 +148,10 @@ export default function GlobalRecommendations() {
       
       // If we need to associate with specific tenants
       if (!data.applyToAllTenants && data.tenantIds && data.tenantIds.length > 0) {
-        const recommendationId = response.id;
+        // Parse the response as JSON to get the ID
+        const recommendationData = response as any;
+        const recommendationId = recommendationData.id;
+        
         // Create associations for each tenant
         await Promise.all(data.tenantIds.map(async (tenantId) => {
           await apiRequest("POST", `/api/tenants/${tenantId}/widget-recommendations`, {
@@ -201,7 +204,7 @@ export default function GlobalRecommendations() {
         
         // For this demo, we'll just associate with the selected tenants
         await Promise.all(data.tenantIds.map(async (tenantId) => {
-          await apiRequest(`/api/tenants/${tenantId}/widget-recommendations`, 'POST', {
+          await apiRequest("POST", `/api/tenants/${tenantId}/widget-recommendations`, {
             tenantId: tenantId,
             globalRecommendationId: id,
             widgetType: data.category  // Use the category as the widget type
