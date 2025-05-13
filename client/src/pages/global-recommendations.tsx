@@ -118,10 +118,7 @@ export default function GlobalRecommendations() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (data: FormValues) => {
-      return apiRequest("/api/global-recommendations", {
-        method: "POST",
-        data,
-      });
+      return apiRequest("POST", "/api/global-recommendations", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
@@ -245,7 +242,7 @@ export default function GlobalRecommendations() {
         );
       case RecommendationPriority.MEDIUM:
         return (
-          <Badge variant="warning" className="flex items-center gap-1">
+          <Badge variant="default" className="flex items-center gap-1 bg-amber-500 hover:bg-amber-600">
             <AlertTriangle className="h-3 w-3" />
             Medium
           </Badge>

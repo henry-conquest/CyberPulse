@@ -11,6 +11,7 @@ import ReportView from "@/pages/report-view";
 import EditReport from "@/pages/edit-report";
 import RiskStats from "@/pages/risk-stats";
 import Recommendations from "@/pages/recommendations";
+import GlobalRecommendations from "@/pages/global-recommendations";
 import Settings from "@/pages/settings";
 import Users from "@/pages/users";
 import Tenants from "@/pages/tenants";
@@ -97,6 +98,7 @@ function Router() {
       {/* Admin routes */}
       <Route path="/users" component={() => <ProtectedRoute component={Users} roles={[UserRoles.ADMIN]} />} />
       <Route path="/tenants" component={() => <ProtectedRoute component={Tenants} roles={[UserRoles.ADMIN]} />} />
+      <Route path="/global-recommendations" component={() => <ProtectedRoute component={GlobalRecommendations} roles={[UserRoles.ADMIN, UserRoles.ANALYST]} />} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

@@ -9,7 +9,8 @@ import {
   Shield, 
   Building,
   CalendarDays,
-  Grid
+  Grid,
+  ListChecks
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoImg from "../../assets/logo.png";
@@ -141,6 +142,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               isActive={location === "/integrations"}
             >
               Integrations
+            </NavItem>
+            
+            <NavItem 
+              href="/global-recommendations" 
+              icon={<ListChecks className="h-5 w-5" />}
+              isActive={location === "/global-recommendations"}
+            >
+              Global Recommendations
             </NavItem>
           </div>
         )}
