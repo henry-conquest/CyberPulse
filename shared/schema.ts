@@ -144,6 +144,20 @@ export const reportRecipients = pgTable("report_recipients", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Global Recommendations (manually created)
+export const globalRecommendations = pgTable("global_recommendations", {
+  id: serial("id").primaryKey(),
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  priority: varchar("priority").notNull(), // "High", "Medium", "Low", "Info"
+  category: varchar("category").notNull(), // "SecureScore", "DeviceScore", "Identity", "Device", "Cloud", "Threat"
+  icon: varchar("icon"), // Lucide icon name
+  active: boolean("active").default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Security recommendations
 export const recommendations = pgTable("recommendations", {
   id: serial("id").primaryKey(),
@@ -216,6 +230,13 @@ export const insertRecommendationSchema = createInsertSchema(recommendations).om
   updatedAt: true, 
   completedAt: true 
 });
+
+export const insertGlobalRecommendationSchema = createInsertSchema(globalRecommendations).omit({ 
+  id: true,
+  createdAt: true, 
+  updatedAt: true
+});
+
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ timestamp: true });
 
 // Types
