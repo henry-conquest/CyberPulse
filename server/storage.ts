@@ -756,6 +756,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTenantWidgetRecommendationsByWidgetType(tenantId: number, widgetType: string): Promise<TenantWidgetRecommendation[]> {
+    // Convert widgetType to uppercase for case-insensitive comparison
+    const normalizedWidgetType = widgetType.toUpperCase();
+    
     return await db
       .select({
         twr: tenantWidgetRecommendations,
@@ -769,7 +772,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(tenantWidgetRecommendations.tenantId, tenantId),
-          eq(tenantWidgetRecommendations.widgetType, widgetType)
+          eq(sql`UPPER(${tenantWidgetRecommendations.widgetType})`, normalizedWidgetType)
         )
       )
       .orderBy(globalRecommendations.priority)

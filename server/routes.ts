@@ -1873,10 +1873,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const recommendationData = req.body;
     
     try {
-      // Validate the input
+      // Validate the input and ensure widget type is uppercase for consistency
       const validatedData = insertTenantWidgetRecommendationSchema.parse({
         ...recommendationData,
         tenantId: Number(tenantId),
+        widgetType: recommendationData.widgetType?.toUpperCase(),
       });
       
       const newRecommendation = await storage.createTenantWidgetRecommendation(validatedData);
@@ -1918,10 +1919,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized access to recommendation" });
       }
       
-      // Update the recommendation
+      // Update the recommendation with consistent uppercase for widget type
+      const updatedData = {
+        ...recommendationData,
+        // If widget type is being updated, ensure it's uppercase
+        ...(recommendationData.widgetType && { widgetType: recommendationData.widgetType.toUpperCase() })
+      };
+      
       const updatedRecommendation = await storage.updateTenantWidgetRecommendation(
         Number(id),
-        recommendationData
+        updatedData
       );
       
       // Log the action
