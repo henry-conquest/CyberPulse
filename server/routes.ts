@@ -1674,6 +1674,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
+  // Get the current secure score directly from Microsoft Graph API
+  app.get("/api/tenants/:id/current-secure-score", isAuthenticated, asyncHandler(async (req, res) => {
+    try {
+      console.log("Current secure score endpoint called for tenant", req.params.id);
+      const userId = (req.user as any).claims.sub;
+      const tenantId = parseInt(req.params.id);
+      
+      // Check if user has access to this tenant
+      const hasAccess = await hasTenantAccess(userId, tenantId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this tenant" });
+      }
+      
+      // Get the connection info for this tenant
+      const connection = await storage.getMicrosoft365Connection(tenantId);
+      if (!connection) {
+        console.log("No Microsoft 365 connection found for tenant", tenantId);
+        return res.status(404).json({ error: "No Microsoft 365 connection found for this tenant" });
+      }
+      
+      // Initialize the Microsoft Graph service with the connection
+      const graphService = new MicrosoftGraphService(connection);
+      
+      // Get the current secure score
+      console.log("Fetching current secure score from Microsoft Graph API");
+      const secureScore = await graphService.getSecureScore();
+      console.log("Received secure score:", secureScore);
+      
+      if (!secureScore) {
+        console.log("No secure score data returned from Microsoft Graph API");
+        return res.status(404).json({ error: "No secure score data available" });
+      }
+      
+      // Return the secure score data
+      res.json({
+        currentScore: secureScore.currentScore,
+        maxScore: secureScore.maxScore,
+        currentPercent: Math.round((secureScore.currentScore / secureScore.maxScore) * 100),
+        lastUpdated: secureScore.createdDateTime
+      });
+    } catch (error) {
+      console.error("Error fetching current secure score:", error);
+      res.status(500).json({ error: "Failed to fetch secure score data", details: error.message });
+    }
+  }));
+
   const httpServer = createServer(app);
   return httpServer;
 }

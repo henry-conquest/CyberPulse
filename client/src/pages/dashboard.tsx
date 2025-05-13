@@ -16,6 +16,7 @@ import AnalystComments from "@/components/dashboard/AnalystComments";
 import SecureScoreWidget from "@/components/dashboard/SecureScoreWidget";
 import SecureScoreTrendWidget from "@/components/dashboard/SecureScoreTrendWidget";
 import CurrentSecureScoreWidget from "@/components/dashboard/CurrentSecureScoreWidget";
+import LiveSecureScoreWidget from "@/components/dashboard/LiveSecureScoreWidget";
 
 interface DashboardProps {
   tenantId?: string;
@@ -352,55 +353,10 @@ Cyber Security and the threats associated are a continuous moving target, howeve
       </div>
       
       {/* Current Secure Score Widget */}
-      {tenantId && securityData && (
+      {tenantId && (
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4">Microsoft Secure Score</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <CurrentSecureScoreWidget 
-              currentScore={securityData.securityData?.secureScore || 0}
-              currentPercent={securityData.securityData?.secureScorePercent || 0}
-            />
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Key Security Facts</CardTitle>
-                <CardDescription>Based on your Microsoft 365 environment</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  <li className="flex items-start">
-                    <div className={`h-5 w-5 rounded-full flex items-center justify-center mr-2 ${securityData.securityData?.identityMetrics?.mfaNotEnabled > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                      {securityData.securityData?.identityMetrics?.mfaNotEnabled > 0 ? '✗' : '✓'}
-                    </div>
-                    <span>
-                      {securityData.securityData?.identityMetrics?.mfaNotEnabled > 0 
-                        ? `${securityData.securityData?.identityMetrics?.mfaNotEnabled} users without MFA`
-                        : 'All users have MFA enabled'}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className={`h-5 w-5 rounded-full flex items-center justify-center mr-2 ${securityData.securityData?.identityMetrics?.phishResistantMfa ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
-                      {securityData.securityData?.identityMetrics?.phishResistantMfa ? '✓' : '!'}
-                    </div>
-                    <span>
-                      {securityData.securityData?.identityMetrics?.phishResistantMfa 
-                        ? 'Phishing-resistant MFA in place'
-                        : 'Phishing-resistant MFA not implemented'}
-                    </span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className={`h-5 w-5 rounded-full flex items-center justify-center mr-2 ${securityData.securityData?.deviceMetrics?.diskEncryption ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                      {securityData.securityData?.deviceMetrics?.diskEncryption ? '✓' : '✗'}
-                    </div>
-                    <span>
-                      {securityData.securityData?.deviceMetrics?.diskEncryption
-                        ? 'Device encryption enforced'
-                        : 'Device encryption not enforced'}
-                    </span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
+          <LiveSecureScoreWidget tenantId={parseInt(tenantId)} />
         </div>
       )}
       
