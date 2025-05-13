@@ -875,7 +875,7 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
   }
 
   // Get the security data
-  let securityData = report.securityData || {};
+  const securityData = report.securityData || {};
   
   // Parse security data if it's a string
   if (typeof securityData === 'string') {
