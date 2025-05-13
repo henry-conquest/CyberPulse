@@ -131,6 +131,7 @@ export interface IStorage {
   createTenantWidgetRecommendation(recommendation: InsertTenantWidgetRecommendation): Promise<TenantWidgetRecommendation>;
   getTenantWidgetRecommendationsByTenantId(tenantId: number): Promise<TenantWidgetRecommendation[]>;
   getTenantWidgetRecommendationsByWidgetType(tenantId: number, widgetType: string): Promise<TenantWidgetRecommendation[]>;
+  getTenantWidgetRecommendationsByGlobalId(globalRecommendationId: number): Promise<TenantWidgetRecommendation[]>;
   getTenantWidgetRecommendation(id: number): Promise<TenantWidgetRecommendation | undefined>;
   updateTenantWidgetRecommendation(id: number, recommendation: Partial<InsertTenantWidgetRecommendation>): Promise<TenantWidgetRecommendation>;
   deleteTenantWidgetRecommendation(id: number): Promise<void>;
@@ -778,6 +779,14 @@ export class DatabaseStorage implements IStorage {
         description: row.gr.description,
         priority: row.gr.priority
       })));
+  }
+  
+  async getTenantWidgetRecommendationsByGlobalId(globalRecommendationId: number): Promise<TenantWidgetRecommendation[]> {
+    return await db
+      .select()
+      .from(tenantWidgetRecommendations)
+      .where(eq(tenantWidgetRecommendations.globalRecommendationId, globalRecommendationId))
+      .orderBy(tenantWidgetRecommendations.tenantId);
   }
 
   async getTenantWidgetRecommendation(id: number): Promise<TenantWidgetRecommendation | undefined> {
