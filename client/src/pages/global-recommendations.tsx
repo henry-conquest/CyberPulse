@@ -137,41 +137,38 @@ export default function GlobalRecommendations() {
   const createMutation = useMutation({
     mutationFn: async (data: FormValues) => {
       // First create the global recommendation
-      const response = await fetch("/api/global-recommendations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description,
-          priority: data.priority,
-          category: data.category,
-          icon: data.icon,
-          active: data.active,
-        }),
-        credentials: "include",
+      const response = await apiRequest("POST", "/api/global-recommendations", {
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        category: data.category,
+        icon: data.icon,
+        active: data.active,
       });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to create recommendation: ${errorText}`);
-      }
-      
-      // Parse the response JSON
-      const responseData = await response.json();
       
       // If we need to associate with specific tenants
       if (!data.applyToAllTenants && data.tenantIds && data.tenantIds.length > 0) {
-        // Create associations for each tenant
-        await Promise.all(data.tenantIds.map(async (tenantId) => {
-          await apiRequest("POST", `/api/tenants/${tenantId}/widget-recommendations`, {
-            tenantId: tenantId,
-            globalRecommendationId: responseData.id,
-            widgetType: data.category  // Use the category as the widget type
-          });
-        }));
+        try {
+          // Get the recommendation ID
+          const responseClone = await response.clone().json();
+          const newId = responseClone.id;
+          
+          if (newId) {
+            // Create associations for each tenant
+            for (const tenantId of data.tenantIds) {
+              await apiRequest("POST", `/api/tenants/${tenantId}/widget-recommendations`, {
+                tenantId: tenantId,
+                globalRecommendationId: newId,
+                widgetType: data.category  // Use the category as the widget type
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error associating tenants:", error);
+        }
       }
       
-      return responseData;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
@@ -195,45 +192,37 @@ export default function GlobalRecommendations() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: FormValues }) => {
       // First update the global recommendation
-      const response = await fetch(`/api/global-recommendations/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description,
-          priority: data.priority,
-          category: data.category,
-          icon: data.icon,
-          active: data.active,
-        }),
-        credentials: "include",
+      const response = await apiRequest("PUT", `/api/global-recommendations/${id}`, {
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        category: data.category,
+        icon: data.icon,
+        active: data.active,
       });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to update recommendation: ${errorText}`);
-      }
-      
-      const responseData = await response.json();
       
       // If we need to associate with specific tenants
       if (!data.applyToAllTenants && data.tenantIds && data.tenantIds.length > 0) {
-        // In a real implementation, we would:
-        // 1. Fetch existing tenant associations
-        // 2. Remove associations that are no longer needed
-        // 3. Add new associations
-        
-        // For this demo, we'll just associate with the selected tenants
-        await Promise.all(data.tenantIds.map(async (tenantId) => {
-          await apiRequest("POST", `/api/tenants/${tenantId}/widget-recommendations`, {
-            tenantId: tenantId,
-            globalRecommendationId: id,
-            widgetType: data.category  // Use the category as the widget type
-          });
-        }));
+        try {
+          // In a real implementation, we would:
+          // 1. Fetch existing tenant associations
+          // 2. Remove associations that are no longer needed
+          // 3. Add new associations
+          
+          // For this demo, we'll just associate with the selected tenants
+          for (const tenantId of data.tenantIds) {
+            await apiRequest("POST", `/api/tenants/${tenantId}/widget-recommendations`, {
+              tenantId: tenantId,
+              globalRecommendationId: id,
+              widgetType: data.category  // Use the category as the widget type
+            });
+          }
+        } catch (error) {
+          console.error("Error associating tenants:", error);
+        }
       }
       
-      return responseData;
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
