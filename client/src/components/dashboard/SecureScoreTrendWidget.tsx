@@ -3,7 +3,8 @@ import { format } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, TrendingDown, HelpCircle, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, TrendingDown, HelpCircle, Calendar, RefreshCw } from "lucide-react";
 
 type SecureScoreHistory = {
   id: number;
@@ -59,10 +60,17 @@ const calculateTrend = (data: SecureScoreHistory[]) => {
 };
 
 export default function SecureScoreTrendWidget({ tenantId, limit = 90 }: SecureScoreTrendWidgetProps) {
+  // Add debugging
+  console.log(`SecureScoreTrendWidget rendering for tenant ID: ${tenantId}`);
+  
   const { data, isLoading, error } = useQuery({
     queryKey: [`/api/tenants/${tenantId}/secure-score-history`, { limit }],
     enabled: !!tenantId
   });
+  
+  console.log("SecureScoreTrendWidget data:", data);
+  console.log("SecureScoreTrendWidget loading:", isLoading);
+  console.log("SecureScoreTrendWidget error:", error);
 
   // Error state
   if (error) {
@@ -110,7 +118,23 @@ export default function SecureScoreTrendWidget({ tenantId, limit = 90 }: SecureS
           <div className="text-center">
             <Calendar className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-semibold text-gray-900">No History Available</h3>
-            <p className="mt-1 text-sm text-gray-500">Secure score history will appear here as it is collected.</p>
+            <p className="mt-1 text-sm text-gray-500">
+              No secure score history data available for Tenant ID: {tenantId}.
+              <br />
+              This widget shows secure score trends over time as data is collected.
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-4"
+              onClick={() => {
+                console.log("Refreshing secure score history data for tenant:", tenantId);
+                window.location.reload();
+              }}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Data
+            </Button>
           </div>
         </CardContent>
       </Card>

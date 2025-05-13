@@ -351,9 +351,11 @@ Cyber Security and the threats associated are a continuous moving target, howeve
       </div>
       
       {/* Secure Score History Trend */}
-      <div className="mb-6">
-        <SecureScoreTrendWidget tenantId={parseInt(tenantId)} />
-      </div>
+      {tenantId && (
+        <div className="mb-6">
+          <SecureScoreTrendWidget tenantId={parseInt(tenantId)} />
+        </div>
+      )}
       
       {/* Detailed Risk Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
