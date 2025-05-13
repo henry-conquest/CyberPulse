@@ -1581,35 +1581,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Update the global recommendation
     const recommendation = await storage.updateGlobalRecommendation(Number(id), req.body);
     
-    // If category changed, update all tenant widget recommendations referencing this global recommendation
-    if (categoryChanged) {
-      try {
-        // Get all tenant widget recommendations using this global recommendation
-        const tenantWidgetRecs = await storage.getTenantWidgetRecommendationsByGlobalId(Number(id));
-        
-        console.log(`Category changed for recommendation ${id} from ${oldCategory} to ${req.body.category}`);
-        console.log(`Found ${tenantWidgetRecs.length} tenant widget recommendations to update`);
-        
-        // Update each tenant widget recommendation to use the new category as widget type
-        // Always use UPPERCASE for widget types to maintain consistency
-        for (const twRec of tenantWidgetRecs) {
-          console.log(`Updating tenant widget recommendation ${twRec.id} from ${twRec.widgetType} to ${req.body.category.toUpperCase()}`);
-          await storage.updateTenantWidgetRecommendation(twRec.id, {
-            ...twRec,
-            widgetType: req.body.category.toUpperCase()
+    // Get all tenant widget recommendations using this global recommendation
+    try {
+      const tenantWidgetRecs = await storage.getTenantWidgetRecommendationsByGlobalId(Number(id));
+      console.log(`Found ${tenantWidgetRecs.length} tenant widget recommendations for global recommendation ${id}`);
+      
+      // If we have any tenant widget recommendations to update
+      if (tenantWidgetRecs.length > 0) {
+        // Check if category changed
+        if (categoryChanged) {
+          console.log(`Category changed for recommendation ${id} from ${oldCategory} to ${req.body.category}`);
+          
+          // Update each tenant widget recommendation to use the new category as widget type
+          // Always use UPPERCASE for widget types to maintain consistency
+          for (const twRec of tenantWidgetRecs) {
+            console.log(`Updating tenant widget recommendation ${twRec.id} from ${twRec.widgetType} to ${req.body.category.toUpperCase()}`);
+            await storage.updateTenantWidgetRecommendation(twRec.id, {
+              ...twRec,
+              widgetType: req.body.category.toUpperCase()
+            });
+          }
+          
+          // Add to audit log for category change
+          await storage.createAuditLog({
+            userId,
+            action: "update_tenant_widget_recommendations_category",
+            details: `Updated ${tenantWidgetRecs.length} tenant widget recommendations to new widget type: ${req.body.category}`,
           });
         }
         
-        // Add to audit log
-        await storage.createAuditLog({
-          userId,
-          action: "update_tenant_widget_recommendations",
-          details: `Updated ${tenantWidgetRecs.length} tenant widget recommendations to new widget type: ${req.body.category}`,
-        });
-      } catch (error) {
-        console.error("Error updating tenant widget recommendations:", error);
-        // Continue anyway - we updated the global recommendation, so this is a partial success
+        // Check if priority changed
+        if (existingRecommendation.priority !== req.body.priority) {
+          console.log(`Priority changed for recommendation ${id} from ${existingRecommendation.priority} to ${req.body.priority}`);
+          
+          // Update shared priority information in all tenant widget recommendations
+          for (const twRec of tenantWidgetRecs) {
+            await storage.updateTenantWidgetRecommendation(twRec.id, {
+              priority: req.body.priority
+            });
+          }
+          
+          // Add to audit log for priority change
+          await storage.createAuditLog({
+            userId,
+            action: "update_tenant_widget_recommendations_priority",
+            details: `Updated priority for ${tenantWidgetRecs.length} tenant widget recommendations to: ${req.body.priority}`,
+          });
+        }
       }
+    } catch (error) {
+      console.error("Error updating tenant widget recommendations:", error);
+      // Continue anyway - we updated the global recommendation, so this is a partial success
     }
     
     // Create audit log
