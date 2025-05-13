@@ -265,43 +265,33 @@ Cyber Security and the threats associated are a continuous moving target, howeve
       
       {/* Microsoft Secure Score Widget */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">Microsoft Secure Score</h2>
-        {latestReport && latestReport.security_data ? (
-          (() => {
-            // Parse the security data if it's a string
-            const securityData = typeof latestReport.security_data === 'string' 
-              ? JSON.parse(latestReport.security_data)
-              : latestReport.security_data;
-              
-            return (
-              <ReportBasedSecureScoreWidget 
-                secureScore={parseFloat(securityData.secureScore)} 
-                secureScorePercent={parseInt(securityData.secureScorePercent)}
-              />
-            );
-          })()
-        ) : (
-          <Card className="border-amber-200 bg-amber-50">
-            <CardHeader>
-              <CardTitle className="text-lg text-amber-700">Secure Score Not Available</CardTitle>
-              <CardDescription className="text-amber-600">
-                No report data with secure score information found
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-amber-700 mb-4">
-                Generate a quarterly report to view your Microsoft Secure Score.
-              </p>
-              <Button 
-                onClick={handleGenerateReport}
-                className="flex items-center"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Generate Report
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Microsoft Secure Score</h2>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/tenants/${tenantId}/secure-score`}>
+              View Detailed Score
+            </Link>
+          </Button>
+        </div>
+        
+        <Card className="border-amber-200 bg-amber-50">
+          <CardHeader>
+            <CardTitle className="text-lg text-amber-700">Secure Score Now Available Separately</CardTitle>
+            <CardDescription className="text-amber-600">
+              View your Microsoft Secure Score on a dedicated page
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-amber-700 mb-4">
+              The Microsoft Secure Score widget is now available on a dedicated page for better visibility and analysis.
+            </p>
+            <Button asChild>
+              <Link href={`/tenants/${tenantId}/secure-score`}>
+                Go to Secure Score
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
       
       {/* Current Threats */}

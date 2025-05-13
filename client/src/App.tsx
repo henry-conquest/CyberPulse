@@ -15,6 +15,7 @@ import Settings from "@/pages/settings";
 import Users from "@/pages/users";
 import Tenants from "@/pages/tenants";
 import Integrations from "./pages/integrations";
+import SecureScorePage from "@/pages/secure-score";
 
 import { useAuth } from "@/hooks/useAuth";
 import Layout from "@/components/layout/Layout";
@@ -65,6 +66,9 @@ function Router() {
       {/* Tenant-specific routes */}
       <Route path="/tenants/:tenantId/dashboard" component={({ params }) => (
         <ProtectedRoute component={Dashboard} tenantId={params.tenantId} />
+      )} />
+      <Route path="/tenants/:tenantId/secure-score" component={({ params }) => (
+        <ProtectedRoute component={SecureScorePage} tenantId={params.tenantId} />
       )} />
       <Route path="/tenants/:tenantId/reports" component={({ params }) => (
         <ProtectedRoute component={Reports} tenantId={params.tenantId} />
