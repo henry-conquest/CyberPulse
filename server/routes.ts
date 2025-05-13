@@ -1525,6 +1525,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).send();
   }));
 
+  // Secure Score History
+  app.get("/api/tenants/:id/secure-score-history", isAuthenticated, asyncHandler(async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    const tenantId = parseInt(req.params.id);
+    
+    // Check if user has access to this tenant
+    const hasAccess = await hasTenantAccess(userId, tenantId);
+    if (!hasAccess) {
+      return res.status(403).json({ message: "You don't have access to this tenant" });
+    }
+    
+    // Get limit from query parameter (optional)
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 90;
+    
+    const history = await storage.getSecureScoreHistoryByTenantId(tenantId, limit);
+    res.json(history);
+  }));
+  
+  // Get secure score history for a specific period
+  app.get("/api/tenants/:id/secure-score-history/period", isAuthenticated, asyncHandler(async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    const tenantId = parseInt(req.params.id);
+    
+    // Check if user has access to this tenant
+    const hasAccess = await hasTenantAccess(userId, tenantId);
+    if (!hasAccess) {
+      return res.status(403).json({ message: "You don't have access to this tenant" });
+    }
+    
+    // Get start and end dates from query parameters
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: "Both startDate and endDate are required" });
+    }
+    
+    const history = await storage.getSecureScoreHistoryForPeriod(
+      tenantId, 
+      new Date(startDate as string), 
+      new Date(endDate as string)
+    );
+    
+    res.json(history);
+  }));
+  
   // Audit logs
   app.get("/api/tenants/:id/audit-logs", isAuthenticated, isAuthorized([UserRoles.ADMIN]), asyncHandler(async (req, res) => {
     const tenantId = parseInt(req.params.id);
