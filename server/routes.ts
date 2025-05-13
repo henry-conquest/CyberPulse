@@ -1577,7 +1577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
   
   // Populate test secure score history data for a tenant (development only)
-  app.get("/api/tenants/:id/test-secure-score-history", isAuthenticated, isAuthorized([UserRoles.ADMIN]), asyncHandler(async (req, res) => {
+  app.get("/api/tenants/:id/test-secure-score-history", isAuthenticated, asyncHandler(async (req, res) => {
     console.log("Test data generation endpoint called");
     const userId = (req.user as any).claims.sub;
     const tenantId = parseInt(req.params.id);
