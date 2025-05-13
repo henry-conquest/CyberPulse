@@ -1585,10 +1585,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tenantWidgetRecs = await storage.getTenantWidgetRecommendationsByGlobalId(Number(id));
         
         // Update each tenant widget recommendation to use the new category as widget type
+        // Always use UPPERCASE for widget types to maintain consistency
         for (const twRec of tenantWidgetRecs) {
           await storage.updateTenantWidgetRecommendation(twRec.id, {
             ...twRec,
-            widgetType: req.body.category
+            widgetType: req.body.category.toUpperCase()
           });
         }
         

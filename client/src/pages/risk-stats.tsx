@@ -1154,6 +1154,7 @@ const SecureScoreCard = ({
           secureScorePercent={secureScorePercent}
           securityData={securityData}
           maxScore={maxScore}
+          tenantId={tenantId}
         />
       </Dialog>
     </>
