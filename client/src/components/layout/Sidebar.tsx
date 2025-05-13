@@ -43,7 +43,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const { user } = useAuth();
   const [location] = useLocation();
 
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "admin";
+  console.log("User role:", user?.role);
   
   // Check if we're in a tenant-specific route
   const tenantMatch = location.match(/\/tenants\/(\d+)/);
