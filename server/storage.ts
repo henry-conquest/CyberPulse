@@ -9,6 +9,7 @@ import {
   reportRecipients,
   recommendations,
   auditLogs,
+  secureScoreHistory,
   type User,
   type UpsertUser,
   type Tenant,
@@ -29,6 +30,8 @@ import {
   type InsertRecommendation,
   type AuditLog,
   type InsertAuditLog,
+  type SecureScoreHistory,
+  type InsertSecureScoreHistory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, desc, asc, sql, like, or } from "drizzle-orm";
