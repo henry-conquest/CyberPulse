@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { 
   ArrowLeft,
@@ -19,11 +19,16 @@ import {
   Mail,
   MailCheck,
   Tag,
-  Key
+  Key,
+  Plus,
+  Edit,
+  Trash2,
+  GhostIcon
 } from "lucide-react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { cn } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -78,6 +83,29 @@ interface RiskStatsProps {
   id: string;
 }
 
+interface GlobalRecommendation {
+  id: number;
+  title: string;
+  description: string;
+  priority: "HIGH" | "MEDIUM" | "LOW" | "INFO";
+  category: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface TenantWidgetRecommendation {
+  id: number;
+  tenantId: number;
+  globalRecommendationId: number;
+  widgetType: string;
+  title?: string;
+  description?: string;
+  priority?: "HIGH" | "MEDIUM" | "LOW" | "INFO";
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Risk severity component
 const RiskSeverity = ({ score }: { score: number }) => {
   let riskLevel = "Low";
@@ -95,6 +123,182 @@ const RiskSeverity = ({ score }: { score: number }) => {
     <div className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", bgColor)}>
       {riskLevel}
     </div>
+  );
+};
+
+// Recommendation Selector Component
+const RecommendationSelector = ({
+  tenantId,
+  widgetType,
+  onClose
+}: {
+  tenantId: number;
+  widgetType: string;
+  onClose: () => void;
+}) => {
+  const queryClient = useQueryClient();
+  const [selectedRecommendations, setSelectedRecommendations] = useState<number[]>([]);
+  
+  // Fetch global recommendations
+  const { data: globalRecommendations = [], isLoading: isLoadingGlobal } = useQuery<GlobalRecommendation[]>({
+    queryKey: ['/api/global-recommendations'],
+  });
+  
+  // Fetch tenant widget recommendations
+  const { data: tenantRecommendations = [], isLoading: isLoadingTenant } = useQuery<TenantWidgetRecommendation[]>({
+    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/${widgetType}`],
+  });
+  
+  // Find which recommendations are already selected
+  useEffect(() => {
+    if (tenantRecommendations.length > 0) {
+      const selectedIds = tenantRecommendations.map(rec => rec.globalRecommendationId);
+      setSelectedRecommendations(selectedIds);
+    }
+  }, [tenantRecommendations]);
+  
+  // Filter global recommendations by widget type category
+  const filteredRecommendations = globalRecommendations.filter(rec => {
+    if (widgetType === 'SECURE_SCORE') {
+      return rec.category === 'SECURE_SCORE';
+    } else if (widgetType === 'DEVICE_SCORE') {
+      return rec.category === 'DEVICE_SCORE';
+    }
+    return false;
+  });
+  
+  // Toggle recommendation selection
+  const toggleRecommendation = (id: number) => {
+    setSelectedRecommendations(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(recId => recId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+  
+  // Save selected recommendations
+  const saveRecommendations = useMutation({
+    mutationFn: async () => {
+      // First, handle removals
+      const recommendationsToRemove = tenantRecommendations.filter(
+        rec => !selectedRecommendations.includes(rec.globalRecommendationId)
+      );
+      
+      // Remove recommendations that are no longer selected
+      for (const rec of recommendationsToRemove) {
+        await apiRequest(`/api/tenants/${tenantId}/widget-recommendations/${rec.id}`, {
+          method: 'DELETE'
+        });
+      }
+      
+      // Add new recommendations
+      const existingIds = tenantRecommendations.map(rec => rec.globalRecommendationId);
+      const recommendationsToAdd = selectedRecommendations.filter(id => !existingIds.includes(id));
+      
+      for (const globalRecommendationId of recommendationsToAdd) {
+        await apiRequest(`/api/tenants/${tenantId}/widget-recommendations`, {
+          method: 'POST',
+          data: {
+            tenantId,
+            globalRecommendationId,
+            widgetType
+          }
+        });
+      }
+      
+      return true;
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/${widgetType}`] });
+      onClose();
+    }
+  });
+  
+  const isLoading = isLoadingGlobal || isLoadingTenant || saveRecommendations.isPending;
+  
+  return (
+    <DialogContent className="max-w-4xl">
+      <DialogHeader>
+        <DialogTitle>Manage Widget Recommendations</DialogTitle>
+        <DialogDescription>
+          Select recommendations to show for this {widgetType === 'SECURE_SCORE' ? 'Secure Score' : 'Device Score'} widget
+        </DialogDescription>
+      </DialogHeader>
+      
+      <div className="py-4">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-40">
+            <p>Loading recommendations...</p>
+          </div>
+        ) : filteredRecommendations.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <GhostIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+            <p>No recommendations available for this widget type.</p>
+            <p className="text-sm">Create global recommendations first from the Recommendations page.</p>
+          </div>
+        ) : (
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+            {filteredRecommendations.map(rec => (
+              <div
+                key={rec.id}
+                className={cn(
+                  "border rounded-lg p-4 transition-all cursor-pointer",
+                  selectedRecommendations.includes(rec.id)
+                    ? "border-primary bg-primary/5"
+                    : "hover:bg-muted"
+                )}
+                onClick={() => toggleRecommendation(rec.id)}
+              >
+                <div className="flex items-start">
+                  <div className="mr-4 mt-0.5">
+                    <div className="h-5 w-5 border rounded flex items-center justify-center">
+                      {selectedRecommendations.includes(rec.id) && (
+                        <Check className="h-3.5 w-3.5 text-primary" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">{rec.title}</h4>
+                      <span className={cn(
+                        "text-xs rounded-full px-2 py-1 font-medium",
+                        rec.priority === "HIGH" ? "bg-red-100 text-red-800" :
+                        rec.priority === "MEDIUM" ? "bg-amber-100 text-amber-800" :
+                        rec.priority === "LOW" ? "bg-blue-100 text-blue-800" :
+                        "bg-green-100 text-green-800"
+                      )}>
+                        {rec.priority}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      <DialogFooter>
+        <Button
+          variant="outline"
+          onClick={onClose}
+          disabled={saveRecommendations.isPending}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={() => saveRecommendations.mutate()}
+          disabled={saveRecommendations.isPending}
+        >
+          {saveRecommendations.isPending ? "Saving..." : "Save Recommendations"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
   );
 };
 
@@ -338,98 +542,6 @@ const DeviceRecommendationsDialog = ({
   );
 };
 
-// Device Score component
-const DeviceScoreCard = ({
-  deviceScore,
-  deviceScorePercent,
-  deviceMetrics,
-  securityData,
-  maxScore = 10
-}: {
-  deviceScore: number;
-  deviceScorePercent: number;
-  deviceMetrics: any;
-  securityData: any;
-  maxScore?: number;
-}) => {
-  // Calculate gradient colors based on score
-  const getScoreColor = (percent: number) => {
-    if (percent >= 70) return "#22c55e"; // green
-    if (percent >= 40) return "#eab308"; // yellow
-    return "#ef4444"; // red
-  };
-
-  // Get appropriate icon for the score
-  const getScoreIcon = (percent: number) => {
-    if (percent >= 70) return <Check className="h-6 w-6 text-green-500" />;
-    if (percent >= 40) return <AlertTriangle className="h-6 w-6 text-amber-500" />;
-    return <XCircle className="h-6 w-6 text-red-500" />;
-  };
-
-  // Get score description
-  const getScoreDescription = (percent: number) => {
-    if (percent >= 70) return "Good";
-    if (percent >= 40) return "Needs Improvement";
-    return "Critical";
-  };
-
-  const scoreColor = getScoreColor(deviceScorePercent);
-  
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <Laptop className="h-5 w-5 text-green-500" />
-              <CardTitle className="text-lg">Microsoft 365 Device Score</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <div className="w-32 h-32 mr-6">
-                <CircularProgressbar
-                  value={deviceScorePercent}
-                  text={`${deviceScorePercent}%`}
-                  styles={buildStyles({
-                    pathColor: scoreColor,
-                    textColor: scoreColor,
-                    trailColor: "#e5e7eb",
-                    textSize: "22px",
-                  })}
-                />
-              </div>
-              <div>
-                <div className="flex items-center mb-2">
-                  {getScoreIcon(deviceScorePercent)}
-                  <span className="ml-2 font-medium text-lg">{getScoreDescription(deviceScorePercent)}</span>
-                </div>
-                <p className="text-gray-600">
-                  Score: <span className="font-medium">{deviceScore}</span> / {maxScore}
-                </p>
-                <p className="text-gray-600 mt-1">
-                  {deviceScorePercent < 40 && "Critical device security issues"}
-                  {deviceScorePercent >= 40 && deviceScorePercent < 70 && "Device security needs attention"}
-                  {deviceScorePercent >= 70 && "Good device security posture"}
-                </p>
-                <Button variant="outline" size="sm" className="mt-3">
-                  <Info className="h-4 w-4 mr-1" /> View Recommendations
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </DialogTrigger>
-      <DeviceRecommendationsDialog 
-        deviceScore={deviceScore}
-        deviceScorePercent={deviceScorePercent}
-        deviceMetrics={deviceMetrics}
-        securityData={securityData}
-      />
-    </Dialog>
-  );
-};
-
 // Secure Score Recommendations Dialog
 const SecureScoreRecommendationsDialog = ({
   secureScore,
@@ -449,76 +561,48 @@ const SecureScoreRecommendationsDialog = ({
   const getRecommendations = () => {
     const recommendations = [];
     
-    // Identity recommendations
-    if (securityData?.identityMetrics?.mfaNotEnabled > 0) {
+    if (!securityData?.identitySecure) {
       recommendations.push({
         icon: <UserCheck className="h-5 w-5 text-red-500" />,
-        title: "Enable Multi-Factor Authentication",
-        description: `${securityData.identityMetrics.mfaNotEnabled} users don't have MFA enabled. Enable MFA for all accounts to prevent credential theft.`,
-        priority: "High",
-        category: "Identity"
+        title: "Strengthen Identity Security",
+        description: "Configure MFA for all accounts, especially for privileged users and administrators.",
+        priority: "High"
       });
     }
     
-    if (securityData?.identityMetrics?.globalAdmins > 2) {
-      recommendations.push({
-        icon: <Users className="h-5 w-5 text-red-500" />,
-        title: "Reduce Global Administrators",
-        description: `You have ${securityData.identityMetrics.globalAdmins} global admin accounts. Reduce to a minimum of 2-3 administrators.`,
-        priority: "High",
-        category: "Identity"
-      });
-    }
-    
-    if (!securityData?.identityMetrics?.roleBasedAccessControl) {
-      recommendations.push({
-        icon: <Key className="h-5 w-5 text-amber-500" />,
-        title: "Implement Role-Based Access Control",
-        description: "Use role-based access control to apply the principle of least privilege.",
-        priority: "Medium",
-        category: "Identity"
-      });
-    }
-    
-    // Cloud recommendations
-    if (!securityData?.cloudMetrics?.dkimPolicies) {
-      recommendations.push({
-        icon: <MailCheck className="h-5 w-5 text-amber-500" />,
-        title: "Configure DKIM for Email",
-        description: "Configure DKIM (DomainKeys Identified Mail) to prevent email spoofing.",
-        priority: "Medium",
-        category: "Cloud"
-      });
-    }
-    
-    if (!securityData?.cloudMetrics?.dmarcPolicies) {
+    if (!securityData?.emailSecured) {
       recommendations.push({
         icon: <Mail className="h-5 w-5 text-red-500" />,
-        title: "Implement DMARC Policy",
-        description: "Implement DMARC policies to protect against email phishing and spoofing.",
-        priority: "High",
-        category: "Cloud"
+        title: "Enable Advanced Email Protection",
+        description: "Protect against phishing and email-based attacks with anti-spam and anti-phishing policies.",
+        priority: "High"
       });
     }
     
-    if (!securityData?.cloudMetrics?.sensitivityLabels) {
+    if (!securityData?.privilegedAccessSecured) {
       recommendations.push({
-        icon: <Tag className="h-5 w-5 text-blue-500" />,
-        title: "Use Sensitivity Labels",
-        description: "Implement sensitivity labels to classify and protect sensitive data.",
-        priority: "Low",
-        category: "Cloud"
+        icon: <Key className="h-5 w-5 text-amber-500" />,
+        title: "Secure Privileged Access",
+        description: "Implement just-in-time access and privileged access security for admin accounts.",
+        priority: "Medium"
       });
     }
     
-    // Best practice recommendations for any score
-    if (secureScorePercent >= 70) {
+    if (!securityData?.shadowITMonitored) {
       recommendations.push({
-        icon: <Shield className="h-5 w-5 text-green-500" />,
-        title: "Regular Security Assessments",
-        description: "Continue your good security posture by conducting regular security assessments.",
-        priority: "Info",
-        category: "Best Practice"
+        icon: <Cloud className="h-5 w-5 text-amber-500" />,
+        title: "Monitor Unauthorized Cloud Apps",
+        description: "Detect and control shadow IT and unauthorized cloud applications.",
+        priority: "Medium"
+      });
+    }
+    
+    if (!securityData?.complianceTrainingDone) {
+      recommendations.push({
+        icon: <Users className="h-5 w-5 text-blue-500" />,
+        title: "Implement Security Awareness Training",
+        description: "Provide regular security awareness training for all employees.",
+        priority: "Low"
       });
     }
     
@@ -526,10 +610,9 @@ const SecureScoreRecommendationsDialog = ({
     if (recommendations.length === 0) {
       recommendations.push({
         icon: <Check className="h-5 w-5 text-green-500" />,
-        title: "Continue your good work",
-        description: "Your Microsoft 365 security configuration appears to be in good standing. Continue to monitor and maintain your current policies.",
-        priority: "Info",
-        category: "Best Practice"
+        title: "Maintain Current Security Posture",
+        description: "Your Microsoft 365 secure score is good. Continue to monitor and maintain your current security settings.",
+        priority: "Info"
       });
     }
     
@@ -543,7 +626,7 @@ const SecureScoreRecommendationsDialog = ({
     ? allRecommendations.filter(rec => rec.priority === priorityFilter)
     : allRecommendations;
   
-  // Count recommendations by priority
+  // Count recommendations by priority  
   const highCount = allRecommendations.filter(rec => rec.priority === "High").length;
   const mediumCount = allRecommendations.filter(rec => rec.priority === "Medium").length;
   const lowCount = allRecommendations.filter(rec => rec.priority === "Low").length;
@@ -563,7 +646,7 @@ const SecureScoreRecommendationsDialog = ({
       <DialogHeader>
         <DialogTitle className="text-xl">Microsoft Secure Score Recommendations</DialogTitle>
         <DialogDescription>
-          Improve your Microsoft 365 security posture with these recommendations
+          Improve your Microsoft 365 secure score with these specific recommendations
         </DialogDescription>
       </DialogHeader>
       
@@ -584,9 +667,9 @@ const SecureScoreRecommendationsDialog = ({
           <div>
             <h3 className="text-lg font-medium">Current Secure Score: {secureScore.toFixed(1)}/{maxScore}</h3>
             <p className="text-muted-foreground">
-              {secureScorePercent < 40 && "Your Microsoft 365 environment requires urgent security improvements"}
-              {secureScorePercent >= 40 && secureScorePercent < 70 && "Your Microsoft 365 security needs improvement"}
-              {secureScorePercent >= 70 && "Your Microsoft 365 security posture is good but can be further improved"}
+              {secureScorePercent < 40 && "Your security posture requires immediate attention"}
+              {secureScorePercent >= 40 && secureScorePercent < 70 && "Your security posture needs improvement"}
+              {secureScorePercent >= 70 && "Your security posture is good but can be further improved"}
             </p>
           </div>
         </div>
@@ -667,20 +750,15 @@ const SecureScoreRecommendationsDialog = ({
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium">{rec.title}</h4>
-                      <div className="flex items-center gap-2">
-                        <div className="text-xs px-2 py-1 rounded border text-gray-600">
-                          {rec.category}
-                        </div>
-                        <span className={cn(
-                          "text-xs rounded-full px-2 py-1 font-medium",
-                          rec.priority === "High" ? "bg-red-100 text-red-800" :
-                          rec.priority === "Medium" ? "bg-amber-100 text-amber-800" :
-                          rec.priority === "Low" ? "bg-blue-100 text-blue-800" :
-                          "bg-green-100 text-green-800"
-                        )}>
-                          {rec.priority} Priority
-                        </span>
-                      </div>
+                      <span className={cn(
+                        "text-xs rounded-full px-2 py-1 font-medium",
+                        rec.priority === "High" ? "bg-red-100 text-red-800" :
+                        rec.priority === "Medium" ? "bg-amber-100 text-amber-800" :
+                        rec.priority === "Low" ? "bg-blue-100 text-blue-800" :
+                        "bg-green-100 text-green-800"
+                      )}>
+                        {rec.priority} Priority
+                      </span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
                   </div>
@@ -704,18 +782,162 @@ const SecureScoreRecommendationsDialog = ({
   );
 };
 
+// Device Score component
+const DeviceScoreCard = ({
+  deviceScore,
+  deviceScorePercent,
+  deviceMetrics,
+  securityData,
+  tenantId,
+  maxScore = 10
+}: {
+  deviceScore: number;
+  deviceScorePercent: number;
+  deviceMetrics: any;
+  securityData: any;
+  tenantId: number;
+  maxScore?: number;
+}) => {
+  // For showing recommendation selector dialog
+  const [showManageRecommendations, setShowManageRecommendations] = useState(false);
+  const { user } = useAuth();
+  const isAdminOrAnalyst = user?.role === 'admin' || user?.role === 'analyst';
+  
+  // Calculate gradient colors based on score
+  const getScoreColor = (percent: number) => {
+    if (percent >= 70) return "#22c55e"; // green
+    if (percent >= 40) return "#eab308"; // yellow
+    return "#ef4444"; // red
+  };
+
+  // Get appropriate icon for the score
+  const getScoreIcon = (percent: number) => {
+    if (percent >= 70) return <Check className="h-6 w-6 text-green-500" />;
+    if (percent >= 40) return <AlertTriangle className="h-6 w-6 text-amber-500" />;
+    return <XCircle className="h-6 w-6 text-red-500" />;
+  };
+
+  // Get score description
+  const getScoreDescription = (percent: number) => {
+    if (percent >= 70) return "Good";
+    if (percent >= 40) return "Needs Improvement";
+    return "Critical";
+  };
+
+  const scoreColor = getScoreColor(deviceScorePercent);
+  
+  return (
+    <>
+      {/* Manage recommendations dialog */}
+      {showManageRecommendations && (
+        <Dialog open={showManageRecommendations} onOpenChange={setShowManageRecommendations}>
+          <RecommendationSelector 
+            tenantId={tenantId} 
+            widgetType="DEVICE_SCORE" 
+            onClose={() => setShowManageRecommendations(false)} 
+          />
+        </Dialog>
+      )}
+      
+      {/* Device Score Card with Recommendations Dialog */}
+      <Dialog>
+        <DialogTrigger asChild>
+          <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Laptop className="h-5 w-5 text-green-500" />
+                  <CardTitle className="text-lg">Microsoft 365 Device Score</CardTitle>
+                </div>
+                {isAdminOrAnalyst && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowManageRecommendations(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Manage Recommendations</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <div className="w-32 h-32 mr-6">
+                  <CircularProgressbar
+                    value={deviceScorePercent}
+                    text={`${deviceScorePercent}%`}
+                    styles={buildStyles({
+                      pathColor: scoreColor,
+                      textColor: scoreColor,
+                      trailColor: "#e5e7eb",
+                      textSize: "22px",
+                    })}
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center mb-2">
+                    {getScoreIcon(deviceScorePercent)}
+                    <span className="ml-2 font-medium text-lg">{getScoreDescription(deviceScorePercent)}</span>
+                  </div>
+                  <p className="text-gray-600">
+                    Score: <span className="font-medium">{deviceScore}</span> / {maxScore}
+                  </p>
+                  <p className="text-gray-600 mt-1">
+                    {deviceScorePercent < 40 && "Critical device security issues detected"}
+                    {deviceScorePercent >= 40 && deviceScorePercent < 70 && "Device security needs improvement"}
+                    {deviceScorePercent >= 70 && "Good device security posture"}
+                  </p>
+                  <Button variant="outline" size="sm" className="mt-3">
+                    <Info className="h-4 w-4 mr-1" /> View Device Score Details
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </DialogTrigger>
+        <DeviceRecommendationsDialog 
+          deviceScore={deviceScore}
+          deviceScorePercent={deviceScorePercent}
+          deviceMetrics={deviceMetrics}
+          securityData={securityData}
+        />
+      </Dialog>
+    </>
+  );
+};
+
 // SecureScore component
 const SecureScoreCard = ({ 
   secureScore, 
   secureScorePercent,
   securityData,
+  tenantId,
   maxScore = 278
 }: { 
   secureScore: number; 
   secureScorePercent: number;
   securityData?: any;
+  tenantId: number;
   maxScore?: number;
 }) => {
+  // For showing recommendation selector dialog
+  const [showManageRecommendations, setShowManageRecommendations] = useState(false);
+  const { user } = useAuth();
+  const isAdminOrAnalyst = user?.role === 'admin' || user?.role === 'analyst';
+  
   // Calculate gradient colors based on score
   const getScoreColor = (percent: number) => {
     if (percent >= 70) return "#22c55e"; // green
@@ -740,110 +962,165 @@ const SecureScoreCard = ({
   const scoreColor = getScoreColor(secureScorePercent);
   
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-blue-500" />
-              <CardTitle className="text-lg">Microsoft Secure Score</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <div className="w-32 h-32 mr-6">
-                <CircularProgressbar
-                  value={secureScorePercent}
-                  text={`${secureScorePercent}%`}
-                  styles={buildStyles({
-                    pathColor: scoreColor,
-                    textColor: scoreColor,
-                    trailColor: "#e5e7eb",
-                    textSize: "22px",
-                  })}
-                />
-              </div>
-              <div>
-                <div className="flex items-center mb-2">
-                  {getScoreIcon(secureScorePercent)}
-                  <span className="ml-2 font-medium text-lg">{getScoreDescription(secureScorePercent)}</span>
+    <>
+      {/* Manage recommendations dialog */}
+      {showManageRecommendations && (
+        <Dialog open={showManageRecommendations} onOpenChange={setShowManageRecommendations}>
+          <RecommendationSelector 
+            tenantId={tenantId} 
+            widgetType="SECURE_SCORE" 
+            onClose={() => setShowManageRecommendations(false)} 
+          />
+        </Dialog>
+      )}
+      
+      {/* Secure Score Card with Recommendations Dialog */}
+      <Dialog>
+        <DialogTrigger asChild>
+          <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-blue-500" />
+                  <CardTitle className="text-lg">Microsoft Secure Score</CardTitle>
                 </div>
-                <p className="text-gray-600">
-                  Score: <span className="font-medium">{secureScore.toFixed(1)}</span> / {maxScore}
-                </p>
-                <p className="text-gray-600 mt-1">
-                  {secureScorePercent < 40 && "Urgent action required"}
-                  {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
-                  {secureScorePercent >= 70 && "Good security posture"}
-                </p>
-                <Button variant="outline" size="sm" className="mt-3">
-                  <Info className="h-4 w-4 mr-1" /> View Secure Score Details
-                </Button>
+                {isAdminOrAnalyst && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowManageRecommendations(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Manage Recommendations</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </DialogTrigger>
-      <SecureScoreRecommendationsDialog 
-        secureScore={secureScore}
-        secureScorePercent={secureScorePercent}
-        maxScore={maxScore}
-        securityData={securityData}
-      />
-    </Dialog>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center">
+                <div className="w-32 h-32 mr-6">
+                  <CircularProgressbar
+                    value={secureScorePercent}
+                    text={`${secureScorePercent}%`}
+                    styles={buildStyles({
+                      pathColor: scoreColor,
+                      textColor: scoreColor,
+                      trailColor: "#e5e7eb",
+                      textSize: "22px",
+                    })}
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center mb-2">
+                    {getScoreIcon(secureScorePercent)}
+                    <span className="ml-2 font-medium text-lg">{getScoreDescription(secureScorePercent)}</span>
+                  </div>
+                  <p className="text-gray-600">
+                    Score: <span className="font-medium">{secureScore.toFixed(1)}</span> / {maxScore}
+                  </p>
+                  <p className="text-gray-600 mt-1">
+                    {secureScorePercent < 40 && "Urgent action required"}
+                    {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
+                    {secureScorePercent >= 70 && "Good security posture"}
+                  </p>
+                  <Button variant="outline" size="sm" className="mt-3">
+                    <Info className="h-4 w-4 mr-1" /> View Secure Score Details
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </DialogTrigger>
+        <SecureScoreRecommendationsDialog 
+          secureScore={secureScore}
+          secureScorePercent={secureScorePercent}
+          securityData={securityData}
+          maxScore={maxScore}
+        />
+      </Dialog>
+    </>
   );
 };
 
-// Risk category component
+// Risk Category component
 const RiskCategory = ({ 
-  icon, 
-  title, 
-  score, 
-  description 
+  title,
+  score,
+  description,
+  icon,
+  trend = 0
 }: { 
-  icon: React.ReactNode; 
   title: string; 
   score: number;
   description: string;
+  icon: React.ReactNode;
+  trend?: number;
 }) => {
-  let progressColor = "bg-green-500";
-  
-  if (score >= 75) {
-    progressColor = "bg-red-500";
-  } else if (score >= 50) {
-    progressColor = "bg-amber-500";
-  }
-  
+  // Calculate bg color based on score
+  const getBgColor = (score: number) => {
+    if (score < 50) return "bg-green-50";
+    if (score < 75) return "bg-amber-50";
+    return "bg-red-50";
+  };
+
+  const getIconBgColor = (score: number) => {
+    if (score < 50) return "bg-green-100";
+    if (score < 75) return "bg-amber-100";
+    return "bg-red-100";
+  };
+
+  const getTextColor = (score: number) => {
+    if (score < 50) return "text-green-800";
+    if (score < 75) return "text-amber-800";
+    return "text-red-800";
+  };
+
   return (
-    <Card className="overflow-hidden">
+    <Card className={cn("border", getBgColor(score))}>
       <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          {icon}
-          <CardTitle className="text-lg">{title}</CardTitle>
-          <div className="ml-auto">
-            <RiskSeverity score={score} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={cn("p-1 rounded", getIconBgColor(score))}>
+              {icon}
+            </div>
+            <CardTitle className="text-lg">{title}</CardTitle>
           </div>
+          <RiskSeverity score={score} />
         </div>
       </CardHeader>
-      <CardContent className="pb-2">
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm font-medium">
-            <span>Risk Score</span>
-            <span>{score}%</span>
+      <CardContent>
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm text-gray-600">Risk Level</span>
+            <span className={cn("font-medium", getTextColor(score))}>{score}%</span>
           </div>
           <Progress 
             value={score} 
-            className="h-2"
-            style={{
-              "--progress-color": score >= 75 ? "#ef4444" : 
-                                score >= 50 ? "#f59e0b" : 
-                                "#22c55e"
-            } as React.CSSProperties}
+            className={cn("h-2", 
+              score < 50 ? "bg-green-100" : 
+              score < 75 ? "bg-amber-100" : 
+              "bg-red-100"
+            )} 
+            indicatorClassName={cn(
+              score < 50 ? "bg-green-500" : 
+              score < 75 ? "bg-amber-500" : 
+              "bg-red-500"
+            )} 
           />
         </div>
-        <p className="text-sm text-muted-foreground mt-3">
-          {description}
-        </p>
+        <p className="text-sm text-gray-600">{description}</p>
       </CardContent>
     </Card>
   );
@@ -858,8 +1135,16 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-muted-foreground">Loading risk data...</div>
+        <div className="flex items-center">
+          <Button variant="ghost" className="mb-4 p-0 mr-2" asChild>
+            <Link to={`/tenants/${tenantId}/reports`}>
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to Reports
+            </Link>
+          </Button>
+        </div>
+        <div className="h-96 flex items-center justify-center">
+          <p>Loading report data...</p>
         </div>
       </div>
     );
@@ -868,143 +1153,159 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
   if (!report) {
     return (
       <div className="container mx-auto p-6">
-        <div className="flex flex-col items-center justify-center h-64">
-          <div className="text-lg text-red-500 mb-4">Failed to load report data</div>
-          <Button asChild>
-            <Link href={`/tenants/${tenantId}/report-periods`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
+        <div className="flex items-center">
+          <Button variant="ghost" className="mb-4 p-0 mr-2" asChild>
+            <Link to={`/tenants/${tenantId}/reports`}>
+              <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Reports
             </Link>
           </Button>
+        </div>
+        <div className="h-96 flex items-center justify-center">
+          <p>Report not found.</p>
         </div>
       </div>
     );
   }
 
-  // Get the security data
-  let securityData = report.securityData || {};
-  
-  // Parse security data if it's a string
-  if (typeof securityData === 'string') {
-    try {
-      securityData = JSON.parse(securityData);
-    } catch (err) {
-      console.error("Error parsing security data:", err);
-    }
-  }
-
-  // Extract secure score data
-  const secureScore = parseFloat(securityData.secureScore || "0");
-  const secureScorePercent = parseInt(securityData.secureScorePercent || "0");
-  const maxScore = 278; // Standard max score for Microsoft Secure Score
-  
-  // Extract device score data
-  const deviceScore = parseInt(securityData.deviceMetrics?.deviceScore || "0"); 
-  const deviceScorePercent = deviceScore * 10; // Convert to percentage (deviceScore is out of 10)
-
-  // Get risk scores
   const {
+    title,
+    quarter,
+    year,
+    status,
+    securityData,
     overallRiskScore,
     identityRiskScore,
     trainingRiskScore,
     deviceRiskScore,
     cloudRiskScore,
-    threatRiskScore
+    threatRiskScore,
   } = report;
 
-  // Determine overall risk level
+  // Extract data for Microsoft Secure Score
+  const secureScore = securityData?.secureScore || 0;
+  const maxScore = securityData?.maxScore || 278;
+  const secureScorePercent = securityData?.secureScorePercent || 0;
+  
+  // Extract data for Device Score
+  const deviceScore = securityData?.deviceScore || 0;
+  const deviceScorePercent = securityData?.deviceScorePercent || 0;
+  const deviceMetrics = securityData?.deviceMetrics || {};
+
+  // Risk level text and color
   let overallRiskLevel = "Low";
-  let overallBgColor = "bg-green-100";
+  let overallBgColor = "bg-green-50";
   let overallTextColor = "text-green-800";
   
   if (overallRiskScore >= 75) {
     overallRiskLevel = "High";
-    overallBgColor = "bg-red-100";
+    overallBgColor = "bg-red-50";
     overallTextColor = "text-red-800";
   } else if (overallRiskScore >= 50) {
     overallRiskLevel = "Medium";
-    overallBgColor = "bg-amber-100";
+    overallBgColor = "bg-amber-50";
     overallTextColor = "text-amber-800";
   }
 
-  // Generate descriptions based on risk scores
-  const identityDesc = identityRiskScore >= 75 ? 
-    "Critical identity security issues detected. Immediate remediation recommended." :
-    identityRiskScore >= 50 ?
-    "Moderate identity security concerns found. Consider implementing additional authentication measures." :
-    "Identity security controls are generally effective. Continue monitoring for changes.";
-
-  const trainingDesc = trainingRiskScore >= 75 ?
-    "Significant training deficiencies detected. Security awareness training should be prioritized." :
-    trainingRiskScore >= 50 ?
-    "Moderate training gaps identified. Consider refresher courses for staff." :
-    "Training compliance is generally good. Maintain regular security awareness programs.";
-
-  const deviceDesc = deviceRiskScore >= 75 ?
-    "Critical device security issues found. Immediate endpoint protection updates recommended." :
-    deviceRiskScore >= 50 ?
-    "Moderate device security concerns. Consider reviewing device management policies." :
-    "Device security controls are generally effective. Continue monitoring for compliance.";
-
-  const cloudDesc = cloudRiskScore >= 75 ?
-    "Significant cloud security vulnerabilities detected. Immediate remediation recommended." :
-    cloudRiskScore >= 50 ?
-    "Moderate cloud security concerns identified. Review configuration and access controls." :
-    "Cloud security controls are generally effective. Continue monitoring for changes.";
-
-  const threatDesc = threatRiskScore >= 75 ?
-    "Active threats detected requiring immediate response." :
-    threatRiskScore >= 50 ?
-    "Potential threats identified requiring investigation." :
-    "Minimal threat activity detected. Continue monitoring security alerts.";
+  // Text descriptions for risk categories
+  const identityDesc = identityRiskScore < 50 
+    ? "Identity security is well-managed with appropriate controls." 
+    : identityRiskScore < 75 
+      ? "Some identity security improvements needed."
+      : "Critical identity security issues detected.";
+      
+  const trainingDesc = trainingRiskScore < 50 
+    ? "Security awareness training is comprehensive and up-to-date." 
+    : trainingRiskScore < 75 
+      ? "Training program requires some enhancements."
+      : "Security training program needs significant improvement.";
+      
+  const deviceDesc = deviceRiskScore < 50 
+    ? "Device security is well-implemented across the organization." 
+    : deviceRiskScore < 75 
+      ? "Device security needs attention in key areas."
+      : "Critical device security issues detected.";
+      
+  const cloudDesc = cloudRiskScore < 50 
+    ? "Cloud applications and services are properly secured." 
+    : cloudRiskScore < 75 
+      ? "Cloud security requires specific improvements."
+      : "Major cloud security vulnerabilities detected.";
+      
+  const threatDesc = threatRiskScore < 50 
+    ? "Threat protection systems are working effectively." 
+    : threatRiskScore < 75 
+      ? "Threat protection requires enhancement."
+      : "Critical gaps in threat protection detected.";
 
   return (
     <div className="container mx-auto p-6">
-      <div className="mb-6 flex items-center">
-        <Button variant="outline" size="sm" asChild className="mr-4">
-          <Link href={`/tenants/${tenantId}/report-periods`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
+      {/* Header and navigation */}
+      <div className="flex items-center">
+        <Button variant="ghost" className="mb-4 p-0 mr-2" asChild>
+          <Link to={`/tenants/${tenantId}/reports`}>
+            <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Reports
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {report.title} - Risk Stats
-        </h1>
       </div>
-
+      
+      {/* Report title and metadata */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">{title}</h1>
+          <Badge variant={
+            status === "sent" ? "default" : 
+            status === "manager_ready" ? "secondary" :
+            status === "analyst_ready" ? "outline" :
+            "destructive"
+          }>
+            {status === "sent" ? "Sent to Client" : 
+             status === "manager_ready" ? "Ready for Manager" :
+             status === "analyst_ready" ? "Ready for Analyst" :
+             status === "reviewed" ? "In Review" : "New"}
+          </Badge>
+        </div>
+        <p className="text-muted-foreground">
+          Q{quarter} {year} Risk Management Summary
+        </p>
+      </div>
+      
+      {/* Overall Risk Score Card */}
       <div className="mb-8">
-        <Card className={cn("overflow-hidden border-t-4", overallRiskScore >= 75 ? "border-t-red-500" : overallRiskScore >= 50 ? "border-t-amber-500" : "border-t-green-500")}>
-          <CardHeader>
-            <CardTitle>Overall Security Risk Assessment</CardTitle>
-            <CardDescription>
-              Based on multiple security metrics from {report.quarter ? `Q${report.quarter}` : report.month} {report.year}
-            </CardDescription>
+        <Card className={cn("border", overallBgColor)}>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg">Overall Cyber Risk Score</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-4">
-              <div className={cn("text-5xl font-bold", 
-                overallRiskScore >= 75 ? "text-red-500" : 
-                overallRiskScore >= 50 ? "text-amber-500" : 
-                "text-green-500"
-              )}>
-                {overallRiskScore}%
+            <div className="flex items-center">
+              <div className="w-32 h-32 mr-6">
+                <CircularProgressbar
+                  value={overallRiskScore}
+                  text={`${overallRiskScore}%`}
+                  styles={buildStyles({
+                    pathColor: overallRiskScore < 50 ? "#22c55e" : 
+                               overallRiskScore < 75 ? "#eab308" : "#ef4444",
+                    textColor: overallRiskScore < 50 ? "#22c55e" : 
+                               overallRiskScore < 75 ? "#eab308" : "#ef4444",
+                    trailColor: "#e5e7eb",
+                    textSize: "22px",
+                  })}
+                />
               </div>
-              <div className={cn("px-3 py-1 rounded-full text-sm font-medium", 
-                overallBgColor, overallTextColor
-              )}>
-                {overallRiskLevel} Risk
+              <div>
+                <div className="flex items-center mb-2">
+                  <span className={cn("text-lg font-medium", overallTextColor)}>
+                    {overallRiskLevel} Risk
+                  </span>
+                </div>
+                <p className="text-gray-600">
+                  This organization has a {overallRiskLevel.toLowerCase()} overall cyber risk score based on analysis of identity security, security awareness training, device security, cloud security, and threat protection.
+                </p>
               </div>
-            </div>
-            <div className="mt-4">
-              <Progress 
-                value={overallRiskScore} 
-                className="h-3"
-                style={{
-                  "--progress-color": overallRiskScore >= 75 ? "#ef4444" : 
-                                     overallRiskScore >= 50 ? "#f59e0b" : 
-                                     "#22c55e"
-                } as React.CSSProperties}
-              />
             </div>
           </CardContent>
         </Card>
@@ -1019,6 +1320,7 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
             secureScorePercent={secureScorePercent}
             securityData={securityData}
             maxScore={maxScore}
+            tenantId={Number(tenantId)}
           />
         </div>
         
@@ -1030,73 +1332,66 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
             deviceMetrics={securityData.deviceMetrics || {}}
             securityData={securityData}
             maxScore={10}
+            tenantId={Number(tenantId)}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Identity Risk */}
         <RiskCategory 
-          icon={<Users className="h-5 w-5 text-blue-500" />}
-          title="Identity Security" 
-          score={identityRiskScore} 
+          title="Identity Risk" 
+          score={identityRiskScore}
           description={identityDesc}
+          icon={<UserCheck className="h-4 w-4 text-green-500" />}
         />
         
+        {/* Training Risk */}
         <RiskCategory 
-          icon={<Shield className="h-5 w-5 text-purple-500" />}
-          title="Security Training" 
-          score={trainingRiskScore} 
+          title="Training Risk" 
+          score={trainingRiskScore}
           description={trainingDesc}
+          icon={<Users className="h-4 w-4 text-blue-500" />}
         />
         
+        {/* Device Risk */}
         <RiskCategory 
-          icon={<Laptop className="h-5 w-5 text-green-500" />}
-          title="Device Security" 
-          score={deviceRiskScore} 
+          title="Device Risk" 
+          score={deviceRiskScore}
           description={deviceDesc}
+          icon={<Laptop className="h-4 w-4 text-green-500" />}
         />
         
+        {/* Cloud Risk */}
         <RiskCategory 
-          icon={<Cloud className="h-5 w-5 text-indigo-500" />}
-          title="Cloud Security" 
-          score={cloudRiskScore} 
+          title="Cloud Risk" 
+          score={cloudRiskScore}
           description={cloudDesc}
+          icon={<Cloud className="h-4 w-4 text-blue-500" />}
         />
         
+        {/* Threat Risk */}
         <RiskCategory 
-          icon={<ShieldAlert className="h-5 w-5 text-red-500" />}
-          title="Threat Assessment" 
-          score={threatRiskScore} 
+          title="Threat Risk" 
+          score={threatRiskScore}
           description={threatDesc}
+          icon={<ShieldAlert className="h-4 w-4 text-red-500" />}
         />
       </div>
-
-      {/* Summary section */}
-      <div className="mt-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Summary and Recommendations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {overallRiskScore >= 75 ? (
-                "This security assessment has identified significant security concerns requiring immediate attention. We recommend addressing the high-risk items highlighted in this report as soon as possible to reduce your organization's cyber risk exposure."
-              ) : overallRiskScore >= 50 ? (
-                "This security assessment has identified moderate security concerns. We recommend prioritizing the medium-risk items highlighted in this report to improve your organization's security posture."
-              ) : (
-                "This security assessment shows your organization has a strong security posture. Continue maintaining your security controls and addressing the low-risk items to further enhance your security."
-              )}
-            </p>
-            
-            {report.analystComments && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-md">
-                <h3 className="font-medium text-blue-800 mb-2">Analyst Comments</h3>
-                <p className="text-sm text-blue-800">{report.analystComments}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      
+      {report.analystComments && (
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Analyst Comments</CardTitle>
+              <CardDescription>Professional analysis and recommendations</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-line">{report.analystComments}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
