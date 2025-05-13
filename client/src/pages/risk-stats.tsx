@@ -11,7 +11,10 @@ import {
   ShieldAlert,
   Check,
   AlertTriangle,
-  XCircle
+  XCircle,
+  Info,
+  HardDrive,
+  ShieldCheck
 } from "lucide-react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
@@ -32,6 +35,16 @@ import {
   TooltipTrigger,
   TooltipProvider 
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
 
 interface Report {
   id: number;
@@ -79,14 +92,158 @@ const RiskSeverity = ({ score }: { score: number }) => {
   );
 };
 
+// Device Recommendations Dialog
+const DeviceRecommendationsDialog = ({
+  deviceScore,
+  deviceScorePercent,
+  deviceMetrics
+}: {
+  deviceScore: number;
+  deviceScorePercent: number;
+  deviceMetrics: any;
+}) => {
+  // Generate appropriate recommendations based on security status
+  const getRecommendations = () => {
+    const recommendations = [];
+    
+    if (!deviceMetrics?.diskEncryption) {
+      recommendations.push({
+        icon: <HardDrive className="h-5 w-5 text-red-500" />,
+        title: "Enable Disk Encryption",
+        description: "Configure BitLocker or FileVault on all devices to protect data in case of theft or loss.",
+        priority: "High"
+      });
+    }
+    
+    if (!deviceMetrics?.defenderForEndpoint) {
+      recommendations.push({
+        icon: <ShieldAlert className="h-5 w-5 text-red-500" />,
+        title: "Deploy Microsoft Defender for Endpoint",
+        description: "Implement advanced threat protection across your device fleet.",
+        priority: "High"
+      });
+    }
+    
+    if (!deviceMetrics?.deviceHardening) {
+      recommendations.push({
+        icon: <Shield className="h-5 w-5 text-amber-500" />,
+        title: "Improve Device Hardening",
+        description: "Implement device hardening policies to reduce attack surface.",
+        priority: "Medium"
+      });
+    }
+    
+    if (!deviceMetrics?.softwareUpdated) {
+      recommendations.push({
+        icon: <ShieldCheck className="h-5 w-5 text-amber-500" />,
+        title: "Update Device Software",
+        description: "Establish regular patch management for operating systems and applications.",
+        priority: "Medium"
+      });
+    }
+    
+    if (!deviceMetrics?.managedDetectionResponse) {
+      recommendations.push({
+        icon: <Info className="h-5 w-5 text-blue-500" />,
+        title: "Implement Managed Detection & Response",
+        description: "Consider adding 24/7 monitoring and response capabilities.",
+        priority: "Low"
+      });
+    }
+    
+    // If all checks passed or if no specific recommendations available
+    if (recommendations.length === 0) {
+      recommendations.push({
+        icon: <Check className="h-5 w-5 text-green-500" />,
+        title: "Maintain Current Device Security",
+        description: "Your device security is good. Continue to monitor and maintain your current policies.",
+        priority: "Info"
+      });
+    }
+    
+    return recommendations;
+  };
+  
+  const recommendations = getRecommendations();
+  
+  return (
+    <DialogContent className="max-w-3xl">
+      <DialogHeader>
+        <DialogTitle className="text-xl">Device Security Recommendations</DialogTitle>
+        <DialogDescription>
+          Improve your Microsoft 365 device security score with these specific recommendations
+        </DialogDescription>
+      </DialogHeader>
+      
+      <div className="py-4">
+        <div className="flex items-center mb-6">
+          <div className="w-20 h-20 mr-6">
+            <CircularProgressbar
+              value={deviceScorePercent}
+              text={`${deviceScorePercent}%`}
+              styles={buildStyles({
+                pathColor: deviceScorePercent >= 70 ? "#22c55e" : deviceScorePercent >= 40 ? "#eab308" : "#ef4444",
+                textColor: deviceScorePercent >= 70 ? "#22c55e" : deviceScorePercent >= 40 ? "#eab308" : "#ef4444",
+                trailColor: "#e5e7eb",
+                textSize: "22px",
+              })}
+            />
+          </div>
+          <div>
+            <h3 className="text-lg font-medium">Current Device Score: {deviceScore}/10</h3>
+            <p className="text-muted-foreground">
+              {deviceScorePercent < 40 && "Your device security requires immediate attention"}
+              {deviceScorePercent >= 40 && deviceScorePercent < 70 && "Your device security needs improvement"}
+              {deviceScorePercent >= 70 && "Your device security is good but can be further improved"}
+            </p>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          {recommendations.map((rec, index) => (
+            <div key={index} className="border rounded-lg p-4">
+              <div className="flex items-start">
+                <div className="mr-3 mt-0.5">{rec.icon}</div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">{rec.title}</h4>
+                    <span className={cn(
+                      "text-xs rounded-full px-2 py-1 font-medium",
+                      rec.priority === "High" ? "bg-red-100 text-red-800" :
+                      rec.priority === "Medium" ? "bg-amber-100 text-amber-800" :
+                      rec.priority === "Low" ? "bg-blue-100 text-blue-800" :
+                      "bg-green-100 text-green-800"
+                    )}>
+                      {rec.priority} Priority
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline">Close</Button>
+        </DialogClose>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
+
 // Device Score component
 const DeviceScoreCard = ({
   deviceScore,
   deviceScorePercent,
+  deviceMetrics,
   maxScore = 10
 }: {
   deviceScore: number;
   deviceScorePercent: number;
+  deviceMetrics: any;
   maxScore?: number;
 }) => {
   // Calculate gradient colors based on score
@@ -113,44 +270,56 @@ const DeviceScoreCard = ({
   const scoreColor = getScoreColor(deviceScorePercent);
   
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <Laptop className="h-5 w-5 text-green-500" />
-          <CardTitle className="text-lg">Microsoft 365 Device Score</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center">
-          <div className="w-32 h-32 mr-6">
-            <CircularProgressbar
-              value={deviceScorePercent}
-              text={`${deviceScorePercent}%`}
-              styles={buildStyles({
-                pathColor: scoreColor,
-                textColor: scoreColor,
-                trailColor: "#e5e7eb",
-                textSize: "22px",
-              })}
-            />
-          </div>
-          <div>
-            <div className="flex items-center mb-2">
-              {getScoreIcon(deviceScorePercent)}
-              <span className="ml-2 font-medium text-lg">{getScoreDescription(deviceScorePercent)}</span>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <Laptop className="h-5 w-5 text-green-500" />
+              <CardTitle className="text-lg">Microsoft 365 Device Score</CardTitle>
             </div>
-            <p className="text-gray-600">
-              Score: <span className="font-medium">{deviceScore}</span> / {maxScore}
-            </p>
-            <p className="text-gray-600 mt-1">
-              {deviceScorePercent < 40 && "Critical device security issues"}
-              {deviceScorePercent >= 40 && deviceScorePercent < 70 && "Device security needs attention"}
-              {deviceScorePercent >= 70 && "Good device security posture"}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center">
+              <div className="w-32 h-32 mr-6">
+                <CircularProgressbar
+                  value={deviceScorePercent}
+                  text={`${deviceScorePercent}%`}
+                  styles={buildStyles({
+                    pathColor: scoreColor,
+                    textColor: scoreColor,
+                    trailColor: "#e5e7eb",
+                    textSize: "22px",
+                  })}
+                />
+              </div>
+              <div>
+                <div className="flex items-center mb-2">
+                  {getScoreIcon(deviceScorePercent)}
+                  <span className="ml-2 font-medium text-lg">{getScoreDescription(deviceScorePercent)}</span>
+                </div>
+                <p className="text-gray-600">
+                  Score: <span className="font-medium">{deviceScore}</span> / {maxScore}
+                </p>
+                <p className="text-gray-600 mt-1">
+                  {deviceScorePercent < 40 && "Critical device security issues"}
+                  {deviceScorePercent >= 40 && deviceScorePercent < 70 && "Device security needs attention"}
+                  {deviceScorePercent >= 70 && "Good device security posture"}
+                </p>
+                <Button variant="outline" size="sm" className="mt-3">
+                  <Info className="h-4 w-4 mr-1" /> View Recommendations
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </DialogTrigger>
+      <DeviceRecommendationsDialog 
+        deviceScore={deviceScore}
+        deviceScorePercent={deviceScorePercent}
+        deviceMetrics={deviceMetrics}
+      />
+    </Dialog>
   );
 };
 
@@ -188,7 +357,7 @@ const SecureScoreCard = ({
   const scoreColor = getScoreColor(secureScorePercent);
   
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <Shield className="h-5 w-5 text-blue-500" />
@@ -222,6 +391,9 @@ const SecureScoreCard = ({
               {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
               {secureScorePercent >= 70 && "Good security posture"}
             </p>
+            <Button variant="outline" size="sm" className="mt-3">
+              <Info className="h-4 w-4 mr-1" /> View Secure Score Details
+            </Button>
           </div>
         </div>
       </CardContent>
@@ -461,6 +633,7 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
           <DeviceScoreCard
             deviceScore={deviceScore}
             deviceScorePercent={deviceScorePercent}
+            deviceMetrics={securityData.deviceMetrics || {}}
             maxScore={10}
           />
         </div>
