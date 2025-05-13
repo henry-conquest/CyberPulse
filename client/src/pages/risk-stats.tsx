@@ -341,11 +341,13 @@ const DeviceScoreCard = ({
   deviceScore,
   deviceScorePercent,
   deviceMetrics,
+  securityData,
   maxScore = 10
 }: {
   deviceScore: number;
   deviceScorePercent: number;
   deviceMetrics: any;
+  securityData: any;
   maxScore?: number;
 }) => {
   // Calculate gradient colors based on score
@@ -420,6 +422,7 @@ const DeviceScoreCard = ({
         deviceScore={deviceScore}
         deviceScorePercent={deviceScorePercent}
         deviceMetrics={deviceMetrics}
+        securityData={securityData}
       />
     </Dialog>
   );
@@ -781,7 +784,7 @@ const SecureScoreCard = ({
         secureScore={secureScore}
         secureScorePercent={secureScorePercent}
         maxScore={maxScore}
-        securityData={securityData || {}}
+        securityData={securityData}
       />
     </Dialog>
   );
@@ -875,7 +878,7 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
   }
 
   // Get the security data
-  const securityData = report.securityData || {};
+  let securityData = report.securityData || {};
   
   // Parse security data if it's a string
   if (typeof securityData === 'string') {
@@ -1020,6 +1023,7 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
             deviceScore={deviceScore}
             deviceScorePercent={deviceScorePercent}
             deviceMetrics={securityData.deviceMetrics || {}}
+            securityData={securityData}
             maxScore={10}
           />
         </div>
