@@ -946,6 +946,7 @@ const DeviceScoreCard = ({
           deviceScorePercent={deviceScorePercent}
           deviceMetrics={deviceMetrics}
           securityData={securityData}
+          tenantId={tenantId}
         />
       </Dialog>
     </>
