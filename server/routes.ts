@@ -1598,7 +1598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { quarter, year } = getQuarterInfo(now);
       
       // Delete any existing data first
-      await db.delete(secureScoreHistory).where(eq(secureScoreHistory.tenantId, tenantId));
+      await storage.deleteSecureScoreHistoryByTenantId(tenantId);
       
       // Generate test data for the last 90 days
       const entries = [];
@@ -1612,7 +1612,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const score = Math.max(180, Math.min(285, baseScore + randomVariation));
         const scorePercent = Math.round((score / 285) * 100);
         
-        entries.push({
+        // Create each history entry
+        await storage.createSecureScoreHistory({
           tenantId,
           score,
           scorePercent,
@@ -1623,16 +1624,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Insert the data in batches
-      const batchSize = 30;
-      for (let i = 0; i < entries.length; i += batchSize) {
-        const batch = entries.slice(i, i + batchSize);
-        await db.insert(secureScoreHistory).values(batch);
-      }
-      
       res.json({ 
         message: "Test secure score history data generated successfully",
-        count: entries.length
+        count: 90 // We created 90 entries
       });
     } catch (error) {
       console.error("Error generating test secure score history:", error);

@@ -112,6 +112,7 @@ export interface IStorage {
   getSecureScoreHistoryByTenantId(tenantId: number, limit?: number): Promise<SecureScoreHistory[]>;
   getSecureScoreHistoryForPeriod(tenantId: number, startDate: Date, endDate: Date): Promise<SecureScoreHistory[]>;
   getLatestSecureScoreForTenant(tenantId: number): Promise<SecureScoreHistory | undefined>;
+  deleteSecureScoreHistoryByTenantId(tenantId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -635,6 +636,12 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(asc(secureScoreHistory.recordedAt));
+  }
+
+  async deleteSecureScoreHistoryByTenantId(tenantId: number): Promise<void> {
+    await db
+      .delete(secureScoreHistory)
+      .where(eq(secureScoreHistory.tenantId, tenantId));
   }
 
   async getLatestSecureScoreForTenant(tenantId: number): Promise<SecureScoreHistory | undefined> {
