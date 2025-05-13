@@ -1578,49 +1578,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Populate test secure score history data for a tenant (development only)
   app.get("/api/tenants/:id/test-secure-score-history", isAuthenticated, isAuthorized([UserRoles.ADMIN]), asyncHandler(async (req, res) => {
+    console.log("Test data generation endpoint called");
     const userId = (req.user as any).claims.sub;
     const tenantId = parseInt(req.params.id);
     
+    console.log(`User ID: ${userId}, Tenant ID: ${tenantId}`);
+    
     // Check if user has access to this tenant
     const hasAccess = await hasTenantAccess(userId, tenantId);
+    console.log(`User has access to tenant: ${hasAccess}`);
+    
     if (!hasAccess) {
+      console.log("Access denied for user to this tenant");
       return res.status(403).json({ message: "You don't have access to this tenant" });
     }
     
     try {
+      console.log("Fetching tenant details");
       const tenant = await storage.getTenant(tenantId);
+      console.log("Tenant details:", tenant);
+      
       if (!tenant) {
+        console.log("Tenant not found");
         return res.status(404).json({ message: "Tenant not found" });
       }
       
       // Get the quarter for this record
       const now = new Date();
       const { quarter, year } = getQuarterInfo(now);
+      console.log(`Current quarter: ${quarter}, year: ${year}`);
       
       // Delete any existing data first
-      await storage.deleteSecureScoreHistoryByTenantId(tenantId);
+      console.log(`Attempting to delete existing secure score history for tenant ID ${tenantId}`);
+      try {
+        await storage.deleteSecureScoreHistoryByTenantId(tenantId);
+        console.log(`Successfully deleted existing secure score history for tenant ID ${tenantId}`);
+      } catch (deleteError) {
+        console.error(`Error deleting secure score history: ${deleteError}`);
+        return res.status(500).json({ 
+          message: "Failed to delete existing secure score history data", 
+          error: deleteError instanceof Error ? deleteError.message : "Unknown error" 
+        });
+      }
       
+      console.log(`Starting to generate test data for the last 90 days`);
       // Generate test data for the last 90 days
-      const entries = [];
-      for (let i = 0; i < 90; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        
-        // Create a slightly varying score that generally improves over time
-        const baseScore = 200 + (i * 0.5); // Starts around 200 and increases as we go back in time
-        const randomVariation = Math.random() * 10 - 5; // Random variation between -5 and +5
-        const score = Math.max(180, Math.min(285, baseScore + randomVariation));
-        const scorePercent = Math.round((score / 285) * 100);
-        
-        // Create each history entry
-        await storage.createSecureScoreHistory({
-          tenantId,
-          score,
-          scorePercent,
-          maxScore: 285,
-          recordedAt: date,
-          reportQuarter: quarter,
-          reportYear: year
+      let entriesCreated = 0;
+      try {
+        for (let i = 0; i < 90; i++) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          
+          // Create a slightly varying score that generally improves over time
+          const baseScore = 200 + (i * 0.5); // Starts around 200 and increases as we go back in time
+          const randomVariation = Math.random() * 10 - 5; // Random variation between -5 and +5
+          const score = Math.max(180, Math.min(285, baseScore + randomVariation));
+          const scorePercent = Math.round((score / 285) * 100);
+          
+          // Log the entry we're creating
+          console.log(`Creating entry ${i+1}/90: date=${date.toISOString()}, score=${score}, percent=${scorePercent}`);
+          
+          // Create each history entry
+          const entry = await storage.createSecureScoreHistory({
+            tenantId,
+            score,
+            scorePercent,
+            maxScore: 285,
+            recordedAt: date,
+            reportQuarter: quarter,
+            reportYear: year
+          });
+          
+          console.log(`Created entry with ID: ${entry.id}`);
+          entriesCreated++;
+        }
+        console.log(`Successfully created ${entriesCreated} secure score history entries`);
+      } catch (creationError) {
+        console.error(`Error creating secure score history entries: ${creationError}`);
+        return res.status(500).json({
+          message: `Failed to create all entries. Created ${entriesCreated} of 90 before error occurred.`,
+          error: creationError instanceof Error ? creationError.message : "Unknown error"
         });
       }
       
