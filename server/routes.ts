@@ -16,8 +16,10 @@ import {
   ReportStatus,
   RecommendationStatus,
   RecommendationPriority,
-  RecommendationCategory
+  RecommendationCategory,
+  tenantWidgetRecommendations
 } from "@shared/schema";
+import { db } from "./db";
 import { MicrosoftGraphService } from "./microsoft";
 import { NinjaOneService } from "./ninjaone";
 import { 

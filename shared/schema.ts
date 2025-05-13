@@ -331,10 +331,10 @@ export const RiskLevel = {
 } as const;
 
 export const WidgetType = {
-  SECURE_SCORE: "SecureScore",
-  DEVICE_SCORE: "DeviceScore", 
-  IDENTITY: "Identity",
-  DEVICE: "Device",
-  CLOUD: "Cloud",
-  THREAT: "Threat",
+  SECURE_SCORE: "SECURE_SCORE",
+  DEVICE_SCORE: "DEVICE_SCORE", 
+  IDENTITY: "IDENTITY",
+  DEVICE: "DEVICE",
+  CLOUD: "CLOUD",
+  THREAT: "THREAT",
 } as const;
