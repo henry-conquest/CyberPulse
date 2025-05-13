@@ -106,6 +106,12 @@ export interface IStorage {
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getAuditLogsByTenantId(tenantId: number): Promise<AuditLog[]>;
   getAuditLogsByUserId(userId: string): Promise<AuditLog[]>;
+  
+  // Secure Score History
+  createSecureScoreHistory(data: InsertSecureScoreHistory): Promise<SecureScoreHistory>;
+  getSecureScoreHistoryByTenantId(tenantId: number, limit?: number): Promise<SecureScoreHistory[]>;
+  getSecureScoreHistoryForPeriod(tenantId: number, startDate: Date, endDate: Date): Promise<SecureScoreHistory[]>;
+  getLatestSecureScoreForTenant(tenantId: number): Promise<SecureScoreHistory | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -597,6 +603,48 @@ export class DatabaseStorage implements IStorage {
       .from(auditLogs)
       .where(eq(auditLogs.userId, userId))
       .orderBy(desc(auditLogs.timestamp));
+  }
+
+  // Secure Score History implementations
+  async createSecureScoreHistory(data: InsertSecureScoreHistory): Promise<SecureScoreHistory> {
+    const [entry] = await db
+      .insert(secureScoreHistory)
+      .values(data)
+      .returning();
+    return entry;
+  }
+
+  async getSecureScoreHistoryByTenantId(tenantId: number, limit: number = 90): Promise<SecureScoreHistory[]> {
+    return await db
+      .select()
+      .from(secureScoreHistory)
+      .where(eq(secureScoreHistory.tenantId, tenantId))
+      .orderBy(desc(secureScoreHistory.recordedAt))
+      .limit(limit);
+  }
+
+  async getSecureScoreHistoryForPeriod(tenantId: number, startDate: Date, endDate: Date): Promise<SecureScoreHistory[]> {
+    return await db
+      .select()
+      .from(secureScoreHistory)
+      .where(
+        and(
+          eq(secureScoreHistory.tenantId, tenantId),
+          sql`${secureScoreHistory.recordedAt} >= ${startDate}`,
+          sql`${secureScoreHistory.recordedAt} <= ${endDate}`
+        )
+      )
+      .orderBy(asc(secureScoreHistory.recordedAt));
+  }
+
+  async getLatestSecureScoreForTenant(tenantId: number): Promise<SecureScoreHistory | undefined> {
+    const [latestScore] = await db
+      .select()
+      .from(secureScoreHistory)
+      .where(eq(secureScoreHistory.tenantId, tenantId))
+      .orderBy(desc(secureScoreHistory.recordedAt))
+      .limit(1);
+    return latestScore;
   }
 }
 

@@ -819,6 +819,33 @@ export class MicrosoftGraphService {
       const scorePercent = secureScore ? 
         Math.round((secureScore.currentScore / secureScore.maxScore) * 100) : 50;
       
+      // Record the secure score in our history database for trending
+      if (secureScore) {
+        try {
+          const tenantId = typeof this.connection.tenantId === 'string' ? 
+            parseInt(this.connection.tenantId) : this.connection.tenantId;
+          
+          // Get current report period
+          const today = new Date();
+          const quarter = Math.floor((today.getMonth() / 3) + 1) as 1 | 2 | 3 | 4;
+          const year = today.getFullYear();
+          
+          await storage.createSecureScoreHistory({
+            tenantId,
+            score: secureScore.currentScore,
+            scorePercent,
+            maxScore: secureScore.maxScore,
+            recordedAt: new Date(),
+            reportQuarter: quarter,
+            reportYear: year
+          });
+          
+          console.log(`Recorded secure score history for tenant ${this.connection.tenantId}`);
+        } catch (error) {
+          console.error(`Error recording secure score history for tenant ${this.connection.tenantId}:`, error);
+        }
+      }
+      
       console.log(`Successfully aggregated security metrics for tenant ${this.connection.tenantId}`);
       
       return {
