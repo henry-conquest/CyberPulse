@@ -137,32 +137,41 @@ export default function GlobalRecommendations() {
   const createMutation = useMutation({
     mutationFn: async (data: FormValues) => {
       // First create the global recommendation
-      const response = await apiRequest("POST", "/api/global-recommendations", {
-        title: data.title,
-        description: data.description,
-        priority: data.priority,
-        category: data.category,
-        icon: data.icon,
-        active: data.active,
+      const response = await fetch("/api/global-recommendations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          priority: data.priority,
+          category: data.category,
+          icon: data.icon,
+          active: data.active,
+        }),
+        credentials: "include",
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to create recommendation: ${errorText}`);
+      }
+      
+      // Parse the response JSON
+      const responseData = await response.json();
       
       // If we need to associate with specific tenants
       if (!data.applyToAllTenants && data.tenantIds && data.tenantIds.length > 0) {
-        // Parse the response as JSON to get the ID
-        const responseJson = await response.json();
-        const recommendationId = responseJson.id;
-        
         // Create associations for each tenant
         await Promise.all(data.tenantIds.map(async (tenantId) => {
           await apiRequest("POST", `/api/tenants/${tenantId}/widget-recommendations`, {
             tenantId: tenantId,
-            globalRecommendationId: recommendationId,
+            globalRecommendationId: responseData.id,
             widgetType: data.category  // Use the category as the widget type
           });
         }));
       }
       
-      return response;
+      return responseData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
@@ -186,14 +195,26 @@ export default function GlobalRecommendations() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: FormValues }) => {
       // First update the global recommendation
-      const response = await apiRequest("PUT", `/api/global-recommendations/${id}`, {
-        title: data.title,
-        description: data.description,
-        priority: data.priority,
-        category: data.category,
-        icon: data.icon,
-        active: data.active,
+      const response = await fetch(`/api/global-recommendations/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          priority: data.priority,
+          category: data.category,
+          icon: data.icon,
+          active: data.active,
+        }),
+        credentials: "include",
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to update recommendation: ${errorText}`);
+      }
+      
+      const responseData = await response.json();
       
       // If we need to associate with specific tenants
       if (!data.applyToAllTenants && data.tenantIds && data.tenantIds.length > 0) {
@@ -212,7 +233,7 @@ export default function GlobalRecommendations() {
         }));
       }
       
-      return response;
+      return responseData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
