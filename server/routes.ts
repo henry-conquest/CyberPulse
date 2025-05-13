@@ -1572,7 +1572,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Global recommendation not found" });
     }
     
+    // Check if category changed
+    const categoryChanged = existingRecommendation.category !== req.body.category;
+    
+    // Update the global recommendation
     const recommendation = await storage.updateGlobalRecommendation(Number(id), req.body);
+    
+    // If category changed, update all tenant widget recommendations referencing this global recommendation
+    if (categoryChanged) {
+      try {
+        // Get all tenant widget recommendations using this global recommendation
+        const tenantWidgetRecs = await storage.getTenantWidgetRecommendationsByGlobalId(Number(id));
+        
+        // Update each tenant widget recommendation to use the new category as widget type
+        for (const twRec of tenantWidgetRecs) {
+          await storage.updateTenantWidgetRecommendation(twRec.id, {
+            ...twRec,
+            widgetType: req.body.category
+          });
+        }
+        
+        // Add to audit log
+        await storage.createAuditLog({
+          userId,
+          action: "update_tenant_widget_recommendations",
+          details: `Updated ${tenantWidgetRecs.length} tenant widget recommendations to new widget type: ${req.body.category}`,
+        });
+      } catch (error) {
+        console.error("Error updating tenant widget recommendations:", error);
+        // Continue anyway - we updated the global recommendation, so this is a partial success
+      }
+    }
     
     // Create audit log
     await storage.createAuditLog({
