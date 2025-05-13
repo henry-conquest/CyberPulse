@@ -14,12 +14,18 @@ import {
   XCircle,
   Info,
   HardDrive,
-  ShieldCheck
+  ShieldCheck,
+  UserCheck,
+  Mail,
+  MailCheck,
+  Tag,
+  Key
 } from "lucide-react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
   Card, 
   CardContent, 
@@ -102,6 +108,9 @@ const DeviceRecommendationsDialog = ({
   deviceScorePercent: number;
   deviceMetrics: any;
 }) => {
+  // State for priority filter
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  
   // Generate appropriate recommendations based on security status
   const getRecommendations = () => {
     const recommendations = [];
@@ -164,7 +173,27 @@ const DeviceRecommendationsDialog = ({
     return recommendations;
   };
   
-  const recommendations = getRecommendations();
+  const allRecommendations = getRecommendations();
+  
+  // Filter recommendations based on selected priority
+  const recommendations = priorityFilter
+    ? allRecommendations.filter(rec => rec.priority === priorityFilter)
+    : allRecommendations;
+  
+  // Count recommendations by priority
+  const highCount = allRecommendations.filter(rec => rec.priority === "High").length;
+  const mediumCount = allRecommendations.filter(rec => rec.priority === "Medium").length;
+  const lowCount = allRecommendations.filter(rec => rec.priority === "Low").length;
+  const infoCount = allRecommendations.filter(rec => rec.priority === "Info").length;
+  
+  // Handle priority filter toggle
+  const togglePriorityFilter = (priority: string) => {
+    if (priorityFilter === priority) {
+      setPriorityFilter(null); // Clear filter if same priority clicked
+    } else {
+      setPriorityFilter(priority); // Set new filter
+    }
+  };
   
   return (
     <DialogContent className="max-w-3xl">
@@ -199,29 +228,102 @@ const DeviceRecommendationsDialog = ({
           </div>
         </div>
         
+        {/* Priority Filter Buttons */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          <Button 
+            variant={priorityFilter === "High" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => togglePriorityFilter("High")}
+            className={cn(
+              "border-red-200",
+              priorityFilter === "High" ? "bg-red-500 hover:bg-red-600" : "text-red-800 hover:bg-red-50"
+            )}
+            disabled={highCount === 0}
+          >
+            High Priority {highCount > 0 && `(${highCount})`}
+          </Button>
+          
+          <Button 
+            variant={priorityFilter === "Medium" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => togglePriorityFilter("Medium")}
+            className={cn(
+              "border-amber-200",
+              priorityFilter === "Medium" ? "bg-amber-500 hover:bg-amber-600" : "text-amber-800 hover:bg-amber-50"
+            )}
+            disabled={mediumCount === 0}
+          >
+            Medium Priority {mediumCount > 0 && `(${mediumCount})`}
+          </Button>
+          
+          <Button 
+            variant={priorityFilter === "Low" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => togglePriorityFilter("Low")}
+            className={cn(
+              "border-blue-200",
+              priorityFilter === "Low" ? "bg-blue-500 hover:bg-blue-600" : "text-blue-800 hover:bg-blue-50"
+            )}
+            disabled={lowCount === 0}
+          >
+            Low Priority {lowCount > 0 && `(${lowCount})`}
+          </Button>
+          
+          <Button 
+            variant={priorityFilter === "Info" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => togglePriorityFilter("Info")}
+            className={cn(
+              "border-green-200",
+              priorityFilter === "Info" ? "bg-green-500 hover:bg-green-600" : "text-green-800 hover:bg-green-50"
+            )}
+            disabled={infoCount === 0}
+          >
+            Info {infoCount > 0 && `(${infoCount})`}
+          </Button>
+          
+          {priorityFilter && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setPriorityFilter(null)}
+              className="ml-auto"
+            >
+              Show All
+            </Button>
+          )}
+        </div>
+        
+        {/* Recommendations List */}
         <div className="space-y-4">
-          {recommendations.map((rec, index) => (
-            <div key={index} className="border rounded-lg p-4">
-              <div className="flex items-start">
-                <div className="mr-3 mt-0.5">{rec.icon}</div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">{rec.title}</h4>
-                    <span className={cn(
-                      "text-xs rounded-full px-2 py-1 font-medium",
-                      rec.priority === "High" ? "bg-red-100 text-red-800" :
-                      rec.priority === "Medium" ? "bg-amber-100 text-amber-800" :
-                      rec.priority === "Low" ? "bg-blue-100 text-blue-800" :
-                      "bg-green-100 text-green-800"
-                    )}>
-                      {rec.priority} Priority
-                    </span>
+          {recommendations.length > 0 ? (
+            recommendations.map((rec, index) => (
+              <div key={index} className="border rounded-lg p-4 transition-all hover:shadow-md">
+                <div className="flex items-start">
+                  <div className="mr-3 mt-0.5">{rec.icon}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">{rec.title}</h4>
+                      <span className={cn(
+                        "text-xs rounded-full px-2 py-1 font-medium",
+                        rec.priority === "High" ? "bg-red-100 text-red-800" :
+                        rec.priority === "Medium" ? "bg-amber-100 text-amber-800" :
+                        rec.priority === "Low" ? "bg-blue-100 text-blue-800" :
+                        "bg-green-100 text-green-800"
+                      )}>
+                        {rec.priority} Priority
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              No recommendations match the selected priority filter.
             </div>
-          ))}
+          )}
         </div>
       </div>
       
@@ -323,6 +425,280 @@ const DeviceScoreCard = ({
   );
 };
 
+// Secure Score Recommendations Dialog
+const SecureScoreRecommendationsDialog = ({
+  secureScore,
+  secureScorePercent,
+  maxScore,
+  securityData
+}: {
+  secureScore: number;
+  secureScorePercent: number;
+  maxScore: number;
+  securityData: any;
+}) => {
+  // State for priority filter
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  
+  // Generate appropriate recommendations based on security status
+  const getRecommendations = () => {
+    const recommendations = [];
+    
+    // Identity recommendations
+    if (securityData?.identityMetrics?.mfaNotEnabled > 0) {
+      recommendations.push({
+        icon: <UserCheck className="h-5 w-5 text-red-500" />,
+        title: "Enable Multi-Factor Authentication",
+        description: `${securityData.identityMetrics.mfaNotEnabled} users don't have MFA enabled. Enable MFA for all accounts to prevent credential theft.`,
+        priority: "High",
+        category: "Identity"
+      });
+    }
+    
+    if (securityData?.identityMetrics?.globalAdmins > 2) {
+      recommendations.push({
+        icon: <Users className="h-5 w-5 text-red-500" />,
+        title: "Reduce Global Administrators",
+        description: `You have ${securityData.identityMetrics.globalAdmins} global admin accounts. Reduce to a minimum of 2-3 administrators.`,
+        priority: "High",
+        category: "Identity"
+      });
+    }
+    
+    if (!securityData?.identityMetrics?.roleBasedAccessControl) {
+      recommendations.push({
+        icon: <Key className="h-5 w-5 text-amber-500" />,
+        title: "Implement Role-Based Access Control",
+        description: "Use role-based access control to apply the principle of least privilege.",
+        priority: "Medium",
+        category: "Identity"
+      });
+    }
+    
+    // Cloud recommendations
+    if (!securityData?.cloudMetrics?.dkimPolicies) {
+      recommendations.push({
+        icon: <MailCheck className="h-5 w-5 text-amber-500" />,
+        title: "Configure DKIM for Email",
+        description: "Configure DKIM (DomainKeys Identified Mail) to prevent email spoofing.",
+        priority: "Medium",
+        category: "Cloud"
+      });
+    }
+    
+    if (!securityData?.cloudMetrics?.dmarcPolicies) {
+      recommendations.push({
+        icon: <Mail className="h-5 w-5 text-red-500" />,
+        title: "Implement DMARC Policy",
+        description: "Implement DMARC policies to protect against email phishing and spoofing.",
+        priority: "High",
+        category: "Cloud"
+      });
+    }
+    
+    if (!securityData?.cloudMetrics?.sensitivityLabels) {
+      recommendations.push({
+        icon: <Tag className="h-5 w-5 text-blue-500" />,
+        title: "Use Sensitivity Labels",
+        description: "Implement sensitivity labels to classify and protect sensitive data.",
+        priority: "Low",
+        category: "Cloud"
+      });
+    }
+    
+    // Best practice recommendations for any score
+    if (secureScorePercent >= 70) {
+      recommendations.push({
+        icon: <Shield className="h-5 w-5 text-green-500" />,
+        title: "Regular Security Assessments",
+        description: "Continue your good security posture by conducting regular security assessments.",
+        priority: "Info",
+        category: "Best Practice"
+      });
+    }
+    
+    // If all checks passed or if no specific recommendations available
+    if (recommendations.length === 0) {
+      recommendations.push({
+        icon: <Check className="h-5 w-5 text-green-500" />,
+        title: "Continue your good work",
+        description: "Your Microsoft 365 security configuration appears to be in good standing. Continue to monitor and maintain your current policies.",
+        priority: "Info",
+        category: "Best Practice"
+      });
+    }
+    
+    return recommendations;
+  };
+  
+  const allRecommendations = getRecommendations();
+  
+  // Filter recommendations based on selected priority
+  const recommendations = priorityFilter
+    ? allRecommendations.filter(rec => rec.priority === priorityFilter)
+    : allRecommendations;
+  
+  // Count recommendations by priority
+  const highCount = allRecommendations.filter(rec => rec.priority === "High").length;
+  const mediumCount = allRecommendations.filter(rec => rec.priority === "Medium").length;
+  const lowCount = allRecommendations.filter(rec => rec.priority === "Low").length;
+  const infoCount = allRecommendations.filter(rec => rec.priority === "Info").length;
+  
+  // Handle priority filter toggle
+  const togglePriorityFilter = (priority: string) => {
+    if (priorityFilter === priority) {
+      setPriorityFilter(null); // Clear filter if same priority clicked
+    } else {
+      setPriorityFilter(priority); // Set new filter
+    }
+  };
+  
+  return (
+    <DialogContent className="max-w-3xl">
+      <DialogHeader>
+        <DialogTitle className="text-xl">Microsoft Secure Score Recommendations</DialogTitle>
+        <DialogDescription>
+          Improve your Microsoft 365 security posture with these recommendations
+        </DialogDescription>
+      </DialogHeader>
+      
+      <div className="py-4">
+        <div className="flex items-center mb-6">
+          <div className="w-20 h-20 mr-6">
+            <CircularProgressbar
+              value={secureScorePercent}
+              text={`${secureScorePercent}%`}
+              styles={buildStyles({
+                pathColor: secureScorePercent >= 70 ? "#22c55e" : secureScorePercent >= 40 ? "#eab308" : "#ef4444",
+                textColor: secureScorePercent >= 70 ? "#22c55e" : secureScorePercent >= 40 ? "#eab308" : "#ef4444",
+                trailColor: "#e5e7eb",
+                textSize: "22px",
+              })}
+            />
+          </div>
+          <div>
+            <h3 className="text-lg font-medium">Current Secure Score: {secureScore.toFixed(1)}/{maxScore}</h3>
+            <p className="text-muted-foreground">
+              {secureScorePercent < 40 && "Your Microsoft 365 environment requires urgent security improvements"}
+              {secureScorePercent >= 40 && secureScorePercent < 70 && "Your Microsoft 365 security needs improvement"}
+              {secureScorePercent >= 70 && "Your Microsoft 365 security posture is good but can be further improved"}
+            </p>
+          </div>
+        </div>
+        
+        {/* Priority Filter Buttons */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          <Button 
+            variant={priorityFilter === "High" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => togglePriorityFilter("High")}
+            className={cn(
+              "border-red-200",
+              priorityFilter === "High" ? "bg-red-500 hover:bg-red-600" : "text-red-800 hover:bg-red-50"
+            )}
+            disabled={highCount === 0}
+          >
+            High Priority {highCount > 0 && `(${highCount})`}
+          </Button>
+          
+          <Button 
+            variant={priorityFilter === "Medium" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => togglePriorityFilter("Medium")}
+            className={cn(
+              "border-amber-200",
+              priorityFilter === "Medium" ? "bg-amber-500 hover:bg-amber-600" : "text-amber-800 hover:bg-amber-50"
+            )}
+            disabled={mediumCount === 0}
+          >
+            Medium Priority {mediumCount > 0 && `(${mediumCount})`}
+          </Button>
+          
+          <Button 
+            variant={priorityFilter === "Low" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => togglePriorityFilter("Low")}
+            className={cn(
+              "border-blue-200",
+              priorityFilter === "Low" ? "bg-blue-500 hover:bg-blue-600" : "text-blue-800 hover:bg-blue-50"
+            )}
+            disabled={lowCount === 0}
+          >
+            Low Priority {lowCount > 0 && `(${lowCount})`}
+          </Button>
+          
+          <Button 
+            variant={priorityFilter === "Info" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => togglePriorityFilter("Info")}
+            className={cn(
+              "border-green-200",
+              priorityFilter === "Info" ? "bg-green-500 hover:bg-green-600" : "text-green-800 hover:bg-green-50"
+            )}
+            disabled={infoCount === 0}
+          >
+            Info {infoCount > 0 && `(${infoCount})`}
+          </Button>
+          
+          {priorityFilter && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setPriorityFilter(null)}
+              className="ml-auto"
+            >
+              Show All
+            </Button>
+          )}
+        </div>
+        
+        {/* Recommendations List */}
+        <div className="space-y-4">
+          {recommendations.length > 0 ? (
+            recommendations.map((rec, index) => (
+              <div key={index} className="border rounded-lg p-4 transition-all hover:shadow-md">
+                <div className="flex items-start">
+                  <div className="mr-3 mt-0.5">{rec.icon}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">{rec.title}</h4>
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs px-2 py-1 rounded border text-gray-600">
+                          {rec.category}
+                        </div>
+                        <span className={cn(
+                          "text-xs rounded-full px-2 py-1 font-medium",
+                          rec.priority === "High" ? "bg-red-100 text-red-800" :
+                          rec.priority === "Medium" ? "bg-amber-100 text-amber-800" :
+                          rec.priority === "Low" ? "bg-blue-100 text-blue-800" :
+                          "bg-green-100 text-green-800"
+                        )}>
+                          {rec.priority} Priority
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              No recommendations match the selected priority filter.
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline">Close</Button>
+        </DialogClose>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
+
 // SecureScore component
 const SecureScoreCard = ({ 
   secureScore, 
@@ -357,47 +733,57 @@ const SecureScoreCard = ({
   const scoreColor = getScoreColor(secureScorePercent);
   
   return (
-    <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-blue-500" />
-          <CardTitle className="text-lg">Microsoft Secure Score</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center">
-          <div className="w-32 h-32 mr-6">
-            <CircularProgressbar
-              value={secureScorePercent}
-              text={`${secureScorePercent}%`}
-              styles={buildStyles({
-                pathColor: scoreColor,
-                textColor: scoreColor,
-                trailColor: "#e5e7eb",
-                textSize: "22px",
-              })}
-            />
-          </div>
-          <div>
-            <div className="flex items-center mb-2">
-              {getScoreIcon(secureScorePercent)}
-              <span className="ml-2 font-medium text-lg">{getScoreDescription(secureScorePercent)}</span>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-blue-500" />
+              <CardTitle className="text-lg">Microsoft Secure Score</CardTitle>
             </div>
-            <p className="text-gray-600">
-              Score: <span className="font-medium">{secureScore.toFixed(1)}</span> / {maxScore}
-            </p>
-            <p className="text-gray-600 mt-1">
-              {secureScorePercent < 40 && "Urgent action required"}
-              {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
-              {secureScorePercent >= 70 && "Good security posture"}
-            </p>
-            <Button variant="outline" size="sm" className="mt-3">
-              <Info className="h-4 w-4 mr-1" /> View Secure Score Details
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center">
+              <div className="w-32 h-32 mr-6">
+                <CircularProgressbar
+                  value={secureScorePercent}
+                  text={`${secureScorePercent}%`}
+                  styles={buildStyles({
+                    pathColor: scoreColor,
+                    textColor: scoreColor,
+                    trailColor: "#e5e7eb",
+                    textSize: "22px",
+                  })}
+                />
+              </div>
+              <div>
+                <div className="flex items-center mb-2">
+                  {getScoreIcon(secureScorePercent)}
+                  <span className="ml-2 font-medium text-lg">{getScoreDescription(secureScorePercent)}</span>
+                </div>
+                <p className="text-gray-600">
+                  Score: <span className="font-medium">{secureScore.toFixed(1)}</span> / {maxScore}
+                </p>
+                <p className="text-gray-600 mt-1">
+                  {secureScorePercent < 40 && "Urgent action required"}
+                  {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
+                  {secureScorePercent >= 70 && "Good security posture"}
+                </p>
+                <Button variant="outline" size="sm" className="mt-3">
+                  <Info className="h-4 w-4 mr-1" /> View Secure Score Details
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </DialogTrigger>
+      <SecureScoreRecommendationsDialog 
+        secureScore={secureScore}
+        secureScorePercent={secureScorePercent}
+        maxScore={maxScore}
+        securityData={securityData || {}}
+      />
+    </Dialog>
   );
 };
 
