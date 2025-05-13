@@ -13,6 +13,8 @@ import {
   date,
   unique,
   foreignKey,
+  real,
+  doublePrecision,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -158,6 +160,18 @@ export const recommendations = pgTable("recommendations", {
   completedAt: timestamp("completed_at"),
 });
 
+// Historical secure scores for trending
+export const secureScoreHistory = pgTable("secure_score_history", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().references(() => tenants.id),
+  score: real("score").notNull(),
+  scorePercent: real("score_percent").notNull(),
+  maxScore: real("max_score"),
+  recordedAt: timestamp("recorded_at").notNull().defaultNow(),
+  reportQuarter: integer("report_quarter"),
+  reportYear: integer("report_year"),
+});
+
 // Audit logs
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -172,6 +186,9 @@ export const auditLogs = pgTable("audit_logs", {
 
 // Define insert schemas for the tables
 export const insertTenantSchema = createInsertSchema(tenants).omit({ createdAt: true, updatedAt: true });
+export const insertSecureScoreHistorySchema = createInsertSchema(secureScoreHistory).omit({ id: true });
+export type SecureScoreHistory = typeof secureScoreHistory.$inferSelect;
+export type InsertSecureScoreHistory = typeof secureScoreHistory.$inferInsert;
 export const insertUserTenantSchema = createInsertSchema(userTenants).omit({ createdAt: true });
 export const insertMicrosoft365ConnectionSchema = createInsertSchema(microsoft365Connections).omit({ 
   createdAt: true, 
