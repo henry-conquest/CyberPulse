@@ -8,8 +8,13 @@ import {
   Laptop,
   Cloud,
   Users,
-  ShieldAlert
+  ShieldAlert,
+  Check,
+  AlertTriangle,
+  XCircle
 } from "lucide-react";
+import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
+import "react-circular-progressbar/dist/styles.css";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { 
@@ -71,6 +76,81 @@ const RiskSeverity = ({ score }: { score: number }) => {
     <div className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", bgColor)}>
       {riskLevel}
     </div>
+  );
+};
+
+// SecureScore component
+const SecureScoreCard = ({ 
+  secureScore, 
+  secureScorePercent,
+  maxScore = 278
+}: { 
+  secureScore: number; 
+  secureScorePercent: number;
+  maxScore?: number;
+}) => {
+  // Calculate gradient colors based on score
+  const getScoreColor = (percent: number) => {
+    if (percent >= 70) return "#22c55e"; // green
+    if (percent >= 40) return "#eab308"; // yellow
+    return "#ef4444"; // red
+  };
+
+  // Get appropriate icon for the score
+  const getScoreIcon = (percent: number) => {
+    if (percent >= 70) return <Check className="h-6 w-6 text-green-500" />;
+    if (percent >= 40) return <AlertTriangle className="h-6 w-6 text-amber-500" />;
+    return <XCircle className="h-6 w-6 text-red-500" />;
+  };
+
+  // Get score description
+  const getScoreDescription = (percent: number) => {
+    if (percent >= 70) return "Good";
+    if (percent >= 40) return "Needs Improvement";
+    return "Critical";
+  };
+
+  const scoreColor = getScoreColor(secureScorePercent);
+  
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <Shield className="h-5 w-5 text-blue-500" />
+          <CardTitle className="text-lg">Microsoft Secure Score</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center">
+          <div className="w-32 h-32 mr-6">
+            <CircularProgressbar
+              value={secureScorePercent}
+              text={`${secureScorePercent}%`}
+              styles={buildStyles({
+                pathColor: scoreColor,
+                textColor: scoreColor,
+                trailColor: "#e5e7eb",
+                textSize: "22px",
+              })}
+            />
+          </div>
+          <div>
+            <div className="flex items-center mb-2">
+              {getScoreIcon(secureScorePercent)}
+              <span className="ml-2 font-medium text-lg">{getScoreDescription(secureScorePercent)}</span>
+            </div>
+            <p className="text-gray-600">
+              Score: <span className="font-medium">{secureScore.toFixed(1)}</span> / {maxScore}
+            </p>
+            <p className="text-gray-600 mt-1">
+              {secureScorePercent < 40 && "Urgent action required"}
+              {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
+              {secureScorePercent >= 70 && "Good security posture"}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -162,7 +242,21 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
   }
 
   // Get the security data
-  const securityData = report.securityData || {};
+  let securityData = report.securityData || {};
+  
+  // Parse security data if it's a string
+  if (typeof securityData === 'string') {
+    try {
+      securityData = JSON.parse(securityData);
+    } catch (err) {
+      console.error("Error parsing security data:", err);
+    }
+  }
+
+  // Extract secure score data
+  const secureScore = parseFloat(securityData.secureScore || "0");
+  const secureScorePercent = parseInt(securityData.secureScorePercent || "0");
+  const maxScore = 278; // Standard max score for Microsoft Secure Score
 
   // Get risk scores
   const {
@@ -270,6 +364,15 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Microsoft Secure Score Card */}
+      <div className="mb-8">
+        <SecureScoreCard
+          secureScore={secureScore}
+          secureScorePercent={secureScorePercent}
+          maxScore={maxScore}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
