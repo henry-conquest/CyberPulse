@@ -314,24 +314,45 @@ const DeviceRecommendationsDialog = ({
 }) => {
   // State for priority filter
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  // Add refresh key to force re-fetching when dialog opens
+  const [refreshKey, setRefreshKey] = useState(Date.now());
+  const queryClient = useQueryClient();
+  
+  // Use effect to force refresh when dialog opens
+  useEffect(() => {
+    // Force clear all recommendation caches when dialog opens
+    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`] });
+    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`] });
+    queryClient.removeQueries({ queryKey: ['/api/global-recommendations'] });
+    
+    // Trigger a refresh
+    setRefreshKey(Date.now());
+    
+    console.log("DeviceRecommendationsDialog: Forced refresh of recommendation data");
+  }, []);
   
   // Fetch tenant widget recommendations
   const { data: tenantWidgetRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
-    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`],
-    refetchOnMount: true, // Always refetch when dialog opens
+    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`, refreshKey],
+    refetchOnMount: "always", // Always refetch when dialog opens
     refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 0, // Consider data immediately stale to force refresh
   });
   
   // Fetch secure score recommendations too so we can show them if the category was changed
   const { data: secureScoreRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
-    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`],
-    refetchOnMount: true, // Always refetch when dialog opens
+    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`, refreshKey],
+    refetchOnMount: "always", // Always refetch when dialog opens
     refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 0, // Consider data immediately stale to force refresh
   });
   
   // Fetch global recommendations referenced by tenant widgets
   const { data: globalRecommendations = [] } = useQuery<GlobalRecommendation[]>({
-    queryKey: ['/api/global-recommendations'],
+    queryKey: ['/api/global-recommendations', refreshKey],
+    refetchOnMount: "always", // Always refetch when dialog opens
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 0, // Consider data immediately stale to force refresh
   });
   
   // Generate appropriate recommendations based on security status
@@ -615,24 +636,45 @@ const SecureScoreRecommendationsDialog = ({
 }) => {
   // State for priority filter
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  // Add refresh key to force re-fetching when dialog opens
+  const [refreshKey, setRefreshKey] = useState(Date.now());
+  const queryClient = useQueryClient();
+  
+  // Use effect to force refresh when dialog opens
+  useEffect(() => {
+    // Force clear all recommendation caches when dialog opens
+    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`] });
+    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`] });
+    queryClient.removeQueries({ queryKey: ['/api/global-recommendations'] });
+    
+    // Trigger a refresh
+    setRefreshKey(Date.now());
+    
+    console.log("SecureScoreRecommendationsDialog: Forced refresh of recommendation data");
+  }, []);
   
   // Fetch tenant widget recommendations
   const { data: tenantWidgetRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
-    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`],
-    refetchOnMount: true, // Always refetch when dialog opens
+    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`, refreshKey],
+    refetchOnMount: "always", // Always refetch when dialog opens
     refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 0, // Consider data immediately stale to force refresh
   });
   
   // Fetch device score recommendations too so we can show them if the category was changed
   const { data: deviceScoreRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
-    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`],
-    refetchOnMount: true, // Always refetch when dialog opens
+    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`, refreshKey],
+    refetchOnMount: "always", // Always refetch when dialog opens
     refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 0, // Consider data immediately stale to force refresh
   });
   
   // Fetch global recommendations referenced by tenant widgets
   const { data: globalRecommendations = [] } = useQuery<GlobalRecommendation[]>({
-    queryKey: ['/api/global-recommendations'],
+    queryKey: ['/api/global-recommendations', refreshKey],
+    refetchOnMount: "always", // Always refetch when dialog opens
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 0, // Consider data immediately stale to force refresh
   });
   
   // Generate appropriate recommendations based on security status
