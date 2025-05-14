@@ -1023,68 +1023,48 @@ const SecureScoreRecommendationsDialog = ({
                 key={index} 
                 className={cn(
                   "border rounded-lg p-4 transition-all hover:shadow-md",
-                  rec.isLive ? "bg-blue-50 border-blue-200" : ""
+                  rec.isLive ? "bg-blue-50 border-indigo-200 border-2" : ""
                 )}
               >
                 <div className="flex items-start">
-                  <div className="mr-3 mt-0.5">{rec.icon}</div>
+                  <div className="mr-3 mt-0.5">
+                    {rec.isLive ? <XCircle className="h-5 w-5 text-red-500" /> : rec.icon}
+                  </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium flex items-center">
                         {rec.title}
                         {rec.isLive && (
-                          <span className="ml-2 inline-flex items-center gap-x-1 text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
-                            <ShieldCheck className="w-3 h-3" />
+                          <span className="ml-2 inline-flex items-center gap-x-1 text-xs text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+                            <CircleCheck className="w-3 h-3" />
                             Microsoft
                           </span>
                         )}
                       </h4>
-                      <span className={cn(
-                        "text-xs rounded-full px-2 py-1 font-medium",
+                      <div className={cn(
+                        "text-xs rounded-full px-3 py-1 font-medium whitespace-nowrap",
                         rec.priority === "High" ? "bg-red-100 text-red-800" :
                         rec.priority === "Medium" ? "bg-amber-100 text-amber-800" :
                         rec.priority === "Low" ? "bg-blue-100 text-blue-800" :
                         "bg-green-100 text-green-800"
                       )}>
                         {rec.priority} Priority
-                      </span>
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
                     
-                    {/* Extended information for Microsoft recommendations */}
-                    {rec.isLive && (
-                      <div className="mt-3 border-t border-blue-200 pt-3 space-y-2">
-                        {rec.impact && (
-                          <div>
-                            <h5 className="text-xs font-semibold text-gray-700">Impact</h5>
-                            <p className="text-xs text-muted-foreground">{rec.impact}</p>
-                          </div>
-                        )}
-                        {rec.remediation && (
-                          <div>
-                            <h5 className="text-xs font-semibold text-gray-700">Remediation</h5>
-                            <p className="text-xs text-muted-foreground">{rec.remediation}</p>
-                          </div>
-                        )}
-                        {rec.score > 0 && (
-                          <div className="flex items-center gap-x-2 mt-2">
-                            <div className="text-xs font-medium text-gray-700">Potential score improvement:</div>
-                            <Badge variant="outline" className="text-green-600 bg-green-50">+{rec.score.toFixed(1)} points</Badge>
-                          </div>
-                        )}
-                        {rec.actionUrl && (
-                          <div className="mt-2">
-                            <a 
-                              href={rec.actionUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-x-1"
-                            >
-                              View in Microsoft Portal
-                              <ArrowRight className="w-3 h-3" />
-                            </a>
-                          </div>
-                        )}
+                    {/* Microsoft Portal Link - simplified version */}
+                    {rec.isLive && rec.actionUrl && (
+                      <div className="mt-2">
+                        <a 
+                          href={rec.actionUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-x-1"
+                        >
+                          View in Microsoft Portal
+                          <ArrowRight className="w-3 h-3" />
+                        </a>
                       </div>
                     )}
                   </div>
