@@ -771,9 +771,17 @@ const SecureScoreRecommendationsDialog = ({
       return priorityMap[priority.toUpperCase()] || "Info";
     };
     
-    // Add Microsoft recommendations if available
+    // Add Microsoft recommendations if available - limit to top 10 important recommendations
     if (msRecommendations && msRecommendations.length > 0) {
-      msRecommendations.forEach(rec => {
+      // Sort recommendations by severity (HIGH, MEDIUM, LOW, INFO)
+      const prioritizedRecs = [...msRecommendations].sort((a, b) => {
+        const severityOrder = { 'HIGH': 0, 'MEDIUM': 1, 'LOW': 2, 'INFO': 3 };
+        const severityA = a?.severity?.toUpperCase() || 'INFO';
+        const severityB = b?.severity?.toUpperCase() || 'INFO';
+        return (severityOrder[severityA] || 3) - (severityOrder[severityB] || 3);
+      }).slice(0, 10); // Limit to top 10 recommendations
+      
+      prioritizedRecs.forEach(rec => {
         // Select appropriate icon based on severity
         let icon;
         switch(rec.severity) {
