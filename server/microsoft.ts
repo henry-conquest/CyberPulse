@@ -471,11 +471,15 @@ export class MicrosoftGraphService {
       
       console.log(`Retrieved authentication methods policy for tenant ${this.connection.tenantId}`);
       
-      // Parse the policy to determine which authentication methods are enabled and if only phishing-resistant methods are enabled
+      // Parse the policy to determine which authentication methods are enabled and categorize by security level
       const policy = policyResponse;
       
-      // Define which methods are phishing-resistant
-      const phishingResistantMethods = ['fido2', 'windowsHelloForBusiness', 'certificateBasedAuthentication'];
+      // Define authentication methods by security category based on phishing resistance
+      const methodCategories = {
+        phishResistant: ['fido2', 'windowsHelloForBusiness', 'certificateBasedAuthentication', 'temporaryAccessPass'],
+        partiallySecure: ['microsoftAuthenticator', 'x509CertificateSingleFactor'],
+        insecure: ['email', 'sms', 'softwareOath', 'phoneAuthentication', 'password']
+      };
       
       // Get all the authentication method configurations
       const methodConfigurations = policy.authenticationMethodConfigurations || [];
@@ -485,21 +489,38 @@ export class MicrosoftGraphService {
         .filter((method: any) => method.state === 'enabled')
         .map((method: any) => method.id);
       
-      // Check which non-phishing-resistant methods are enabled
-      const enabledNonPhishingResistantMethods = enabledMethods
-        .filter((methodId: string) => !phishingResistantMethods.includes(methodId));
+      console.log(`Enabled methods for tenant ${this.connection.tenantId}:`, enabledMethods);
       
-      // Check if only phishing-resistant methods are enabled
-      const onlyPhishingResistantEnabled = enabledNonPhishingResistantMethods.length === 0 && 
-        enabledMethods.some((methodId: string) => phishingResistantMethods.includes(methodId));
+      // Categorize enabled methods
+      const enabledPhishResistantMethods = enabledMethods
+        .filter((methodId: string) => methodCategories.phishResistant.includes(methodId));
+      
+      const enabledPartiallySecureMethods = enabledMethods
+        .filter((methodId: string) => methodCategories.partiallySecure.includes(methodId));
+      
+      const enabledInsecureMethods = enabledMethods
+        .filter((methodId: string) => methodCategories.insecure.includes(methodId));
+      
+      // Calculate the risk level based on enabled methods
+      let riskLevel = 'LOW';
+      if (enabledInsecureMethods.length > 0) {
+        riskLevel = 'HIGH';
+      } else if (enabledPartiallySecureMethods.length > 0) {
+        riskLevel = 'MEDIUM';
+      }
       
       // Return a structured response
       return {
         policy,
         enabledMethods,
-        enabledNonPhishingResistantMethods,
-        onlyPhishingResistantEnabled,
-        phishingResistantMethods
+        methodCategories,
+        enabledPhishResistantMethods,
+        enabledPartiallySecureMethods,
+        enabledInsecureMethods,
+        onlyPhishingResistantEnabled: enabledPhishResistantMethods.length > 0 && 
+          enabledPartiallySecureMethods.length === 0 && 
+          enabledInsecureMethods.length === 0,
+        riskLevel
       };
       
     } catch (error: any) {

@@ -761,10 +761,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Retrieved authentication methods policy for tenant ${tenantId}`);
       
-      // Create recommendations for non-phishing-resistant methods
-      const recommendations = policy.enabledNonPhishingResistantMethods.map(methodId => {
+      // Create recommendations for auth methods based on security level
+      const recommendations = [];
+      
+      // Create recommendations for insecure methods - highest priority
+      policy.enabledInsecureMethods.forEach((methodId: string) => {
         let methodName = '';
         let description = '';
+        let severity: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO' = 'HIGH';
         
         // Map method IDs to readable names
         switch (methodId) {
@@ -774,23 +778,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
           case 'sms':
             methodName = 'SMS Authentication';
-            description = 'SMS authentication is not phishing-resistant as it relies on one-time passcodes sent via text message which can be intercepted.';
+            description = 'SMS authentication is not phishing-resistant as it relies on one-time passcodes sent via text message which can be intercepted via SIM swapping, social engineering, or interception.';
             break;
           case 'softwareOath':
-            methodName = 'Authenticator App';
-            description = 'Authenticator apps with time-based one-time passwords are not considered phishing-resistant as they can be susceptible to real-time phishing attacks.';
+            methodName = 'Authenticator App (TOTP)';
+            description = 'Time-based one-time password (TOTP) authenticator apps are susceptible to phishing as codes can be stolen via fake websites.';
             break;
           case 'phoneAuthentication':
             methodName = 'Phone Authentication';
             description = 'Phone authentication is not phishing-resistant as it relies on voice calls which can be redirected or socially engineered.';
-            break;
-          case 'microsoftAuthenticator':
-            methodName = 'Microsoft Authenticator';
-            description = 'When used in non-phishing resistant mode, Microsoft Authenticator is susceptible to real-time phishing attacks.';
-            break;
-          case 'temporaryAccessPass':
-            methodName = 'Temporary Access Pass';
-            description = 'Temporary access passes are not phishing-resistant as they are essentially one-time passcodes.';
             break;
           case 'password':
             methodName = 'Password';
@@ -801,25 +797,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
             description = `This authentication method (${methodId}) is not phishing-resistant.`;
         }
         
-        return {
+        recommendations.push({
           id: `disable-${methodId}`,
           methodId,
           methodName,
           title: `Disable ${methodName}`,
           description,
-          remediation: `Disable the ${methodName} authentication method in Microsoft Entra ID to enforce only phishing-resistant authentication.`,
+          remediation: `Disable the ${methodName} authentication method in Microsoft Entra ID to enforce phishing-resistant authentication.`,
           impact: 'High',
           category: 'Identity',
+          securityLevel: 'Insecure',
           service: 'Microsoft Entra ID',
           actionUrl: 'https://entra.microsoft.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/AdminAuthMethods',
-          severity: 'HIGH' as 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO'
-        };
+          severity
+        });
+      });
+      
+      // Create recommendations for partially secure methods - medium priority
+      policy.enabledPartiallySecureMethods.forEach((methodId: string) => {
+        let methodName = '';
+        let description = '';
+        let severity: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO' = 'MEDIUM';
+        
+        // Map method IDs to readable names
+        switch (methodId) {
+          case 'microsoftAuthenticator':
+            methodName = 'Microsoft Authenticator App (Push)';
+            description = 'Microsoft Authenticator in Push mode is partially resistant, but vulnerable to MFA fatigue and push bombing attacks unless number matching and app context are enforced.';
+            break;
+          case 'x509CertificateSingleFactor':
+            methodName = 'X.509 Certificate Authentication';
+            description = 'Certificate-based authentication can be strong, but the current configuration shows x509CertificateSingleFactor, which is not true MFA.';
+            break;
+          default:
+            methodName = methodId;
+            description = `This authentication method (${methodId}) is only partially phishing-resistant.`;
+        }
+        
+        recommendations.push({
+          id: `strengthen-${methodId}`,
+          methodId,
+          methodName,
+          title: `Strengthen ${methodName}`,
+          description,
+          remediation: `Configure additional security controls for ${methodName} or replace with fully phishing-resistant methods.`,
+          impact: 'Medium',
+          category: 'Identity',
+          securityLevel: 'Partially Secure',
+          service: 'Microsoft Entra ID',
+          actionUrl: 'https://entra.microsoft.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/AdminAuthMethods',
+          severity
+        });
+      });
+      
+      // Include informational entries for phishing-resistant methods
+      policy.enabledPhishResistantMethods.forEach((methodId: string) => {
+        let methodName = '';
+        let description = '';
+        let severity: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO' = 'INFO';
+        
+        // Map method IDs to readable names
+        switch (methodId) {
+          case 'fido2':
+            methodName = 'FIDO2 Security Keys';
+            description = 'FIDO2 security keys offer strong phishing resistance due to cryptographic challenge-response.';
+            break;
+          case 'windowsHelloForBusiness':
+            methodName = 'Windows Hello for Business';
+            description = 'Windows Hello for Business offers strong phishing resistance when configured properly.';
+            break;
+          case 'certificateBasedAuthentication':
+            methodName = 'Certificate-Based Authentication';
+            description = 'Certificate-based authentication offers strong phishing resistance when configured properly.';
+            break;
+          case 'temporaryAccessPass':
+            methodName = 'Temporary Access Pass';
+            description = 'Temporary Access Pass can be phishing resistant if used only for initial setup (not for daily sign-in) and reuse is restricted.';
+            break;
+          default:
+            methodName = methodId;
+            description = `This authentication method (${methodId}) is phishing-resistant.`;
+        }
+        
+        recommendations.push({
+          id: `info-${methodId}`,
+          methodId,
+          methodName,
+          title: `${methodName} (Phishing-Resistant)`,
+          description,
+          remediation: `Continue using ${methodName} as it provides strong phishing resistance.`,
+          impact: 'Low',
+          category: 'Identity',
+          securityLevel: 'Phish-Resistant',
+          service: 'Microsoft Entra ID',
+          actionUrl: 'https://entra.microsoft.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/AdminAuthMethods',
+          severity
+        });
       });
       
       // Return the policy and recommendations
       res.json({
         policy,
-        recommendations
+        recommendations,
+        riskLevel: policy.riskLevel
       });
     } catch (error: any) {
       console.error("Error fetching authentication methods policy:", error);
