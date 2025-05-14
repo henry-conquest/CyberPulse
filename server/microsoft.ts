@@ -261,20 +261,21 @@ export class MicrosoftGraphService {
           }
           
           // Check if this profile's title matches one in our known list
-          // Use fuzzy matching to handle slight variations in wording
+          // Use a stricter matching algorithm to ensure we only get the expected 23 recommendations
           return microsoftPortalRecommendations.some(portalTitle => {
             // Normalize both titles for comparison
             const normalizedPortalTitle = portalTitle.toLowerCase().trim();
             const normalizedProfileTitle = profile.title.toLowerCase().trim();
             
-            // Check if either contains the other or if they're very similar
-            return normalizedProfileTitle.includes(normalizedPortalTitle) || 
-                   normalizedPortalTitle.includes(normalizedProfileTitle) ||
-                   // Check for significant overlap (at least 80% match)
-                   (normalizedPortalTitle.length > 10 && 
-                    normalizedProfileTitle.length > 10 &&
-                    (normalizedPortalTitle.includes(normalizedProfileTitle.substring(0, Math.floor(normalizedProfileTitle.length * 0.8))) ||
-                     normalizedProfileTitle.includes(normalizedPortalTitle.substring(0, Math.floor(normalizedPortalTitle.length * 0.8)))));
+            // Only include exact matches or very specific cases
+            // This is much stricter than before to ensure we only get the 23 expected recommendations
+            return normalizedProfileTitle === normalizedPortalTitle || 
+                   // For MFA, which might have different wording but is a critical recommendation
+                   (normalizedPortalTitle.includes("multi-factor authentication") && 
+                    normalizedProfileTitle.includes("multi-factor authentication")) ||
+                   // For admin roles, which might have different wording
+                   (normalizedPortalTitle.includes("global admin") && 
+                    normalizedProfileTitle.includes("global admin"));
           });
         });
         
