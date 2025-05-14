@@ -695,6 +695,15 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
+  async getSecureScoreHistoryByTenantId(tenantId: number, limit: number = 24): Promise<SecureScoreHistory[]> {
+    return await db
+      .select()
+      .from(secureScoreHistory)
+      .where(eq(secureScoreHistory.tenantId, tenantId))
+      .orderBy(desc(secureScoreHistory.recordedAt))
+      .limit(limit);
+  }
+
   async getSecureScoreHistoryForPeriod(tenantId: number, startDate: Date, endDate: Date): Promise<SecureScoreHistory[]> {
     return await db
       .select()

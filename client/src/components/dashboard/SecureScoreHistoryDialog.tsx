@@ -54,6 +54,64 @@ export default function SecureScoreHistoryDialog({
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   };
   
+  // Create a continuous list of months for x-axis (no gaps)
+  const generateContinuousMonthlyData = (history: SecureScoreHistory[]) => {
+    if (!history || history.length === 0) return [];
+    
+    // Sort by date (oldest first)
+    const sortedHistory = [...history].sort((a, b) => 
+      new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime()
+    );
+    
+    const firstDate = new Date(sortedHistory[0].recordedAt);
+    const lastDate = new Date(sortedHistory[sortedHistory.length - 1].recordedAt);
+    
+    // Create a map of existing dates for quick lookup
+    const historyMap = new Map();
+    sortedHistory.forEach(item => {
+      const date = new Date(item.recordedAt);
+      const key = `${date.getMonth()}-${date.getFullYear()}`;
+      historyMap.set(key, item);
+    });
+    
+    // Generate all months between first and last date
+    const result = [];
+    const currentDate = new Date(firstDate);
+    currentDate.setDate(1); // Set to first day of month
+    
+    while (currentDate <= lastDate) {
+      const key = `${currentDate.getMonth()}-${currentDate.getFullYear()}`;
+      const monthName = currentDate.toLocaleDateString('en-US', { month: 'short' });
+      const yearName = currentDate.getFullYear();
+      const formattedDate = `${monthName} ${yearName}`;
+      
+      if (historyMap.has(key)) {
+        // Use actual data
+        const item = historyMap.get(key);
+        result.push({
+          date: formattedDate,
+          scorePercent: item.scorePercent,
+          score: item.score,
+          maxScore: item.maxScore
+        });
+      } else {
+        // No data for this month, use null or the previous month's data
+        const prevMonth = result.length > 0 ? result[result.length - 1] : null;
+        result.push({
+          date: formattedDate,
+          scorePercent: prevMonth ? prevMonth.scorePercent : null,
+          score: prevMonth ? prevMonth.score : null,
+          maxScore: prevMonth ? prevMonth.maxScore : null
+        });
+      }
+      
+      // Move to next month
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+    
+    return result;
+  };
+  
   // Prepare data for chart
   const chartData = history?.map(item => ({
     date: formatDate(item.recordedAt),
