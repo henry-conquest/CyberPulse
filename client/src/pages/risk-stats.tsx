@@ -318,6 +318,8 @@ const DeviceRecommendationsDialog = ({
   // Fetch tenant widget recommendations
   const { data: tenantWidgetRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
     queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`],
+    refetchOnMount: true, // Always refetch when dialog opens
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
   
   // Fetch secure score recommendations too so we can show them if the category was changed
