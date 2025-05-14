@@ -18,6 +18,7 @@ import Users from "@/pages/users";
 import Tenants from "@/pages/tenants";
 import Integrations from "./pages/integrations";
 import SecureScorePage from "@/pages/secure-score";
+import LoginPage from "@/pages/login";
 
 import { useAuth } from "@/hooks/useAuth";
 import Layout from "@/components/layout/Layout";
@@ -35,8 +36,8 @@ function ProtectedRoute({ component: Component, roles, ...rest }: {
   }
   
   if (!user) {
-    // Redirect to login
-    window.location.href = "/api/login";
+    // Redirect to login page
+    window.location.href = "/login";
     return null;
   }
   
@@ -51,6 +52,9 @@ function ProtectedRoute({ component: Component, roles, ...rest }: {
 function Router() {
   return (
     <Switch>
+      {/* Login route - directly accessible */}
+      <Route path="/login" component={LoginPage} />
+      
       {/* Main routes */}
       <Route path="/" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/companies" component={() => <ProtectedRoute component={Companies} />} />

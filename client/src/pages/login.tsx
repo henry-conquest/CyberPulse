@@ -11,11 +11,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 // Form schema
 const loginFormSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(1, "Password is required"),
+  useMfa: z.boolean().default(false),
+  mfaCode: z.string().optional(),
 });
 
 type LoginFormValues = z.infer<typeof loginFormSchema>;
@@ -24,6 +28,7 @@ const LoginPage = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const [isLocalLoading, setIsLocalLoading] = useState(false);
+  const [showMfa, setShowMfa] = useState(false);
   
   // Initialize form
   const form = useForm<LoginFormValues>({
@@ -31,13 +36,36 @@ const LoginPage = () => {
     defaultValues: {
       email: "",
       password: "",
+      useMfa: false,
+      mfaCode: "",
     },
   });
   
+  // Watch for changes to the useMfa checkbox
+  React.useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "useMfa") {
+        setShowMfa(!!value.useMfa);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const onSubmit = async (values: LoginFormValues) => {
     setIsLocalLoading(true);
     try {
       console.log("Submitting login form:", values);
+      
+      // If MFA is enabled but no code provided, don't submit
+      if (values.useMfa && (!values.mfaCode || values.mfaCode.length < 6)) {
+        toast({
+          title: "MFA code required",
+          description: "Please enter your 6-digit MFA code",
+          variant: "destructive",
+        });
+        setIsLocalLoading(false);
+        return;
+      }
       
       const response = await fetch("/api/auth/login", {
         method: "POST",
