@@ -1955,6 +1955,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const recommendationData = req.body;
     
     try {
+      // Prevent manual assignment to Secure Score widget
+      if (recommendationData.widgetType?.toUpperCase() === 'SECURE_SCORE') {
+        return res.status(403).json({ 
+          message: "Manual assignment of recommendations to the Secure Score widget is not allowed. Microsoft secure score recommendations are automatically displayed." 
+        });
+      }
+      
       // Validate the input and ensure widget type is uppercase for consistency
       const validatedData = insertTenantWidgetRecommendationSchema.parse({
         ...recommendationData,
@@ -2001,6 +2008,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized access to recommendation" });
       }
       
+      // Prevent updating to SECURE_SCORE widget type
+      if (recommendationData.widgetType?.toUpperCase() === 'SECURE_SCORE') {
+        return res.status(403).json({ 
+          message: "Manual assignment of recommendations to the Secure Score widget is not allowed. Microsoft secure score recommendations are automatically displayed." 
+        });
+      }
+      
       // Update the recommendation with consistent uppercase for widget type
       const updatedData = {
         ...recommendationData,
@@ -2044,6 +2058,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify this recommendation belongs to the specified tenant
       if (existingRecommendation.tenantId !== Number(tenantId)) {
         return res.status(403).json({ message: "Unauthorized access to recommendation" });
+      }
+      
+      // Prevent deleting recommendations from Secure Score widget
+      if (existingRecommendation.widgetType === 'SECURE_SCORE') {
+        return res.status(403).json({ 
+          message: "Manual removal of recommendations from the Secure Score widget is not allowed. Microsoft secure score recommendations are automatically managed." 
+        });
       }
       
       // Delete the recommendation
