@@ -1035,13 +1035,13 @@ const SecureScoreRecommendationsDialog = ({
               >
                 <div className="flex items-start">
                   <div className="mr-3 mt-0.5">
-                    {rec.isLive ? <XCircle className="h-5 w-5 text-red-500" /> : rec.icon}
+                    {rec?.isLive ? <XCircle className="h-5 w-5 text-red-500" /> : rec.icon}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium flex items-center">
                         {rec.title}
-                        {rec.isLive && (
+                        {rec?.isLive && (
                           <span className="ml-2 inline-flex items-center gap-x-1 text-xs text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
                             <CheckCircle className="w-3 h-3" />
                             Microsoft
@@ -1061,10 +1061,10 @@ const SecureScoreRecommendationsDialog = ({
                     <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
                     
                     {/* Microsoft Portal Link - simplified version */}
-                    {rec.isLive && rec.actionUrl && (
+                    {rec?.isLive && rec?.actionUrl && (
                       <div className="mt-2">
                         <a 
-                          href={rec.actionUrl} 
+                          href={rec?.actionUrl || '#'} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-xs text-blue-600 hover:text-blue-800 underline flex items-center gap-x-1"
