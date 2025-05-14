@@ -109,7 +109,7 @@ export function setupPassport(app: Express) {
 // Authentication routes
 export function setupAuthRoutes(app: Express) {
   // Local login endpoint
-  app.post('/api/local-login', passport.authenticate('local'), (req, res) => {
+  app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
     res.json(req.user);
   });
   

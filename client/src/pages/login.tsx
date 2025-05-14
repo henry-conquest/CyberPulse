@@ -37,7 +37,9 @@ const LoginPage = () => {
   const onSubmit = async (values: LoginFormValues) => {
     setIsLocalLoading(true);
     try {
-      const response = await fetch("/api/local-login", {
+      console.log("Submitting login form:", values);
+      
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -46,13 +48,16 @@ const LoginPage = () => {
       });
       
       if (!response.ok) {
-        throw new Error("Login failed. Please check your credentials.");
+        const errorData = await response.json().catch(() => null);
+        console.error("Login error:", errorData);
+        throw new Error(errorData?.message || "Login failed. Please check your credentials.");
       }
       
       // If login successful, refresh page to update auth state
       window.location.href = "/dashboard";
       
     } catch (error) {
+      console.error("Login error:", error);
       toast({
         title: "Login failed",
         description: error instanceof Error ? error.message : "Unknown error occurred",
