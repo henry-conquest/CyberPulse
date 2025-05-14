@@ -729,6 +729,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   }));
+  
+  // Get authentication methods policy for a Microsoft 365 tenant
+  app.get("/api/tenants/:id/microsoft365/auth-methods-policy", isAuthenticated, asyncHandler(async (req, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const tenantId = parseInt(req.params.id);
+      
+      // Check if user has access to this tenant
+      const hasAccess = await hasTenantAccess(userId, tenantId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this tenant" });
+      }
+      
+      // Get the connection info for this tenant
+      const connection = await storage.getMicrosoft365Connection(tenantId);
+      if (!connection) {
+        return res.status(404).json({ message: "No Microsoft 365 connection found for this tenant" });
+      }
+      
+      // Initialize the Microsoft Graph service with the connection
+      const graphService = new MicrosoftGraphService(connection);
+      
+      // Get authentication methods policy
+      console.log(`Fetching authentication methods policy for tenant ${tenantId}`);
+      const policy = await graphService.getAuthenticationMethodsPolicy();
+      
+      if (!policy) {
+        return res.status(404).json({ message: "No authentication methods policy found for this tenant" });
+      }
+      
+      console.log(`Retrieved authentication methods policy for tenant ${tenantId}`);
+      
+      // Create recommendations for non-phishing-resistant methods
+      const recommendations = policy.enabledNonPhishingResistantMethods.map(methodId => {
+        let methodName = '';
+        let description = '';
+        
+        // Map method IDs to readable names
+        switch (methodId) {
+          case 'email':
+            methodName = 'Email Authentication';
+            description = 'Email authentication is not phishing-resistant as it relies on one-time passcodes sent to email which can be intercepted.';
+            break;
+          case 'sms':
+            methodName = 'SMS Authentication';
+            description = 'SMS authentication is not phishing-resistant as it relies on one-time passcodes sent via text message which can be intercepted.';
+            break;
+          case 'softwareOath':
+            methodName = 'Authenticator App';
+            description = 'Authenticator apps with time-based one-time passwords are not considered phishing-resistant as they can be susceptible to real-time phishing attacks.';
+            break;
+          case 'phoneAuthentication':
+            methodName = 'Phone Authentication';
+            description = 'Phone authentication is not phishing-resistant as it relies on voice calls which can be redirected or socially engineered.';
+            break;
+          case 'microsoftAuthenticator':
+            methodName = 'Microsoft Authenticator';
+            description = 'When used in non-phishing resistant mode, Microsoft Authenticator is susceptible to real-time phishing attacks.';
+            break;
+          case 'temporaryAccessPass':
+            methodName = 'Temporary Access Pass';
+            description = 'Temporary access passes are not phishing-resistant as they are essentially one-time passcodes.';
+            break;
+          case 'password':
+            methodName = 'Password';
+            description = 'Passwords are not phishing-resistant as they can be easily captured through phishing websites.';
+            break;
+          default:
+            methodName = methodId;
+            description = `This authentication method (${methodId}) is not phishing-resistant.`;
+        }
+        
+        return {
+          id: `disable-${methodId}`,
+          methodId,
+          methodName,
+          title: `Disable ${methodName}`,
+          description,
+          remediation: `Disable the ${methodName} authentication method in Microsoft Entra ID to enforce only phishing-resistant authentication.`,
+          impact: 'High',
+          category: 'Identity',
+          service: 'Microsoft Entra ID',
+          actionUrl: 'https://entra.microsoft.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/AdminAuthMethods',
+          severity: 'HIGH' as 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO'
+        };
+      });
+      
+      // Return the policy and recommendations
+      res.json({
+        policy,
+        recommendations
+      });
+    } catch (error: any) {
+      console.error("Error fetching authentication methods policy:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch authentication methods policy", 
+        details: error.message || "Unknown error" 
+      });
+    }
+  }));
 
   // Microsoft 365 security insights endpoint
   app.get("/api/tenants/:id/microsoft365/security-insights", isAuthenticated, asyncHandler(async (req, res) => {

@@ -38,6 +38,7 @@ import { apiRequest } from "@/lib/queryClient";
 import SecureScoreHistoryDialog from "@/components/dashboard/SecureScoreHistoryDialog";
 import GlobalAdminsWidget from "@/components/dashboard/GlobalAdminsWidget";
 import MfaUsersWidget from "@/components/dashboard/MfaUsersWidget";
+import PhishingResistantMfaWidget from "@/components/dashboard/PhishingResistantMfaWidget";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -1606,6 +1607,13 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
         {/* MFA Users Widget */}
         <div className="md:col-span-1">
           <MfaUsersWidget 
+            tenantId={Number(tenantId)}
+          />
+        </div>
+        
+        {/* Phishing-Resistant MFA Widget */}
+        <div className="md:col-span-1">
+          <PhishingResistantMfaWidget 
             tenantId={Number(tenantId)}
           />
         </div>

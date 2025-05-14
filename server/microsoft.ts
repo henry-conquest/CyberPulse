@@ -445,6 +445,92 @@ export class MicrosoftGraphService {
   }
   
   /**
+   * Get authentication methods policy from Microsoft Graph API
+   * @returns Authentication methods policy object with details about enabled/disabled methods
+   */
+  async getAuthenticationMethodsPolicy() {
+    try {
+      if (!this.client) {
+        this.initializeClient();
+        if (!this.client) {
+          throw new Error("Microsoft Graph client not initialized");
+        }
+      }
+      
+      console.log(`Fetching authentication methods policy for tenant ${this.connection.tenantId}`);
+      
+      // Get the authentication methods policy
+      const policyResponse = await this.client
+        .api('/policies/authenticationMethodsPolicy')
+        .get();
+      
+      if (!policyResponse) {
+        console.log("No authentication methods policy found");
+        return null;
+      }
+      
+      console.log(`Retrieved authentication methods policy for tenant ${this.connection.tenantId}`);
+      
+      // Parse the policy to determine which authentication methods are enabled and if only phishing-resistant methods are enabled
+      const policy = policyResponse;
+      
+      // Define which methods are phishing-resistant
+      const phishingResistantMethods = ['fido2', 'windowsHelloForBusiness', 'certificateBasedAuthentication'];
+      
+      // Get all the authentication method configurations
+      const methodConfigurations = policy.authenticationMethodConfigurations || [];
+      
+      // Check which methods are enabled
+      const enabledMethods = methodConfigurations
+        .filter((method: any) => method.state === 'enabled')
+        .map((method: any) => method.id);
+      
+      // Check which non-phishing-resistant methods are enabled
+      const enabledNonPhishingResistantMethods = enabledMethods
+        .filter((methodId: string) => !phishingResistantMethods.includes(methodId));
+      
+      // Check if only phishing-resistant methods are enabled
+      const onlyPhishingResistantEnabled = enabledNonPhishingResistantMethods.length === 0 && 
+        enabledMethods.some((methodId: string) => phishingResistantMethods.includes(methodId));
+      
+      // Return a structured response
+      return {
+        policy,
+        enabledMethods,
+        enabledNonPhishingResistantMethods,
+        onlyPhishingResistantEnabled,
+        phishingResistantMethods
+      };
+      
+    } catch (error: any) {
+      // Check for authentication errors
+      if (error.statusCode === 401 || 
+          (error.message && error.message.includes("authentication")) ||
+          (error.message && error.message.includes("authorized"))) {
+        console.error(`Authentication error in getAuthenticationMethodsPolicy for tenant ${this.connection.tenantId}:`, error.message);
+        
+        // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        throw new Error(`Authentication failed for Microsoft 365 tenant ${this.connection.tenantName}. Please reconnect this tenant.`);
+      }
+      
+      // Handle other errors
+      console.error(`Error fetching authentication methods policy for tenant ${this.connection.tenantId}:`, error);
+      throw new Error(`Failed to fetch authentication methods policy: ${error.message || "Unknown error"}`);
+    }
+  }
+  
+  /**
    * Get users without MFA enabled from Microsoft Entra ID
    * @returns Array of users who don't have MFA enabled
    */
