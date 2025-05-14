@@ -843,72 +843,10 @@ const SecureScoreRecommendationsDialog = ({
       });
     }
     
-    if (!securityData?.identitySecure) {
-      recommendations.push({
-        icon: <UserCheck className="h-5 w-5 text-red-500" />,
-        title: "Strengthen Identity Security",
-        description: "Configure MFA for all accounts, especially for privileged users and administrators.",
-        priority: "High",
-        isLive: false,
-        actionUrl: undefined
-      });
-    }
+    // No longer adding hardcoded recommendations - all will come from Microsoft Secure Score API
     
-    if (!securityData?.emailSecured) {
-      recommendations.push({
-        icon: <Mail className="h-5 w-5 text-red-500" />,
-        title: "Enable Advanced Email Protection",
-        description: "Protect against phishing and email-based attacks with anti-spam and anti-phishing policies.",
-        priority: "High",
-        isLive: false,
-        actionUrl: undefined
-      });
-    }
-    
-    if (!securityData?.privilegedAccessSecured) {
-      recommendations.push({
-        icon: <Key className="h-5 w-5 text-amber-500" />,
-        title: "Secure Privileged Access",
-        description: "Implement just-in-time access and privileged access security for admin accounts.",
-        priority: "Medium",
-        isLive: false,
-        actionUrl: undefined
-      });
-    }
-    
-    if (!securityData?.shadowITMonitored) {
-      recommendations.push({
-        icon: <Cloud className="h-5 w-5 text-amber-500" />,
-        title: "Monitor Unauthorized Cloud Apps",
-        description: "Detect and control shadow IT and unauthorized cloud applications.",
-        priority: "Medium",
-        isLive: false,
-        actionUrl: undefined
-      });
-    }
-    
-    if (!securityData?.complianceTrainingDone) {
-      recommendations.push({
-        icon: <Users className="h-5 w-5 text-blue-500" />,
-        title: "Implement Security Awareness Training",
-        description: "Provide regular security awareness training for all employees.",
-        priority: "Low",
-        isLive: false,
-        actionUrl: undefined
-      });
-    }
-    
-    // If all checks passed or if no specific recommendations available
-    if (recommendations.length === 0) {
-      recommendations.push({
-        icon: <Check className="h-5 w-5 text-green-500" />,
-        title: "Maintain Current Security Posture",
-        description: "Your Microsoft 365 secure score is good. Continue to monitor and maintain your current security settings.",
-        priority: "Info",
-        isLive: false,
-        actionUrl: undefined
-      });
-    }
+    // Removed the fallback recommendation as per user's request - 
+    // Only showing recommendations that come directly from Microsoft Secure Score API
     
     return recommendations;
   };
