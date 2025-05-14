@@ -36,9 +36,8 @@ function ProtectedRoute({ component: Component, roles, ...rest }: {
   }
   
   if (!user) {
-    // Redirect to login page
-    window.location.href = "/login";
-    return null;
+    // Use Redirect component instead of window.location for SPA navigation
+    return <Redirect to="/login" />;
   }
   
   // Check role-based access
