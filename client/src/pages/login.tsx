@@ -196,7 +196,7 @@ const LoginPage = () => {
             
             <Button 
               type="submit" 
-              className="w-full bg-green-600 hover:bg-green-700" 
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white" 
               size="lg"
             >
               {isLoading ? (
@@ -224,7 +224,7 @@ const LoginPage = () => {
           </div>
           
           <a href="/api/auth/staff-login" className="w-full">
-            <Button className="w-full bg-blue-600 hover:bg-blue-700" size="lg" type="button">
+            <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white" size="lg" type="button">
               <FaMicrosoft className="mr-2 h-5 w-5" />
               Staff Login
             </Button>
@@ -241,8 +241,8 @@ const LoginPage = () => {
           </div>
           
           <a href="/api/auth/customer-login" className="w-full">
-            <Button className="w-full bg-gray-600 hover:bg-gray-700" size="lg" variant="outline" type="button">
-              <FaMicrosoft className="mr-2 h-5 w-5" />
+            <Button className="w-full bg-white hover:bg-gray-100 text-gray-800 border border-gray-300" size="lg" type="button">
+              <FaMicrosoft className="mr-2 h-5 w-5 text-cyan-600" />
               Customer Login
             </Button>
           </a>
