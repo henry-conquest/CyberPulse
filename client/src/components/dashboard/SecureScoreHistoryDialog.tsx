@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle, InfoIcon } from "lucide-react";
 
 interface SecureScoreHistoryDialogProps {
   isOpen: boolean;
@@ -235,12 +235,19 @@ export default function SecureScoreHistoryDialog({
               </div>
             </div>
           ) : (
-            <div className="p-8 text-center text-gray-500">
-              <p className="mb-2">No historical data available yet.</p>
-              <p className="text-sm">
-                Secure Score history snapshots are taken at the end of each month. 
-                Check back later or contact your administrator for details.
-              </p>
+            <div className="py-10 px-6 text-center">
+              <div className="flex flex-col items-center gap-3 max-w-md mx-auto">
+                <InfoIcon className="h-12 w-12 text-blue-500 mb-2" />
+                <h3 className="text-lg font-medium">No Historical Data Available Yet</h3>
+                <p className="text-gray-500 text-sm">
+                  Secure Score snapshots are automatically collected from Microsoft 365 at the end of each month.
+                  History will appear here after the first month-end snapshot is taken.
+                </p>
+                <p className="text-gray-500 text-sm mt-2">
+                  The system will collect authentic Microsoft 365 Secure Score data over time,
+                  allowing you to track your security improvements.
+                </p>
+              </div>
             </div>
           )}
         </div>
