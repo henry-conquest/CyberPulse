@@ -691,6 +691,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   }));
+  
+  // Get users without MFA enabled for a Microsoft 365 tenant
+  app.get("/api/tenants/:id/microsoft365/users-without-mfa", isAuthenticated, asyncHandler(async (req, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const tenantId = parseInt(req.params.id);
+      
+      // Check if user has access to this tenant
+      const hasAccess = await hasTenantAccess(userId, tenantId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this tenant" });
+      }
+      
+      // Get the connection info for this tenant
+      const connection = await storage.getMicrosoft365Connection(tenantId);
+      if (!connection) {
+        return res.status(404).json({ message: "No Microsoft 365 connection found for this tenant" });
+      }
+      
+      // Initialize the Microsoft Graph service with the connection
+      const graphService = new MicrosoftGraphService(connection);
+      
+      // Get users without MFA enabled
+      console.log(`Fetching users without MFA for tenant ${tenantId}`);
+      const usersWithoutMFA = await graphService.getUsersWithoutMFA();
+      
+      console.log(`Retrieved ${usersWithoutMFA.length} users without MFA for tenant ${tenantId}`);
+      
+      // Return the users without MFA (real data from API)
+      res.json(usersWithoutMFA);
+    } catch (error: any) {
+      console.error("Error fetching users without MFA:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch users without MFA", 
+        details: error.message || "Unknown error" 
+      });
+    }
+  }));
 
   // Microsoft 365 security insights endpoint
   app.get("/api/tenants/:id/microsoft365/security-insights", isAuthenticated, asyncHandler(async (req, res) => {
