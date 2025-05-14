@@ -126,7 +126,17 @@ export function setupAuthRoutes(app: Express) {
   // Local login endpoint
   app.post('/api/auth/login', (req, res, next) => {
     console.log('Login attempt with:', req.body.email);
-    passport.authenticate('local', (err, user, info) => {
+    console.log('X-API-Request header:', req.header('X-API-Request'));
+    
+    // Check for custom API header to ensure this is an API call, not a navigation
+    if (!req.header('X-API-Request')) {
+      // If no custom header, just pass through to next middleware which will
+      // serve the SPA HTML - this breaks the redirect loop
+      console.log('Not an API request, skipping authentication');
+      return next();
+    }
+    
+    passport.authenticate('local', (err: any, user: any, info: any) => {
       if (err) {
         console.error('Login error:', err);
         return next(err);
@@ -353,8 +363,14 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Get current user
-  app.get('/api/auth/user', async (req, res) => {
+  app.get('/api/auth/user', async (req, res, next) => {
     try {
+      // Check for custom API header to ensure this is an API call, not a navigation
+      if (!req.header('X-API-Request')) {
+        console.log('Not an API user request, skipping authentication check');
+        return next();
+      }
+      
       if (!req.isAuthenticated() || !req.user) {
         return res.status(401).json({ message: 'Unauthorized' });
       }

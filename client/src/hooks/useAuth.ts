@@ -33,10 +33,13 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       console.log("Login mutation with:", credentials);
+      // Use a direct fetch instead of relying on the API route that might be intercepted
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // Add custom header to identify as API call
+          "X-API-Request": "true"
         },
         body: JSON.stringify(credentials),
         credentials: "include", // Include credentials for session cookies
