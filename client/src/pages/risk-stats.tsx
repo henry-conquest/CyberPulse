@@ -1309,16 +1309,6 @@ const SecureScoreCard = ({
   
   return (
     <>
-      {/* Manage recommendations dialog */}
-      {showManageRecommendations && (
-        <Dialog open={showManageRecommendations} onOpenChange={setShowManageRecommendations}>
-          <RecommendationSelector 
-            tenantId={tenantId} 
-            widgetType="SECURE_SCORE" 
-            onClose={() => setShowManageRecommendations(false)} 
-          />
-        </Dialog>
-      )}
       
       {/* Secure Score Card with Recommendations Dialog */}
       <Dialog>
@@ -1330,28 +1320,6 @@ const SecureScoreCard = ({
                   <Shield className="h-5 w-5 text-blue-500" />
                   <CardTitle className="text-lg">Microsoft Secure Score</CardTitle>
                 </div>
-                {isAdminOrAnalyst && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowManageRecommendations(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Manage Recommendations</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
               </div>
             </CardHeader>
             <CardContent>
