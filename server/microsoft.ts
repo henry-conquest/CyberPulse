@@ -296,33 +296,38 @@ export class MicrosoftGraphService {
         console.error(`Error fetching secure score data: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
       
-      // If no recommendations were found from API, use static recommendations
-      if (improvements.length === 0) {
-        console.log("No recommendations found from API or API failed, using static recommendations");
+      // Add any static recommendations that weren't matched from the API
+      const matched = new Set(improvements.map(imp => imp.title));
+      
+      console.log(`Found ${matched.size} recommendations from API, adding missing static recommendations`);
+      
+      // Add all static recommendations that weren't found in the API
+      staticRecommendations.forEach((rec, index) => {
+        // Skip if we already have this recommendation from the API
+        if (matched.has(rec.title)) {
+          return;
+        }
         
-        // Create recommendations from our static list
-        staticRecommendations.forEach((rec, index) => {
-          const improvement: SecureScoreImprovement = {
-            id: `static-rec-${index + 1}`,
-            title: rec.title,
-            description: `This is a recommended action to improve your Microsoft 365 security posture.`,
-            remediation: `Follow Microsoft's recommended guidance to implement this control.`,
-            impact: 'Improves your overall security posture',
-            category: rec.category,
-            service: rec.product,
-            actionUrl: 'https://security.microsoft.com/securescore?viewid=actions',
-            score: 0,
-            maxScore: 10,
-            percentComplete: 0,
-            implementationStatus: 'notImplemented',
-            severity: rec.severity as 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO',
-            controlName: 'SecureScore',
-            isLive: false
-          };
-          
-          improvements.push(improvement);
-        });
-      }
+        const improvement: SecureScoreImprovement = {
+          id: `static-rec-${index + 1}`,
+          title: rec.title,
+          description: `This is a recommended action to improve your Microsoft 365 security posture.`,
+          remediation: `Follow Microsoft's recommended guidance to implement this control.`,
+          impact: 'Improves your overall security posture',
+          category: rec.category,
+          service: rec.product,
+          actionUrl: 'https://security.microsoft.com/securescore?viewid=actions',
+          score: 0,
+          maxScore: 10,
+          percentComplete: 0,
+          implementationStatus: 'notImplemented',
+          severity: rec.severity as 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO',
+          controlName: 'SecureScore',
+          isLive: false
+        };
+        
+        improvements.push(improvement);
+      });
       
       // Sort recommendations by severity and max score
       const sortedImprovements = improvements.sort((a, b) => {
