@@ -224,7 +224,7 @@ const LoginPage = () => {
             </div>
           </div>
           
-          <a href="/api/auth/staff-login" className="w-full">
+          <a href="/login?type=staff" className="w-full">
             <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white" size="lg" type="button">
               <FaMicrosoft className="mr-2 h-5 w-5" />
               Staff Login
@@ -241,7 +241,7 @@ const LoginPage = () => {
             </div>
           </div>
           
-          <a href="/api/auth/customer-login" className="w-full">
+          <a href="/login?type=customer" className="w-full">
             <Button className="w-full bg-white hover:bg-gray-100 text-gray-800 border border-gray-300" size="lg" type="button">
               <FaMicrosoft className="mr-2 h-5 w-5 text-cyan-600" />
               Customer Login
