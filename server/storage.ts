@@ -12,6 +12,8 @@ import {
   tenantWidgetRecommendations,
   auditLogs,
   secureScoreHistory,
+  microsoftTenantMapping,
+  userTenantAccess,
   type User,
   type UpsertUser,
   type Tenant,
@@ -38,6 +40,10 @@ import {
   type InsertAuditLog,
   type SecureScoreHistory,
   type InsertSecureScoreHistory,
+  type MicrosoftTenantMapping,
+  type InsertMicrosoftTenantMapping,
+  type UserTenantAccess,
+  type InsertUserTenantAccess,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, desc, asc, sql, like, or } from "drizzle-orm";
@@ -47,6 +53,10 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  createUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<UpsertUser>): Promise<User>;
+  getUserByMicrosoftId(microsoftId: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   getUsersByRole(role: string): Promise<User[]>;
   updateUserRole(userId: string, role: string): Promise<User>;
