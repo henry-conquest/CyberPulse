@@ -1236,7 +1236,7 @@ const SecureScoreCard = ({
       {/* Secure Score Card with Recommendations Dialog */}
       <Dialog>
         <DialogTrigger asChild>
-          <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
+          <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors h-full flex flex-col">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1245,50 +1245,53 @@ const SecureScoreCard = ({
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <div className="w-32 h-32 mr-6">
-                  <CircularProgressbar
-                    value={secureScorePercent}
-                    text={`${secureScorePercent}%`}
-                    styles={buildStyles({
-                      pathColor: scoreColor,
-                      textColor: scoreColor,
-                      trailColor: "#e5e7eb",
-                      textSize: "22px",
-                    })}
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center mb-2">
-                    {getScoreIcon(secureScorePercent)}
-                    <span className="ml-2 font-medium text-lg">{getScoreDescription(secureScorePercent)}</span>
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center">
+                  <div className="w-24 h-24 mr-6">
+                    <CircularProgressbar
+                      value={secureScorePercent}
+                      text={`${secureScorePercent}%`}
+                      styles={buildStyles({
+                        pathColor: scoreColor,
+                        textColor: scoreColor,
+                        trailColor: "#e5e7eb",
+                        textSize: "22px",
+                      })}
+                    />
                   </div>
-                  <p className="text-gray-600">
-                    Score: <span className="font-medium">{secureScore.toFixed(1)}</span> / {maxScore}
-                  </p>
-                  <p className="text-gray-600 mt-1">
-                    {secureScorePercent < 40 && "Urgent action required"}
-                    {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
-                    {secureScorePercent >= 70 && "Good security posture"}
-                  </p>
-                  <div className="flex gap-2 mt-3">
-                    <Button variant="outline" size="sm">
-                      <Info className="h-4 w-4 mr-1" /> View Details
-                    </Button>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent triggering the card dialog
-                        setHistoryDialogOpen(true);
-                      }}
-                    >
-                      <Clock className="h-4 w-4 mr-1" /> History
-                    </Button>
+                  <div>
+                    <div className="flex items-center mb-2">
+                      {getScoreIcon(secureScorePercent)}
+                      <span className="ml-2 font-medium text-lg">{getScoreDescription(secureScorePercent)}</span>
+                    </div>
+                    <p className="text-gray-600">
+                      Score: <span className="font-medium">{secureScore.toFixed(1)}</span> / {maxScore}
+                    </p>
+                    <p className="text-gray-600 mt-1">
+                      {secureScorePercent < 40 && "Urgent action required"}
+                      {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
+                      {secureScorePercent >= 70 && "Good security posture"}
+                    </p>
                   </div>
                 </div>
+              </div>
+              
+              <div className="flex gap-2 mt-6">
+                <Button variant="outline" size="sm">
+                  <Info className="h-4 w-4 mr-1" /> View Details
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent triggering the card dialog
+                    setHistoryDialogOpen(true);
+                  }}
+                >
+                  <Clock className="h-4 w-4 mr-1" /> History
+                </Button>
               </div>
             </CardContent>
           </Card>
