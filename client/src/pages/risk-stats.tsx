@@ -411,7 +411,9 @@ const DeviceRecommendationsDialog = ({
             title: widgetRec.title || globalRec.title,
             description: widgetRec.description || globalRec.description,
             priority: convertPriority(widgetRec.priority || globalRec.priority),
-            isCustom: true
+            isCustom: true,
+            isLive: false,
+            actionUrl: undefined
           });
         }
       });
@@ -423,7 +425,9 @@ const DeviceRecommendationsDialog = ({
         icon: <HardDrive className="h-5 w-5 text-red-500" />,
         title: "Enable Disk Encryption",
         description: "Configure BitLocker or FileVault on all devices to protect data in case of theft or loss.",
-        priority: "High"
+        priority: "High",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
@@ -432,7 +436,9 @@ const DeviceRecommendationsDialog = ({
         icon: <ShieldAlert className="h-5 w-5 text-red-500" />,
         title: "Deploy Microsoft Defender for Endpoint",
         description: "Implement advanced threat protection across your device fleet.",
-        priority: "High"
+        priority: "High",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
@@ -441,7 +447,9 @@ const DeviceRecommendationsDialog = ({
         icon: <Shield className="h-5 w-5 text-amber-500" />,
         title: "Improve Device Hardening",
         description: "Implement device hardening policies to reduce attack surface.",
-        priority: "Medium"
+        priority: "Medium",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
@@ -603,21 +611,21 @@ const DeviceRecommendationsDialog = ({
             recommendations.map((rec, index) => (
               <div key={index} className="border rounded-lg p-4 transition-all hover:shadow-md">
                 <div className="flex items-start">
-                  <div className="mr-3 mt-0.5">{rec.icon}</div>
+                  <div className="mr-3 mt-0.5">{rec?.icon}</div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium">{rec.title}</h4>
+                      <h4 className="font-medium">{rec?.title || "Unnamed Recommendation"}</h4>
                       <span className={cn(
                         "text-xs rounded-full px-2 py-1 font-medium",
-                        rec.priority === "High" ? "bg-red-100 text-red-800" :
-                        rec.priority === "Medium" ? "bg-amber-100 text-amber-800" :
-                        rec.priority === "Low" ? "bg-blue-100 text-blue-800" :
+                        rec?.priority === "High" ? "bg-red-100 text-red-800" :
+                        rec?.priority === "Medium" ? "bg-amber-100 text-amber-800" :
+                        rec?.priority === "Low" ? "bg-blue-100 text-blue-800" :
                         "bg-green-100 text-green-800"
                       )}>
-                        {rec.priority} Priority
+                        {rec?.priority || "Info"} Priority
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{rec?.description || "No description available"}</p>
                   </div>
                 </div>
               </div>
