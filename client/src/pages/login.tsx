@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,108 +6,138 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FaMicrosoft } from "react-icons/fa";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-
-// Form schema
-const loginFormSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
-  useMfa: z.boolean().default(false),
-  mfaCode: z.string().optional(),
-});
-
-type LoginFormValues = z.infer<typeof loginFormSchema>;
+import { Loader2 } from "lucide-react";
+import conquestLogo from "@/assets/conquest-logo.png";
 
 const LoginPage = () => {
-  const { user, isAuthenticated, isLoading, login, isLoginPending, refetch } = useAuth();
   const { toast } = useToast();
-  const [showMfa, setShowMfa] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [_, setLocation] = useLocation();
   
-  // Initialize form
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginFormSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      useMfa: false,
-      mfaCode: "",
-    },
-  });
-  
-  // Watch for changes to the useMfa checkbox
-  React.useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === "useMfa") {
-        setShowMfa(!!value.useMfa);
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/user", {
+          credentials: "include",
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data) {
+            setIsAuthenticated(true);
+          }
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
       }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
-  const onSubmit = async (values: LoginFormValues, event?: React.BaseSyntheticEvent) => {
-    // Prevent default form submission behavior to avoid full page refresh
-    event?.preventDefault();
+    };
     
-    // If MFA is enabled but no code provided, don't submit
-    if (values.useMfa && (!values.mfaCode || values.mfaCode.length < 6)) {
+    checkAuth();
+  }, []);
+  
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
       toast({
-        title: "MFA code required",
-        description: "Please enter your 6-digit MFA code",
-        variant: "destructive",
+        title: "Missing fields",
+        description: "Please enter both email and password",
+        variant: "destructive"
       });
       return;
     }
     
-    console.log("Submitting login form through react-query mutation");
+    setIsLoading(true);
     
-    // Use the login mutation from useAuth
-    login(values, {
-      onSuccess: async (data) => {
-        console.log("Login succeeded:", data);
-        
-        // Refetch user data to make sure it's up to date
-        await refetch();
-        
-        // Redirect to dashboard
-        console.log("Redirecting to dashboard");
-        setLocation("/dashboard");
+    try {
+      console.log("Submitting login with:", email);
+      
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: "include"
+      });
+      
+      console.log("Login response status:", response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Login failed");
       }
-    });
+      
+      const userData = await response.json();
+      console.log("Login successful, user data:", userData);
+      
+      // Navigate to dashboard
+      window.location.href = "/dashboard";
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "Login failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // If user is already authenticated, show logged in state
+  // If loading, show loading state
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="w-[380px] shadow-lg">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-50 to-white">
+        <Card className="w-[400px] shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Checking login status...</CardTitle>
+            <div className="flex justify-center mb-4">
+              <img 
+                src={conquestLogo} 
+                alt="ConQuest Logo" 
+                className="h-12 object-contain"
+              />
+            </div>
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-cyan-600 bg-clip-text text-transparent">
+              Cyber Risk Management Portal
+            </CardTitle>
+            <CardDescription className="mt-6">
+              <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+              <p className="mt-2">Logging in...</p>
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
     );
   }
 
+  // If already authenticated, show logged in state
   if (isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="w-[380px] shadow-lg">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-50 to-white">
+        <Card className="w-[400px] shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">You're logged in</CardTitle>
-            <CardDescription>
-              You're already authenticated
+            <div className="flex justify-center mb-4">
+              <img 
+                src={conquestLogo} 
+                alt="ConQuest Logo" 
+                className="h-12 object-contain"
+              />
+            </div>
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-cyan-600 bg-clip-text text-transparent">
+              Cyber Risk Management Portal
+            </CardTitle>
+            <CardDescription className="mt-2">
+              You're already signed in
             </CardDescription>
           </CardHeader>
-          <CardFooter className="flex justify-center">
+          <CardFooter className="flex justify-center pt-0">
             <Link href="/dashboard">
-              <Button size="lg">
+              <Button size="lg" className="bg-teal-600 hover:bg-teal-700">
                 Go to Dashboard
               </Button>
             </Link>
@@ -120,103 +150,65 @@ const LoginPage = () => {
   // If not authenticated, show login options
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-50 to-white">
-      <Card className="w-[380px] shadow-lg">
+      <Card className="w-[400px] shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Choose Login Type</CardTitle>
-          <CardDescription>
+          <div className="flex justify-center mb-4">
+            <img 
+              src={conquestLogo} 
+              alt="ConQuest Logo" 
+              className="h-12 object-contain"
+            />
+          </div>
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-cyan-600 bg-clip-text text-transparent">
+            Cyber Risk Management Portal
+          </CardTitle>
+          <CardDescription className="mt-2">
             Select how you would like to log in
           </CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-4">
           {/* Local Admin Login Form */}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="admin@conquest.local" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="admin@conquest.local"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
               />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                placeholder="********"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
               />
-              
-              <FormField
-                control={form.control}
-                name="useMfa"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Use Multi-factor Authentication (MFA)</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Enhanced security with one-time code verification
-                      </p>
-                    </div>
-                  </FormItem>
-                )}
-              />
-              
-              {showMfa && (
-                <FormField
-                  control={form.control}
-                  name="mfaCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>MFA Code</FormLabel>
-                      <FormControl>
-                        <div className="flex justify-center mt-2 mb-4">
-                          <InputOTP maxLength={6} {...field}>
-                            <InputOTPGroup>
-                              <InputOTPSlot index={0} />
-                              <InputOTPSlot index={1} />
-                              <InputOTPSlot index={2} />
-                              <InputOTPSlot index={3} />
-                              <InputOTPSlot index={4} />
-                              <InputOTPSlot index={5} />
-                            </InputOTPGroup>
-                          </InputOTP>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-green-600 hover:bg-green-700" 
+              size="lg"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                "Local Admin Login"
               )}
-              
-              <Button 
-                type="submit" 
-                className="w-full bg-green-600 hover:bg-green-700" 
-                size="lg"
-                disabled={isLoginPending}
-              >
-                {isLoginPending ? "Logging in..." : "Local Admin Login"}
-              </Button>
-            </form>
-          </Form>
+            </Button>
+          </form>
           
           <p className="text-center text-sm text-muted-foreground">
             For initial setup, use admin@conquest.local with password: admin
