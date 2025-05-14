@@ -25,9 +25,8 @@ const loginFormSchema = z.object({
 type LoginFormValues = z.infer<typeof loginFormSchema>;
 
 const LoginPage = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, login, isLoginPending, refetch } = useAuth();
   const { toast } = useToast();
-  const [isLocalLoading, setIsLocalLoading] = useState(false);
   const [showMfa, setShowMfa] = useState(false);
   const [_, setLocation] = useLocation();
   
@@ -53,69 +52,34 @@ const LoginPage = () => {
   }, [form]);
 
   const onSubmit = async (values: LoginFormValues, event?: React.BaseSyntheticEvent) => {
-    setIsLocalLoading(true);
-    try {
-      console.log("Submitting login form:", values);
-      
-      // If MFA is enabled but no code provided, don't submit
-      if (values.useMfa && (!values.mfaCode || values.mfaCode.length < 6)) {
-        toast({
-          title: "MFA code required",
-          description: "Please enter your 6-digit MFA code",
-          variant: "destructive",
-        });
-        setIsLocalLoading(false);
-        return;
-      }
-      
-      // Prevent default form submission behavior
-      event?.preventDefault();
-      
-      console.log("Sending login request to /api/auth/login");
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-        credentials: "include", // Include credentials for session cookies
-      });
-      
-      console.log("Login response status:", response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error("Login error:", errorData);
-        throw new Error(errorData?.message || "Login failed. Please check your credentials.");
-      }
-      
-      const userData = await response.json();
-      console.log("Login successful, user data:", userData);
-      
-      // Query the user endpoint to verify login was successful
-      const userCheckResponse = await fetch("/api/auth/user", {
-        credentials: "include"
-      });
-      
-      if (userCheckResponse.ok) {
-        console.log("User session verified, redirecting to dashboard");
-        // If login successful, use setLocation instead of window.location to avoid page reload
-        setLocation("/dashboard");
-      } else {
-        console.error("User session not established after login");
-        throw new Error("Login succeeded but session was not established");
-      }
-      
-    } catch (error) {
-      console.error("Login error:", error);
+    // Prevent default form submission behavior to avoid full page refresh
+    event?.preventDefault();
+    
+    // If MFA is enabled but no code provided, don't submit
+    if (values.useMfa && (!values.mfaCode || values.mfaCode.length < 6)) {
       toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        title: "MFA code required",
+        description: "Please enter your 6-digit MFA code",
         variant: "destructive",
       });
-    } finally {
-      setIsLocalLoading(false);
+      return;
     }
+    
+    console.log("Submitting login form through react-query mutation");
+    
+    // Use the login mutation from useAuth
+    login(values, {
+      onSuccess: async (data) => {
+        console.log("Login succeeded:", data);
+        
+        // Refetch user data to make sure it's up to date
+        await refetch();
+        
+        // Redirect to dashboard
+        console.log("Redirecting to dashboard");
+        setLocation("/dashboard");
+      }
+    });
   };
 
   // If user is already authenticated, show logged in state
@@ -247,9 +211,9 @@ const LoginPage = () => {
                 type="submit" 
                 className="w-full bg-green-600 hover:bg-green-700" 
                 size="lg"
-                disabled={isLocalLoading}
+                disabled={isLoginPending}
               >
-                {isLocalLoading ? "Logging in..." : "Local Admin Login"}
+                {isLoginPending ? "Logging in..." : "Local Admin Login"}
               </Button>
             </form>
           </Form>

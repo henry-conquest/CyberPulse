@@ -57,6 +57,8 @@ export function setupPassport(app: Express) {
     usernameField: 'email',
     passwordField: 'password'
   }, async (email, password, done) => {
+    console.log('AUTH STRATEGY EMAIL:', email);
+    console.log('AUTH STRATEGY PASSWORD:', password ? 'PROVIDED' : 'MISSING');
     console.log('LocalStrategy authenticating:', email, 'password:', password ? '(provided)' : '(missing)');
     try {
       // For initial admin setup, allow a special account
