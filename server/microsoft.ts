@@ -252,31 +252,32 @@ export class MicrosoftGraphService {
           });
         }
         
-        // Filter to match exactly what's in the Microsoft Defender portal
-        // We're using the known list of 23 recommendations from the CSV
+        // Filter to show all recommendations that would show as "To address" in the Microsoft Defender portal
+        // Instead of using a static list, use the implementation status criteria that Microsoft uses
         const actionableProfiles = allProfiles.filter((profile: any) => {
           // Basic checks first - must have actionUrl and title
-          if (!profile.actionUrl || !profile.title) {
+          // Also must not be deprecated and must be in the Core tier
+          if (!profile.actionUrl || !profile.title || profile.deprecated) {
             return false;
           }
           
-          // Check if this profile's title matches one in our known list
-          // Use a stricter matching algorithm to ensure we only get the expected 23 recommendations
-          return microsoftPortalRecommendations.some(portalTitle => {
-            // Normalize both titles for comparison
-            const normalizedPortalTitle = portalTitle.toLowerCase().trim();
-            const normalizedProfileTitle = profile.title.toLowerCase().trim();
-            
-            // Only include exact matches or very specific cases
-            // This is much stricter than before to ensure we only get the 23 expected recommendations
-            return normalizedProfileTitle === normalizedPortalTitle || 
-                   // For MFA, which might have different wording but is a critical recommendation
-                   (normalizedPortalTitle.includes("multi-factor authentication") && 
-                    normalizedProfileTitle.includes("multi-factor authentication")) ||
-                   // For admin roles, which might have different wording
-                   (normalizedPortalTitle.includes("global admin") && 
-                    normalizedProfileTitle.includes("global admin"));
-          });
+          if (profile.tier !== "Core") {
+            return false;
+          }
+          
+          // Check implementation status using control scores
+          const controlScore = controlScoresMap.get(profile.controlName);
+          
+          // If we don't have a control score, include it as it may need addressing
+          if (!controlScore) {
+            return true;
+          }
+          
+          // Implementation status check - include items that aren't fully implemented
+          // Microsoft shows items as "To address" when they don't have 
+          // "The setting is properly configured" status
+          return controlScore.implementationStatus !== "The setting is properly configured";
+          
         });
         
         // Log how many profiles we have to work with
