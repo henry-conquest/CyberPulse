@@ -120,6 +120,18 @@ export default function SecureScorePage() {
         </Button>
       </div>
       
+      {/* Standalone History Button */}
+      <div className="flex justify-end mb-4">
+        <Button 
+          variant="outline" 
+          onClick={() => setHistoryDialogOpen(true)}
+          className="flex items-center gap-1"
+        >
+          <History className="w-4 h-4 mr-1" />
+          View Score History
+        </Button>
+      </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card>
           <CardContent className="p-4">
@@ -147,17 +159,6 @@ export default function SecureScorePage() {
               <p className="text-gray-600 text-sm mb-4">
                 Score: <span className="font-medium">{secureScore.toFixed(1)}</span> / {maxScore}
               </p>
-              
-              {/* History Button */}
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setHistoryDialogOpen(true)}
-                className="flex items-center gap-1 text-xs"
-              >
-                <History className="w-3.5 h-3.5" />
-                View History
-              </Button>
             </div>
           </CardContent>
         </Card>
