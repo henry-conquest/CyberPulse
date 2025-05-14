@@ -28,6 +28,26 @@ export function useAuth() {
   const { data: user, isLoading, error, refetch } = useQuery<User>({
     queryKey: ["/api/auth/user"],
     retry: false,
+    queryFn: async ({ queryKey }) => {
+      // Override the default query function to add the custom header
+      const response = await fetch(queryKey[0] as string, {
+        headers: {
+          "X-API-Request": "true"
+        },
+        credentials: "include",
+      });
+      
+      if (response.status === 401) {
+        return null;
+      }
+      
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`${response.status}: ${text || response.statusText}`);
+      }
+      
+      return await response.json();
+    }
   });
 
   const loginMutation = useMutation({
