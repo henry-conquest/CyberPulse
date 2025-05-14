@@ -1574,9 +1574,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Global recommendation not found" });
     }
     
-    // Check if category changed
+    // Check if category changed - do case-insensitive comparison
     const oldCategory = existingRecommendation.category;
-    const categoryChanged = oldCategory !== req.body.category;
+    const categoryChanged = oldCategory.toUpperCase() !== req.body.category.toUpperCase();
     
     // Update the global recommendation
     const recommendation = await storage.updateGlobalRecommendation(Number(id), req.body);
@@ -1595,7 +1595,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Update each tenant widget recommendation to use the new category as widget type
           // Always use UPPERCASE for widget types to maintain consistency
           for (const twRec of tenantWidgetRecs) {
+            // Log the changes
             console.log(`Updating tenant widget recommendation ${twRec.id} from ${twRec.widgetType} to ${req.body.category.toUpperCase()}`);
+            
+            // If we are moving from SECURE_SCORE to DEVICE_SCORE or vice versa
+            // this is a special case we need to handle carefully
+            const currentType = (twRec.widgetType || "").toUpperCase();
+            const newType = req.body.category.toUpperCase();
+            
+            // Track the widget type change 
+            const isMovingBetweenScoreWidgets = 
+              (currentType === "SECURE_SCORE" && newType === "DEVICE_SCORE") ||
+              (currentType === "DEVICE_SCORE" && newType === "SECURE_SCORE");
+              
+            if (isMovingBetweenScoreWidgets) {
+              console.log(`Moving recommendation between score widgets: ${currentType} -> ${newType}`);
+            }
+                
+            // Update the widget type to match the new category
             await storage.updateTenantWidgetRecommendation(twRec.id, {
               widgetType: req.body.category.toUpperCase()
             });

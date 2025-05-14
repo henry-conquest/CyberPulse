@@ -189,13 +189,19 @@ export default function GlobalRecommendations() {
       // Invalidate global recommendations
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
       
-      // Invalidate ALL tenant widget recommendations for ALL widget types to ensure 
-      // changes are reflected correctly when moving between widgets
-      queryClient.invalidateQueries({ queryKey: ["/api/tenants"], exact: false });
+      // Invalidate tenant widget recommendations more aggressively
+      console.log("Global recommendation updated - invalidating all tenant widget recommendation caches");
       
-      // Force invalidation for specific recommendation types to ensure they refresh
-      queryClient.invalidateQueries({ queryKey: ["/api/tenants", "widget-recommendations", "SECURE_SCORE"], exact: false });
-      queryClient.invalidateQueries({ queryKey: ["/api/tenants", "widget-recommendations", "DEVICE_SCORE"], exact: false });
+      // Clear all tenant-related queries to ensure we refresh everything
+      queryClient.invalidateQueries({ queryKey: ["/api/tenants"] });
+
+      // Force specific invalidation of widget-recommendations to ensure they refresh
+      // This is crucial when moving recommendations between widgets
+      queryClient.removeQueries({ queryKey: ["/api/tenants", "widget-recommendations", "SECURE_SCORE"], exact: false });
+      queryClient.removeQueries({ queryKey: ["/api/tenants", "widget-recommendations", "DEVICE_SCORE"], exact: false });
+      
+      // Clear any report data that might use these recommendations
+      queryClient.invalidateQueries({ queryKey: ["/api/tenants", "reports"], exact: false });
       
       setIsEditDialogOpen(false);
       toast({
