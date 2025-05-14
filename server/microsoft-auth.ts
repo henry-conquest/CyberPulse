@@ -305,7 +305,7 @@ export function setupAuthRoutes(app: Express) {
           return res.redirect('/login?error=login_failed');
         }
         
-        // Redirect to dashboard
+        // Redirect to dashboard using client-side SPA routing
         res.redirect('/dashboard');
       });
     } catch (error) {

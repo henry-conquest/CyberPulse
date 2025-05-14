@@ -56,6 +56,7 @@ function Router() {
       
       {/* Main routes */}
       <Route path="/" component={() => <ProtectedRoute component={Companies} />} />
+      <Route path="/dashboard" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/companies" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
       
