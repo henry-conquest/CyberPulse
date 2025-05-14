@@ -186,7 +186,13 @@ export default function GlobalRecommendations() {
       return response;
     },
     onSuccess: () => {
+      // Invalidate global recommendations
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
+      
+      // Also invalidate all tenant widget recommendations to ensure changes are reflected in widgets
+      // Use a partial key match to invalidate all tenant widget recommendation queries
+      queryClient.invalidateQueries({ queryKey: ["/api/tenants"], exact: false });
+      
       setIsEditDialogOpen(false);
       toast({
         title: "Success",
