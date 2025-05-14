@@ -212,18 +212,29 @@ export class MicrosoftGraphService {
           console.log("DEBUG: Sample control score structure:", JSON.stringify(latestScore.controlScores[0], null, 2));
         }
 
-        // Always display at least 5 recommendations even if we don't have perfect score data
-        // First, let's capture all profiles
+        // Get only the addressable recommendations from profiles
+        // These are the ones that actually matter to the tenant
         const allProfiles = profilesResponse?.value || [];
         
-        // Log how many profiles we have to work with
-        console.log(`DEBUG: Working with ${allProfiles.length} profiles`);
+        // Filter to only include actionable profiles that match actual Microsoft portal recommendations
+        // Microsoft portal only shows recommendations that are:
+        // 1. Not deprecated
+        // 2. Have an action URL (so they can be addressed)
+        // 3. Have a valid title
+        const actionableProfiles = allProfiles.filter((profile: any) => {
+          return !profile.deprecated && 
+                 profile.actionUrl && 
+                 profile.title &&
+                 profile.tier === "Core"; // Core tier recommendations are the main ones shown in portal
+        });
         
-        if (allProfiles.length > 0) {
-          // Show all available profiles - don't limit to just 5
-          // This ensures users see all Microsoft recommendations
-          for (let i = 0; i < allProfiles.length; i++) {
-            const profile = allProfiles[i];
+        // Log how many profiles we have to work with
+        console.log(`DEBUG: Working with ${actionableProfiles.length} actionable profiles out of ${allProfiles.length} total profiles`);
+        
+        if (actionableProfiles.length > 0) {
+          // Process all actionable recommendations that match what Microsoft portal shows
+          for (let i = 0; i < actionableProfiles.length; i++) {
+            const profile = actionableProfiles[i];
             console.log(`DEBUG: Adding recommendation for ${profile.title}`);
             
             // Create basic recommendation
@@ -248,16 +259,16 @@ export class MicrosoftGraphService {
           }
         }
         
-        // Now continue with the regular flow for any remaining profiles
-        if (profilesResponse?.value?.length > 0 && latestScore?.controlScores?.length > 0) {
+        // Now continue with the regular flow for any remaining actionable profiles
+        if (actionableProfiles.length > 0 && latestScore?.controlScores?.length > 0) {
           // Map control scores for easy lookup
           const controlScoresMap = new Map();
           latestScore.controlScores.forEach((control: any) => {
             controlScoresMap.set(control.controlName, control);
           });
           
-          // Process all control profiles
-          for (const profile of profilesResponse.value) {
+          // Process remaining actionable profiles that weren't added in first pass
+          for (const profile of actionableProfiles) {
             // Skip profiles we already added in our first pass
             if (improvements.some(imp => imp.id === profile.id)) {
               continue;
