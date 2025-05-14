@@ -172,6 +172,55 @@ const LoginPage = () => {
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={form.control}
+                name="useMfa"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-2">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Use Multi-factor Authentication (MFA)</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Enhanced security with one-time code verification
+                      </p>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              {showMfa && (
+                <FormField
+                  control={form.control}
+                  name="mfaCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>MFA Code</FormLabel>
+                      <FormControl>
+                        <div className="flex justify-center mt-2 mb-4">
+                          <InputOTP maxLength={6} {...field}>
+                            <InputOTPGroup>
+                              <InputOTPSlot index={0} />
+                              <InputOTPSlot index={1} />
+                              <InputOTPSlot index={2} />
+                              <InputOTPSlot index={3} />
+                              <InputOTPSlot index={4} />
+                              <InputOTPSlot index={5} />
+                            </InputOTPGroup>
+                          </InputOTP>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
               <Button 
                 type="submit" 
                 className="w-full bg-green-600 hover:bg-green-700" 

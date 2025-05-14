@@ -92,18 +92,23 @@ export function setupPassport(app: Express) {
 
   // Serialize user to session
   passport.serializeUser((user: any, done) => {
+    console.log(`Serializing user ID: ${user.id}`);
     done(null, user.id);
   });
 
   // Deserialize user from session
-  passport.deserializeUser(async (id: string, done) => {
+  passport.deserializeUser(async (id: any, done) => {
     try {
-      console.log(`Deserializing user with ID: ${id}`);
-      const user = await storage.getUser(id);
+      // Ensure id is a string (passport sometimes sends objects)
+      const userId = typeof id === 'object' ? id.id : id;
+      console.log(`Deserializing user with ID: ${userId}`);
+      
+      const user = await storage.getUser(userId);
       if (!user) {
-        console.log(`User with ID ${id} not found during deserialization`);
+        console.log(`User with ID ${userId} not found during deserialization`);
         return done(null, false);
       }
+      
       console.log(`Successfully deserialized user: ${user.email}`);
       return done(null, user);
     } catch (error) {
