@@ -56,6 +56,7 @@ const LoginPage = () => {
     try {
       console.log("Submitting login with:", email);
       
+      console.log("Sending authentication request");
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
