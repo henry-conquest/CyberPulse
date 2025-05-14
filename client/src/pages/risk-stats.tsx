@@ -842,7 +842,9 @@ const SecureScoreRecommendationsDialog = ({
         icon: <Key className="h-5 w-5 text-amber-500" />,
         title: "Secure Privileged Access",
         description: "Implement just-in-time access and privileged access security for admin accounts.",
-        priority: "Medium"
+        priority: "Medium",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
@@ -851,7 +853,9 @@ const SecureScoreRecommendationsDialog = ({
         icon: <Cloud className="h-5 w-5 text-amber-500" />,
         title: "Monitor Unauthorized Cloud Apps",
         description: "Detect and control shadow IT and unauthorized cloud applications.",
-        priority: "Medium"
+        priority: "Medium",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
@@ -1026,7 +1030,7 @@ const SecureScoreRecommendationsDialog = ({
                 key={index} 
                 className={cn(
                   "border rounded-lg p-4 transition-all hover:shadow-md",
-                  rec.isLive ? "bg-blue-50 border-indigo-200 border-2" : ""
+                  rec?.isLive ? "bg-blue-50 border-indigo-200 border-2" : ""
                 )}
               >
                 <div className="flex items-start">
