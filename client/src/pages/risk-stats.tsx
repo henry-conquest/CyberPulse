@@ -1035,12 +1035,12 @@ const SecureScoreRecommendationsDialog = ({
               >
                 <div className="flex items-start">
                   <div className="mr-3 mt-0.5">
-                    {rec?.isLive ? <XCircle className="h-5 w-5 text-red-500" /> : rec.icon}
+                    {rec?.isLive ? <XCircle className="h-5 w-5 text-red-500" /> : rec?.icon}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium flex items-center">
-                        {rec.title}
+                        {rec?.title || "Unnamed Recommendation"}
                         {rec?.isLive && (
                           <span className="ml-2 inline-flex items-center gap-x-1 text-xs text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
                             <CheckCircle className="w-3 h-3" />
@@ -1050,15 +1050,15 @@ const SecureScoreRecommendationsDialog = ({
                       </h4>
                       <div className={cn(
                         "text-xs rounded-full px-3 py-1 font-medium whitespace-nowrap",
-                        rec.priority === "High" ? "bg-red-100 text-red-800" :
-                        rec.priority === "Medium" ? "bg-amber-100 text-amber-800" :
-                        rec.priority === "Low" ? "bg-blue-100 text-blue-800" :
+                        rec?.priority === "High" ? "bg-red-100 text-red-800" :
+                        rec?.priority === "Medium" ? "bg-amber-100 text-amber-800" :
+                        rec?.priority === "Low" ? "bg-blue-100 text-blue-800" :
                         "bg-green-100 text-green-800"
                       )}>
-                        {rec.priority} Priority
+                        {rec?.priority || "Info"} Priority
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{rec?.description || "No description available"}</p>
                     
                     {/* Microsoft Portal Link - simplified version */}
                     {rec?.isLive && rec?.actionUrl && (
