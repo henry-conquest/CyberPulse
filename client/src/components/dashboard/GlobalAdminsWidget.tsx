@@ -166,7 +166,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
   // Main widget card with dialog
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <Card className="h-full">
+      <Card className="h-full flex flex-col">
         <CardHeader className="pb-2">
           <CardTitle className="text-md flex items-center">
             <UserCog className="mr-2 h-5 w-5 text-primary" />
@@ -174,8 +174,8 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
           </CardTitle>
         </CardHeader>
 
-        <CardContent>
-          <div className="flex flex-col items-center justify-center h-24">
+        <CardContent className="flex-1 flex flex-col justify-between">
+          <div className="flex flex-col items-center justify-center">
             {isLoading ? (
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             ) : isError ? (
@@ -189,13 +189,16 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
                 <div className="text-sm text-muted-foreground mt-1">
                   Microsoft 365 Global Admin{admins.length !== 1 ? 's' : ''}
                 </div>
-                <DialogTrigger asChild>
-                  <Button variant="link" size="sm" className="mt-2">
-                    View Details
-                  </Button>
-                </DialogTrigger>
               </>
             )}
+          </div>
+          
+          <div className="mt-6 text-center">
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                View Details
+              </Button>
+            </DialogTrigger>
           </div>
         </CardContent>
       </Card>

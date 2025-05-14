@@ -1104,7 +1104,7 @@ const DeviceScoreCard = ({
       {/* Device Score Card with Recommendations Dialog */}
       <Dialog>
         <DialogTrigger asChild>
-          <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
+          <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors h-full flex flex-col">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1135,37 +1135,42 @@ const DeviceScoreCard = ({
                 )}
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <div className="w-32 h-32 mr-6">
-                  <CircularProgressbar
-                    value={deviceScorePercent}
-                    text={`${deviceScorePercent}%`}
-                    styles={buildStyles({
-                      pathColor: scoreColor,
-                      textColor: scoreColor,
-                      trailColor: "#e5e7eb",
-                      textSize: "22px",
-                    })}
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center mb-2">
-                    {getScoreIcon(deviceScorePercent)}
-                    <span className="ml-2 font-medium text-lg">{getScoreDescription(deviceScorePercent)}</span>
+            <CardContent className="flex-1 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center">
+                  <div className="w-24 h-24 mr-6">
+                    <CircularProgressbar
+                      value={deviceScorePercent}
+                      text={`${deviceScorePercent}%`}
+                      styles={buildStyles({
+                        pathColor: scoreColor,
+                        textColor: scoreColor,
+                        trailColor: "#e5e7eb",
+                        textSize: "22px",
+                      })}
+                    />
                   </div>
-                  <p className="text-gray-600">
-                    Score: <span className="font-medium">{deviceScore}</span> / {maxScore}
-                  </p>
-                  <p className="text-gray-600 mt-1">
-                    {deviceScorePercent < 40 && "Critical device security issues detected"}
-                    {deviceScorePercent >= 40 && deviceScorePercent < 70 && "Device security needs improvement"}
-                    {deviceScorePercent >= 70 && "Good device security posture"}
-                  </p>
-                  <Button variant="outline" size="sm" className="mt-3">
-                    <Info className="h-4 w-4 mr-1" /> View Device Score Details
-                  </Button>
+                  <div>
+                    <div className="flex items-center mb-2">
+                      {getScoreIcon(deviceScorePercent)}
+                      <span className="ml-2 font-medium text-lg">{getScoreDescription(deviceScorePercent)}</span>
+                    </div>
+                    <p className="text-gray-600">
+                      Score: <span className="font-medium">{deviceScore}</span> / {maxScore}
+                    </p>
+                    <p className="text-gray-600 mt-1">
+                      {deviceScorePercent < 40 && "Critical device security issues detected"}
+                      {deviceScorePercent >= 40 && deviceScorePercent < 70 && "Device security needs improvement"}
+                      {deviceScorePercent >= 70 && "Good device security posture"}
+                    </p>
+                  </div>
                 </div>
+              </div>
+              
+              <div className="mt-6">
+                <Button variant="outline" size="sm">
+                  <Info className="h-4 w-4 mr-1" /> View Device Score Details
+                </Button>
               </div>
             </CardContent>
           </Card>
