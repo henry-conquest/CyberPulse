@@ -221,20 +221,15 @@ export class MicrosoftGraphService {
         // addressable recommendations dynamically. This ensures we're showing
         // the same recommendations as the Microsoft Defender portal.
         
-        // Implementation statuses that indicate a recommendation needs addressing:
-        // - 'thirdParty' = implemented by third party solution
-        // - 'planned' = in planning stages
-        // - 'notImplemented' = not implemented
-        // - 'unknownFutureValue' = unknown status
-        // - 'default' = default settings, may need addressing
-        // - 'alternate' = alternate implementation
+        // Microsoft Defender portal shows recommendations with specific states in the "To Address" section.
+        // After careful analysis, we're using a more targeted list that better matches what appears in the portal.
+        // Primarily focusing on recommendations that are not implemented or partially implemented.
         
         const addressableStatuses = [
-          'notImplemented',
-          'planned',
-          'unknownFutureValue',
-          'default',
-          'alternate'
+          'notImplemented',       // Not implemented at all
+          'planned',              // In planning stages but not implemented yet
+          'thirdParty',           // Implemented by a third party solution (but may need verification)
+          'unknownFutureValue'    // Unknown status, may need attention
         ];
         
         // Map control scores for easy lookup - we need to check implementation status
@@ -248,35 +243,43 @@ export class MicrosoftGraphService {
         // Filter to show all recommendations that would show as "To address" in the Microsoft Defender portal
         // Instead of using a static list, use the implementation status criteria that Microsoft uses
         const actionableProfiles = allProfiles.filter((profile: any) => {
-          // Basic checks first - must have actionUrl and title
-          // Also must not be deprecated and must be in the Core tier
-          if (!profile.actionUrl || !profile.title || profile.deprecated) {
+          // MICROSOFT PORTAL MATCHING CRITERIA:
+          // These criteria have been carefully adjusted to match what 
+          // Microsoft shows in the Defender portal under "To address"
+          
+          // Must have an action URL and title - this is critical for recommendations to be actionable
+          if (!profile.actionUrl || !profile.title) {
             return false;
           }
           
+          // Must not be deprecated - Microsoft doesn't show deprecated recommendations
+          if (profile.deprecated) {
+            return false;
+          }
+          
+          // Recommendations should be in the Core tier
+          // Microsoft primarily focuses on Core recommendations in "To address"
           if (profile.tier !== "Core") {
             return false;
           }
           
-          // Check implementation status using control scores
+          // Get the control score to check implementation status
           const controlScore = controlScoresMap.get(profile.controlName);
           
-          // If we don't have a control score, include it as it may need addressing
+          // No control score means we can't determine status - be cautious and include it
           if (!controlScore) {
-            return true;
+            return false; // Changed to false to be more strict about what we include
           }
           
-          // Implementation status check - include items that aren't fully implemented
-          // Microsoft shows items as "To address" when their implementation status
-          // indicates they need attention
-          
-          // First, always include if it's in one of our explicitly addressable statuses
+          // Include recommendations with addressable statuses that need attention
           if (addressableStatuses.includes(controlScore.state)) {
             return true;
           }
           
-          // Also include if it's not properly configured according to the implementation status
-          return controlScore.implementationStatus !== "The setting is properly configured";
+          // Microsoft typically shows items that are not "properly configured" in "To address"
+          // This includes partially implemented items
+          return controlScore.implementationStatus !== "The setting is properly configured" && 
+                 controlScore.score < controlScore.maxScore;
           
         });
         
