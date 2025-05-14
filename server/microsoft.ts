@@ -189,6 +189,7 @@ export class MicrosoftGraphService {
       // Define static list of exact "To address" recommendations from Microsoft Secure Score
       // These match what appears in the Microsoft Security portal
       const staticRecommendations = [
+        // Original recommendations
         { title: "Enable Microsoft Entra ID Identity Protection sign-in risk policies", severity: "HIGH", category: "Identity", product: "Microsoft Entra ID" },
         { title: "Enable Microsoft Entra ID Identity Protection user risk policies", severity: "HIGH", category: "Identity", product: "Microsoft Entra ID" },
         { title: "Quarantine messages that are detected from impersonated users", severity: "HIGH", category: "Apps", product: "Defender for Office" },
@@ -211,7 +212,19 @@ export class MicrosoftGraphService {
         { title: "Block users who reached the message limit", severity: "LOW", category: "Apps", product: "Defender for Office" },
         { title: "Restrict anonymous users from joining meetings", severity: "LOW", category: "Apps", product: "Microsoft Teams" },
         { title: "Designate more than one global admin", severity: "LOW", category: "Identity", product: "Microsoft Entra ID" },
-        { title: "Use least privileged administrative roles", severity: "LOW", category: "Identity", product: "Microsoft Entra ID" }
+        { title: "Use least privileged administrative roles", severity: "LOW", category: "Identity", product: "Microsoft Entra ID" },
+        
+        // Additional recommendations that appear in Microsoft Security Portal
+        { title: "Enable self-service password reset", severity: "MEDIUM", category: "Identity", product: "Microsoft Entra ID" },
+        { title: "Enable Microsoft Authenticator", severity: "HIGH", category: "Identity", product: "Microsoft Entra ID" },
+        { title: "Deploy Microsoft Defender for Endpoint", severity: "HIGH", category: "Endpoint", product: "Microsoft Defender for Endpoint" },
+        { title: "Turn on user risk policies", severity: "HIGH", category: "Identity", product: "Microsoft Entra ID" },
+        { title: "Turn on sign-in risk policies", severity: "HIGH", category: "Identity", product: "Microsoft Entra ID" },
+        { title: "Register all users for MFA", severity: "HIGH", category: "Identity", product: "Microsoft Entra ID" },
+        { title: "Enable modern authentication in Exchange Online", severity: "MEDIUM", category: "Apps", product: "Exchange Online" },
+        { title: "Enable Microsoft Defender for Office 365 Safe Links", severity: "MEDIUM", category: "Apps", product: "Defender for Office" },
+        { title: "Configure Microsoft Defender for Cloud Apps", severity: "MEDIUM", category: "Apps", product: "Microsoft Defender for Cloud Apps" },
+        { title: "Configure sensitivity labels for content", severity: "MEDIUM", category: "Data", product: "Microsoft Information Protection" }
       ];
 
       try {
