@@ -42,9 +42,9 @@ export default function SecureScoreHistoryDialog({
     }
   }, [isOpen]);
   
-  // Query to fetch secure score history
+  // Query to fetch secure score history - up to 24 months
   const { data: history, isLoading, error } = useQuery<SecureScoreHistory[]>({
-    queryKey: [`/api/tenants/${tenantId}/secure-score-history`, refreshKey],
+    queryKey: [`/api/tenants/${tenantId}/secure-score-history?limit=24`, refreshKey],
     enabled: isOpen, // Only fetch when dialog is open
   });
   
@@ -83,7 +83,7 @@ export default function SecureScoreHistoryDialog({
         <DialogHeader>
           <DialogTitle className="text-xl">Secure Score History</DialogTitle>
           <DialogDescription>
-            Monthly snapshots of Microsoft 365 Secure Score over the past 12 months
+            Monthly snapshots of Microsoft 365 Secure Score over the past 24 months
           </DialogDescription>
         </DialogHeader>
         
