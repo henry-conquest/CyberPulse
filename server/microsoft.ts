@@ -443,4 +443,106 @@ export class MicrosoftGraphService {
       throw new Error(`Failed to fetch global administrators: ${error.message || "Unknown error"}`);
     }
   }
+  
+  /**
+   * Get users without MFA enabled from Microsoft Entra ID
+   * @returns Array of users who don't have MFA enabled
+   */
+  async getUsersWithoutMFA() {
+    try {
+      if (!this.client) {
+        this.initializeClient();
+        if (!this.client) {
+          throw new Error("Microsoft Graph client not initialized");
+        }
+      }
+      
+      console.log(`Fetching users without MFA for tenant ${this.connection.tenantId}`);
+      
+      // Get all users first
+      const usersResponse = await this.client.api('/users')
+        .select('id,displayName,userPrincipalName,mail,jobTitle,department,accountEnabled')
+        .filter('accountEnabled eq true')
+        .top(999) // Get a reasonable number of users
+        .get();
+      
+      if (!usersResponse.value || usersResponse.value.length === 0) {
+        console.log("No users found for tenant", this.connection.tenantId);
+        return [];
+      }
+      
+      console.log(`Found ${usersResponse.value.length} total users for tenant ${this.connection.tenantId}`);
+      
+      // Now we need to check authentication methods for each user to determine MFA status
+      const usersWithoutMFA = [];
+      
+      for (const user of usersResponse.value) {
+        try {
+          // Get authentication methods for this user
+          const authMethodsResponse = await this.client.api(`/users/${user.id}/authentication/methods`)
+            .get();
+            
+          // Log the first user's authentication methods for debugging
+          if (usersWithoutMFA.length === 0) {
+            console.log("Sample user authentication methods:", JSON.stringify(authMethodsResponse, null, 2));
+          }
+          
+          // Check if user has MFA methods enabled
+          // Authentication methods that count as MFA: fido2, windowsHelloForBusiness, 
+          // microsoftAuthenticator, softwareOath (app), emailAuthenticationMethod, phoneAuthenticationMethod
+          const mfaMethods = authMethodsResponse.value.filter((method: any) => {
+            // Filter out passwordMethods which don't count as MFA
+            return method["@odata.type"] !== "#microsoft.graph.passwordAuthenticationMethod";
+          });
+          
+          // If user has no MFA methods, add to our list
+          if (mfaMethods.length === 0) {
+            console.log(`User ${user.displayName} (${user.userPrincipalName}) does not have MFA enabled`);
+            usersWithoutMFA.push({
+              id: user.id,
+              displayName: user.displayName || 'Unknown User',
+              email: user.mail || user.userPrincipalName || null,
+              jobTitle: user.jobTitle || 'Not specified',
+              department: user.department || 'Not specified',
+              accountEnabled: user.accountEnabled !== undefined ? user.accountEnabled : true,
+              lastSignInAt: user.signInActivity?.lastSignInDateTime || null
+            });
+          }
+        } catch (userError: any) {
+          console.error(`Error checking MFA for user ${user.displayName}:`, userError.message || userError);
+          // Continue with other users even if there's an error with one
+          continue;
+        }
+      }
+      
+      console.log(`Found ${usersWithoutMFA.length} users without MFA enabled for tenant ${this.connection.tenantId}`);
+      return usersWithoutMFA;
+      
+    } catch (error: any) {
+      // Check for authentication errors
+      if (error.statusCode === 401 || 
+          (error.message && error.message.includes("authentication")) ||
+          (error.message && error.message.includes("authorized"))) {
+        console.error(`Authentication error in getUsersWithoutMFA for tenant ${this.connection.tenantId}:`, error.message);
+        
+        // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        throw new Error(`Authentication failed for Microsoft 365 tenant ${this.connection.tenantName}. Please reconnect this tenant.`);
+      }
+      
+      // Handle other errors
+      console.error(`Error fetching users without MFA for tenant ${this.connection.tenantId}:`, error);
+      throw new Error(`Failed to fetch users without MFA: ${error.message || "Unknown error"}`);
+    }
+  }
 }
