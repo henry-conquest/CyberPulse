@@ -118,7 +118,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
                     <CardTitle className="text-md">{admin.displayName || 'Unknown User'}</CardTitle>
                     <div className="flex items-center mt-1 text-sm text-muted-foreground">
                       <Mail className="h-3.5 w-3.5 mr-1" />
-                      {admin.email || 'No email provided'}
+                      {admin.email ? admin.email : 'No email provided'}
                     </div>
                   </div>
                   {!admin.accountEnabled && (

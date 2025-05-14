@@ -387,16 +387,22 @@ export class MicrosoftGraphService {
       
       console.log(`Found ${membersResponse.value.length} Global Administrators for tenant ${this.connection.tenantId}`);
       
+      // Log raw member data to see what we're getting from Microsoft
+      console.log("Raw Global Admin data sample:", JSON.stringify(membersResponse.value[0] || {}, null, 2));
+      
       // Transform response to a more friendly format
-      return membersResponse.value.map((user: any) => ({
+      const admins = membersResponse.value.map((user: any) => ({
         id: user.id,
-        displayName: user.displayName,
-        email: user.mail || user.userPrincipalName,
+        displayName: user.displayName || 'Unknown User',
+        email: user.mail || user.userPrincipalName || null,
         jobTitle: user.jobTitle || 'Not specified',
         department: user.department || 'Not specified',
         companyName: user.companyName || 'Not specified',
-        accountEnabled: user.accountEnabled || false
+        accountEnabled: user.accountEnabled !== undefined ? user.accountEnabled : false
       }));
+      
+      console.log("Transformed Global Admins data:", JSON.stringify(admins, null, 2));
+      return admins;
       
     } catch (error: any) {
       // Check for authentication errors
