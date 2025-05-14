@@ -6,6 +6,8 @@ import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { Check, AlertTriangle, XCircle, Loader2 } from "lucide-react";
 import { useParams, Link } from "wouter";
+import SecureScoreWidget from "@/components/dashboard/SecureScoreWidget";
+import SecureScoreTrendWidget from "@/components/dashboard/SecureScoreTrendWidget";
 
 export default function SecureScorePage() {
   const params = useParams();
@@ -109,7 +111,7 @@ export default function SecureScorePage() {
   const maxScore = 278; // Standard max score for Microsoft Secure Score
 
   return (
-    <div className="max-w-xl mx-auto my-8">
+    <div className="max-w-3xl mx-auto my-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Microsoft Secure Score</h1>
         <Button variant="outline" size="sm" asChild>
@@ -119,49 +121,46 @@ export default function SecureScorePage() {
         </Button>
       </div>
       
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Current Secure Score</CardTitle>
-          <CardDescription>Microsoft 365 security assessment</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center">
-            <div className="w-32 h-32 mr-6">
-              <CircularProgressbar
-                value={secureScorePercent}
-                text={`${secureScorePercent}%`}
-                styles={buildStyles({
-                  pathColor: scoreColor,
-                  textColor: scoreColor,
-                  trailColor: "#e5e7eb",
-                  textSize: "22px",
-                })}
-              />
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <Card>
+          <CardContent className="p-0">
+            <SecureScoreWidget 
+              currentScore={secureScore}
+              currentPercent={secureScorePercent}
+              tenantId={parseInt(tenantId)}
+            />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Score Details</CardTitle>
+            <CardDescription>Microsoft 365 security assessment</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-2">
+              Score: <span className="font-medium">{secureScore?.toFixed(1)}</span> / {maxScore}
+            </p>
+            <p className="text-gray-600 mb-4">
+              {secureScorePercent < 40 && "Urgent action required"}
+              {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
+              {secureScorePercent >= 70 && "Good security posture"}
+            </p>
+            
             <div>
-              <div className="flex items-center mb-2">
-                {getScoreIcon(secureScorePercent)}
-                <span className="ml-2 font-medium text-lg">{getScoreDescription(secureScorePercent)}</span>
-              </div>
-              <p className="text-gray-600">
-                Score: <span className="font-medium">{secureScore.toFixed(1)}</span> / {maxScore}
+              <p className="text-sm text-gray-500">
+                Microsoft Secure Score is a measurement of an organization's security posture, 
+                with a higher number indicating more improvement actions taken.
               </p>
-              <p className="text-gray-600 mt-1">
-                {secureScorePercent < 40 && "Urgent action required"}
-                {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
-                {secureScorePercent >= 70 && "Good security posture"}
-              </p>
-              
-              <div className="mt-4">
-                <p className="text-sm text-gray-500">
-                  Microsoft Secure Score is a measurement of an organization's security posture, 
-                  with a higher number indicating more improvement actions taken.
-                </p>
-              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Add Secure Score Trend Widget */}
+      <div className="mb-6">
+        <SecureScoreTrendWidget tenantId={parseInt(tenantId)} limit={12} />
+      </div>
     </div>
   );
 }
