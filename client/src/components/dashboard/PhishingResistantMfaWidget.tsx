@@ -235,7 +235,7 @@ const PhishingResistantMfaWidget = ({ tenantId }: PhishingResistantMfaWidgetProp
     enabledPhishResistantMethods = ['fido2', 'windowsHelloForBusiness'];
     enabledPartiallySecureMethods = ['microsoftAuthenticator'];
     enabledInsecureMethods = ['sms'];
-    riskLevel = 'MEDIUM';
+    riskLevel = 'MEDIUM'; // This will determine the risk badge (LOW, MEDIUM, HIGH)
     recommendations = [
       {
         id: "disable-sms",
@@ -282,29 +282,20 @@ const PhishingResistantMfaWidget = ({ tenantId }: PhishingResistantMfaWidgetProp
   // Determine status for the badge and display - simplified labels
   let securityStatus = 'Secure';
   let statusColor = 'green';
-  let statusIcon = <CheckCircle className="h-3.5 w-3.5 mr-1" />;
-  let circleColor = '#22c55e'; // Green
+  let statusIcon = <CheckCircle className="h-8 w-8 mx-auto text-green-500" />;
   
   if (enabledMethods.length === 0) {
     securityStatus = 'No MFA';
     statusColor = 'red';
-    statusIcon = <ShieldX className="h-3.5 w-3.5 mr-1" />;
-    circleColor = '#f87171'; // Red
+    statusIcon = <ShieldX className="h-8 w-8 mx-auto text-red-500" />;
   } else if (enabledInsecureMethods.length > 0) {
     securityStatus = 'Insecure';
     statusColor = 'red';
-    statusIcon = <ShieldOff className="h-3.5 w-3.5 mr-1" />;
-    circleColor = '#f87171'; // Red
-  } else if (enabledPartiallySecureMethods.length > 0 && enabledPhishResistantMethods.length > 0) {
+    statusIcon = <ShieldOff className="h-8 w-8 mx-auto text-red-500" />;
+  } else if (enabledPartiallySecureMethods.length > 0) {
     securityStatus = 'Partially Secure';
     statusColor = 'amber';
-    statusIcon = <ShieldAlert className="h-3.5 w-3.5 mr-1" />;
-    circleColor = '#f59e0b'; // Amber
-  } else if (enabledPartiallySecureMethods.length > 0 && enabledPhishResistantMethods.length === 0) {
-    securityStatus = 'Partially Secure';
-    statusColor = 'amber';
-    statusIcon = <ShieldAlert className="h-3.5 w-3.5 mr-1" />;
-    circleColor = '#f59e0b'; // Amber
+    statusIcon = <ShieldAlert className="h-8 w-8 mx-auto text-amber-500" />;
   }
   
   // Calculate the security percentage for the circular progress (0 = totally insecure, 100 = all secure)
@@ -325,41 +316,45 @@ const PhishingResistantMfaWidget = ({ tenantId }: PhishingResistantMfaWidgetProp
       </CardHeader>
       <CardContent>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <div className="flex flex-col items-center justify-center">
-            <div className="w-24 h-24 mx-auto mb-4">
-              <CircularProgressbar
-                value={securityPercentage}
-                text={`${securityPercentage}%`}
-                styles={buildStyles({
-                  textSize: '22px',
-                  pathColor: circleColor,
-                  textColor: '#64748b',
-                  trailColor: '#e2e8f0',
-                })}
-              />
-            </div>
-            <div className="text-center space-y-2">
-              <Badge 
-                variant="outline" 
-                className={statusColor === 'green' 
-                  ? "bg-green-50 text-green-700 border-green-200"
-                  : statusColor === 'amber'
-                    ? "bg-amber-50 text-amber-700 border-amber-200" 
-                    : "bg-red-50 text-red-700 border-red-200"
-                }
-              >
+          <div className="flex flex-col items-center justify-center h-44">
+            <Badge 
+              className={
+                riskLevel === 'LOW' 
+                  ? "bg-green-100 text-green-800 mb-3" 
+                  : riskLevel === 'MEDIUM' 
+                    ? "bg-amber-100 text-amber-800 mb-3"
+                    : "bg-red-100 text-red-800 mb-3"
+              }
+            >
+              {riskLevel === 'LOW' ? 'Low Risk' : riskLevel === 'MEDIUM' ? 'Moderate Risk' : 'High Risk'}
+            </Badge>
+            
+            <div className={`
+              w-32 h-32 rounded-full flex items-center justify-center mb-4
+              ${statusColor === 'green' ? 'bg-green-50 border-2 border-green-300' : 
+                statusColor === 'amber' ? 'bg-amber-50 border-2 border-amber-300' : 
+                'bg-red-50 border-2 border-red-300'}
+            `}>
+              <div className="text-center">
                 {statusIcon}
-                {securityStatus} MFA 
-              </Badge>
-              <p className="text-sm text-muted-foreground">
-                {totalRiskyMethods > 0 ? 
-                  `${totalRiskyMethods} risky authentication methods enabled` : 
-                  enabledMethods.length === 0 ? 
-                    "No authentication methods enabled" : 
-                    "All methods are phishing-resistant"
-                }
-              </p>
+                <div className={`
+                  text-xl font-semibold mt-1
+                  ${statusColor === 'green' ? 'text-green-700' : 
+                    statusColor === 'amber' ? 'text-amber-700' : 
+                    'text-red-700'}
+                `}>
+                  {securityStatus}
+                </div>
+              </div>
             </div>
+            <p className="text-sm text-muted-foreground text-center">
+              {totalRiskyMethods > 0 ? 
+                `${totalRiskyMethods} risky authentication methods enabled` : 
+                enabledMethods.length === 0 ? 
+                  "No authentication methods enabled" : 
+                  "All methods are phishing-resistant"
+              }
+            </p>
           </div>
 
           <DialogTrigger asChild>
