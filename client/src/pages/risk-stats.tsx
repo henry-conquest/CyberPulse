@@ -337,17 +337,14 @@ const DeviceRecommendationsDialog = ({
   const [refreshKey, setRefreshKey] = useState(Date.now());
   const queryClient = useQueryClient();
   
-  // Use effect to force refresh when dialog opens
+  // Use effect to force refresh when dialog opens AND on each render
+  // This is critical to ensure fresh data is always fetched when the dialog opens
   useEffect(() => {
-    // Force clear all recommendation caches when dialog opens
-    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`] });
-    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`] });
-    queryClient.removeQueries({ queryKey: ['/api/global-recommendations'] });
-    
-    // Trigger a refresh
+    // Force refresh data on each render - Dialog's onOpenChange already cleared the cache
+    // Set a unique timestamp to force new queries
     setRefreshKey(Date.now());
     
-    console.log("DeviceRecommendationsDialog: Forced refresh of recommendation data");
+    console.log("DeviceRecommendationsDialog: Refreshed with new key:", Date.now());
   }, []);
   
   // Fetch tenant widget recommendations
@@ -1145,7 +1142,18 @@ const DeviceScoreCard = ({
       )}
       
       {/* Device Score Card with Recommendations Dialog */}
-      <Dialog>
+      <Dialog onOpenChange={(open) => {
+        if (open) {
+          // Force refresh data when the dialog is opened
+          const queryClient = useQueryClient();
+          // Clear all recommendation caches to ensure fresh data
+          queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`] });
+          queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`] });
+          queryClient.removeQueries({ queryKey: ['/api/global-recommendations'] });
+          
+          console.log("DeviceScore dialog opened - forcing data refresh");
+        }
+      }}>
         <DialogTrigger asChild>
           <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
             <CardHeader className="pb-2">
