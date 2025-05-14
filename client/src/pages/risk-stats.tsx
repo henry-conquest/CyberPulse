@@ -707,10 +707,7 @@ const SecureScoreRecommendationsDialog = ({
   
   // Use effect to force refresh when dialog opens
   useEffect(() => {
-    // Force clear all recommendation caches when dialog opens
-    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`] });
-    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`] });
-    queryClient.removeQueries({ queryKey: ['/api/global-recommendations'] });
+    // Only clear Microsoft secure score recommendations cache since we only use that now
     queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/secure-score-recommendations`] });
     
     // Set a unique timestamp to force new queries
@@ -732,33 +729,12 @@ const SecureScoreRecommendationsDialog = ({
     retry: 1, // Only retry once to avoid excessive API calls if there's an issue
   });
   
-  // Fetch tenant widget recommendations
-  const { data: tenantWidgetRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
-    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`, refreshKey],
-    refetchOnMount: "always", // Always refetch when dialog opens
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    staleTime: 0, // Consider data immediately stale to force refresh
-  });
+  // Removed queries for tenant widget recommendations, device score recommendations, and global recommendations
+  // We're now using only the official Microsoft recommendations
   
-  // Fetch device score recommendations too so we can show them if the category was changed
-  const { data: deviceScoreRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
-    queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`, refreshKey],
-    refetchOnMount: "always", // Always refetch when dialog opens
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    staleTime: 0, // Consider data immediately stale to force refresh
-  });
-  
-  // Fetch global recommendations referenced by tenant widgets
-  const { data: globalRecommendations = [] } = useQuery<GlobalRecommendation[]>({
-    queryKey: ['/api/global-recommendations', refreshKey],
-    refetchOnMount: "always", // Always refetch when dialog opens
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    staleTime: 0, // Consider data immediately stale to force refresh
-  });
-  
-  // Generate appropriate recommendations based on security status
+  // Generate recommendations from Microsoft Secure Score API only
   const getRecommendations = () => {
-    const recommendations = [];
+    const recommendations: Recommendation[] = [];
     
     // Helper function to convert priority to display format
     const convertPriority = (priority: string): string => {
@@ -771,7 +747,7 @@ const SecureScoreRecommendationsDialog = ({
       return priorityMap[priority.toUpperCase()] || "Info";
     };
     
-    // Add Microsoft recommendations if available - all 23 addressable recommendations
+    // ONLY use Microsoft recommendations from the Graph API
     if (msRecommendations && msRecommendations.length > 0) {
       // Sort recommendations by severity (HIGH, MEDIUM, LOW, INFO)
       const prioritizedRecs = [...msRecommendations].sort((a, b) => {
@@ -779,7 +755,7 @@ const SecureScoreRecommendationsDialog = ({
         const severityA = a?.severity?.toUpperCase() || 'INFO';
         const severityB = b?.severity?.toUpperCase() || 'INFO';
         return (severityOrder[severityA] ?? 3) - (severityOrder[severityB] ?? 3);
-      }).slice(0, 25); // Show up to 25 recommendations to cover all addressable ones
+      });
       
       prioritizedRecs.forEach(rec => {
         // Select appropriate icon based on severity
@@ -812,40 +788,7 @@ const SecureScoreRecommendationsDialog = ({
       });
     }
     
-    // Only use recommendations that match the current widget type
-    // Ensure we're using case-insensitive comparison for widget types to avoid issues
-    // This is critical for proper categorization of recommendations
-    const relevantRecommendations = tenantWidgetRecommendations.filter(rec => {
-      // Ensure widgetType exists and make comparison case-insensitive
-      return rec.widgetType && rec.widgetType.toUpperCase() === "SECURE_SCORE";
-    });
-    
-    // Add tenant-specific recommendations only if we don't have Microsoft recommendations
-    if (msRecommendations.length === 0 && relevantRecommendations.length > 0 && globalRecommendations.length > 0) {
-      // For each tenant widget recommendation, find the corresponding global recommendation
-      relevantRecommendations.forEach(widgetRec => {
-        const globalRec = globalRecommendations.find(rec => rec.id === widgetRec.globalRecommendationId);
-        
-        // Display all valid secure score recommendations
-        // We've already filtered by widget type, so no need for additional checks
-        if (globalRec) {
-          
-          recommendations.push({
-            icon: <Info className="h-5 w-5 text-blue-500" />,
-            title: widgetRec?.title || globalRec?.title || "Custom Recommendation",
-            description: widgetRec?.description || globalRec?.description || "No description available",
-            priority: convertPriority(widgetRec?.priority || globalRec?.priority || "INFO"),
-            isCustom: true,
-            isLive: false,
-            actionUrl: undefined
-          });
-        }
-      });
-    }
-    
-    // No longer adding hardcoded recommendations - all will come from Microsoft Secure Score API
-    
-    // Removed the fallback recommendation as per user's request - 
+    // Removed all custom recommendations, tenant widget recommendations and fallbacks
     // Only showing recommendations that come directly from Microsoft Secure Score API
     
     return recommendations;
@@ -1217,10 +1160,9 @@ const SecureScoreCard = ({
   tenantId: number;
   maxScore?: number;
 }) => {
-  // For showing recommendation selector dialog
-  const [showManageRecommendations, setShowManageRecommendations] = useState(false);
+  // Removed management of recommendations as per user's request
+  // Only showing Microsoft recommendations directly from the Graph API
   const { user } = useAuth();
-  const isAdminOrAnalyst = user?.role === 'admin' || user?.role === 'analyst';
   
   // Calculate gradient colors based on score
   const getScoreColor = (percent: number) => {
