@@ -1,10 +1,14 @@
-import { ArrowUp, ArrowDown, Minus, ShieldCheck } from "lucide-react";
+import { ArrowUp, ArrowDown, Minus, ShieldCheck, History } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import SecureScoreHistoryDialog from "./SecureScoreHistoryDialog";
 
 interface SecureScoreWidgetProps {
   currentScore: number;
   previousScore?: number;
   currentPercent: number;
   previousPercent?: number;
+  tenantId: number;
 }
 
 export default function SecureScoreWidget({ 

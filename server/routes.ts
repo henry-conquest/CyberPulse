@@ -1918,6 +1918,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
+  // Secure Score History Endpoints
+  
+  // Get secure score history for a tenant
+  app.get('/api/tenants/:tenantId/secure-score-history', isAuthenticated, asyncHandler(async (req, res) => {
+    const { tenantId } = req.params;
+    const { limit } = req.query;
+    
+    try {
+      // Convert limit to number if provided
+      const limitNum = limit ? parseInt(limit as string) : 12; // Default to 12 months
+      
+      const history = await storage.getSecureScoreHistoryByTenantId(Number(tenantId), limitNum);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching secure score history:", error);
+      res.status(500).json({ message: "Failed to fetch secure score history" });
+    }
+  }));
+  
+  // Get secure score history for a specific period (quarter/year)
+  app.get('/api/tenants/:tenantId/secure-score-history/:year/:quarter', isAuthenticated, asyncHandler(async (req, res) => {
+    const { tenantId, year, quarter } = req.params;
+    
+    try {
+      // Calculate date range for the specified quarter
+      const quarterNum = parseInt(quarter);
+      const yearNum = parseInt(year);
+      
+      // Quarterly date ranges
+      const startMonth = (quarterNum - 1) * 3;
+      const startDate = new Date(yearNum, startMonth, 1);
+      const endDate = new Date(yearNum, startMonth + 3, 0);
+      
+      const history = await storage.getSecureScoreHistoryForPeriod(
+        Number(tenantId),
+        startDate,
+        endDate
+      );
+      
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching secure score history for period:", error);
+      res.status(500).json({ message: "Failed to fetch secure score history for period" });
+    }
+  }));
+  
+  // Get the latest secure score for a tenant
+  app.get('/api/tenants/:tenantId/secure-score-latest', isAuthenticated, asyncHandler(async (req, res) => {
+    const { tenantId } = req.params;
+    
+    try {
+      const latestScore = await storage.getLatestSecureScoreForTenant(Number(tenantId));
+      
+      if (!latestScore) {
+        return res.status(404).json({ message: "No secure score history found for this tenant" });
+      }
+      
+      res.json(latestScore);
+    } catch (error) {
+      console.error("Error fetching latest secure score:", error);
+      res.status(500).json({ message: "Failed to fetch latest secure score" });
+    }
+  }));
+  
   // Tenant Widget Recommendations Endpoints
   
   // Get all tenant widget recommendations for a tenant

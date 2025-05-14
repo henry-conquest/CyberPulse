@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { scheduleQuarterlyReports } from "./reports";
+import { scheduleMonthlySecureScoreSnapshots } from "./secure-score-history";
 
 const app = express();
 app.use(express.json());
@@ -43,6 +44,10 @@ app.use((req, res, next) => {
   // Schedule automatic quarterly report generation
   await scheduleQuarterlyReports();
   log("Quarterly report scheduler started");
+  
+  // Schedule monthly secure score snapshots
+  await scheduleMonthlySecureScoreSnapshots();
+  log("Monthly secure score snapshot scheduler started");
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
