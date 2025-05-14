@@ -210,7 +210,9 @@ export function setupAuthRoutes(app: Express) {
           // Create mapping
           await storage.createMicrosoftTenantMapping({
             microsoftTenantId: tenantInfo.id,
-            tenantId: tenant.id
+            appTenantId: tenant.id,
+            tenantName: tenantInfo.displayName,
+            domainName: tenantInfo.domains[0] || ''
           });
           
           // Create user-tenant access
@@ -221,13 +223,13 @@ export function setupAuthRoutes(app: Express) {
           });
         } else {
           // Check if user has access to this tenant
-          const access = await storage.getUserTenantAccess(user.id, mapping.tenantId);
+          const access = await storage.getUserTenantAccess(user.id, mapping.appTenantId);
           
           if (!access) {
             // Create user-tenant access
             await storage.createUserTenantAccess({
               userId: user.id,
-              tenantId: mapping.tenantId,
+              tenantId: mapping.appTenantId,
               role: UserRoles.READONLY
             });
           }
