@@ -142,6 +142,8 @@ const RecommendationSelector = ({
   // Fetch global recommendations
   const { data: globalRecommendations = [], isLoading: isLoadingGlobal } = useQuery<GlobalRecommendation[]>({
     queryKey: ['/api/global-recommendations'],
+    refetchOnMount: true, // Always refetch when dialog opens
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
   
   // Fetch tenant widget recommendations
@@ -321,6 +323,8 @@ const DeviceRecommendationsDialog = ({
   // Fetch secure score recommendations too so we can show them if the category was changed
   const { data: secureScoreRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
     queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`],
+    refetchOnMount: true, // Always refetch when dialog opens
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
   
   // Fetch global recommendations referenced by tenant widgets
@@ -611,11 +615,15 @@ const SecureScoreRecommendationsDialog = ({
   // Fetch tenant widget recommendations
   const { data: tenantWidgetRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
     queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`],
+    refetchOnMount: true, // Always refetch when dialog opens
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
   
   // Fetch device score recommendations too so we can show them if the category was changed
   const { data: deviceScoreRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
     queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`],
+    refetchOnMount: true, // Always refetch when dialog opens
+    refetchOnWindowFocus: true, // Refetch when window regains focus
   });
   
   // Fetch global recommendations referenced by tenant widgets
