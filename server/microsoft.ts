@@ -232,10 +232,15 @@ export class MicrosoftGraphService {
         if (profilesResponse?.value && profilesResponse.value.length > 0) {
           const allProfiles = profilesResponse.value;
           
-          console.log(`Processing ${allProfiles.length} total profiles from Microsoft Graph API`);
+          // Filter profiles to only include ones that match our exact "To address" recommendations
+          const matchingProfiles = allProfiles.filter((profile: any) => {
+            return staticRecommendations.some(rec => rec.title === profile.title);
+          });
           
-          // Create improvement objects from all profiles
-          for (const profile of allProfiles) {
+          console.log(`Found ${matchingProfiles.length} exact matching profiles out of ${allProfiles.length} total profiles`);
+          
+          // Create improvement objects from matching profiles
+          for (const profile of matchingProfiles) {
             // Determine severity based on Microsoft's implementation status
             let severity: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO' = 'MEDIUM';
             
