@@ -10,7 +10,8 @@ import {
   Building,
   CalendarDays,
   Grid,
-  ListChecks
+  ListChecks,
+  UserCog
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logoImg from "../../assets/logo.png";
@@ -105,13 +106,22 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           </NavItem>
           
           {currentTenantId && (
-            <NavItem 
-              href={`/tenants/${currentTenantId}/report-periods`} 
-              icon={<CalendarDays className="h-5 w-5" />}
-              isActive={location.endsWith("/report-periods")}
-            >
-              Report Periods
-            </NavItem>
+            <>
+              <NavItem 
+                href={`/tenants/${currentTenantId}/report-periods`} 
+                icon={<CalendarDays className="h-5 w-5" />}
+                isActive={location.endsWith("/report-periods")}
+              >
+                Report Periods
+              </NavItem>
+              <NavItem 
+                href={`/tenants/${currentTenantId}/global-admins`} 
+                icon={<UserCog className="h-5 w-5" />}
+                isActive={location.endsWith("/global-admins")}
+              >
+                Global Admins
+              </NavItem>
+            </>
           )}
         </div>
         

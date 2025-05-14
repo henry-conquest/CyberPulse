@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+
 // Create a simple PageHeader component
 const PageHeader = ({ title, description }: { title: string; description: string }) => (
   <div className="mb-8">
@@ -14,7 +16,6 @@ const PageHeader = ({ title, description }: { title: string; description: string
     <p className="text-muted-foreground mt-2">{description}</p>
   </div>
 );
-import { useToast } from "@/hooks/use-toast";
 
 type GlobalAdmin = {
   id: string;
@@ -31,7 +32,7 @@ export default function GlobalAdminsPage() {
   const { toast } = useToast();
   
   // Query to fetch global admins
-  const { data: admins, isLoading, isError, error, refetch } = useQuery({
+  const { data: admins = [], isLoading, isError, error, refetch } = useQuery<GlobalAdmin[]>({
     queryKey: ['/api/tenants', tenantId, 'microsoft365/global-administrators'],
     enabled: !!tenantId
   });
