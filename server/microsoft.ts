@@ -28,26 +28,6 @@ interface ControlScore {
 // Interface for secure score improvement recommendations
 interface SecureScoreImprovement {
   id: string;
-  rank: number;
-  title: string;
-  description: string;
-  status: 'toAddress' | 'addressed' | 'thirdParty' | 'default';
-  severity: 'high' | 'medium' | 'low' | 'informational';
-  category: string;
-  impact: string;
-  remediation: string;
-  remediationImpact: string;
-  actionUrl: string;
-  implementedDateTime?: string;
-  lastModifiedDateTime: string;
-  percentComplete: number;
-  pointsIncrease: number;
-  service: string;
-}
-
-// Interface for secure score improvement recommendations
-interface SecureScoreImprovement {
-  id: string;
   title: string;
   description: string;
   remediation: string;
@@ -191,6 +171,190 @@ export class MicrosoftGraphService {
     }
   }
 
+  async getSecureScoreImprovements(): Promise<SecureScoreImprovement[]> {
+    try {
+      if (!this.client) {
+        this.initializeClient();
+        if (!this.client) {
+          throw new Error("Microsoft Graph client not initialized");
+        }
+      }
+
+      console.log(`Fetching secure score improvement actions for tenant ${this.connection.tenantId}`);
+      
+      // Array to hold our improvement recommendations
+      const improvements: SecureScoreImprovement[] = [];
+      
+      try {
+        // First, try to get the secureScoreControlProfiles which contain improvement recommendations
+        const profilesResponse = await this.client
+          .api('/security/secureScoreControlProfiles')
+          .get();
+
+        // Get the secure scores to know the latest secure score
+        const scoresResponse = await this.client
+          .api('/security/secureScores')
+          .top(1)
+          .orderby('createdDateTime desc')
+          .get();
+          
+        console.log(`Got ${profilesResponse?.value?.length || 0} control profiles and ${scoresResponse?.value?.length || 0} scores`);
+        
+        const latestScore = scoresResponse?.value?.[0];
+        
+        if (profilesResponse?.value?.length > 0 && latestScore?.controlScores?.length > 0) {
+          // Map control scores for easy lookup
+          const controlScoresMap = new Map();
+          latestScore.controlScores.forEach((control: any) => {
+            controlScoresMap.set(control.controlName, control);
+          });
+          
+          // Process all control profiles
+          for (const profile of profilesResponse.value) {
+            // Get the corresponding control score for this profile
+            const controlScore = controlScoresMap.get(profile.controlName);
+            
+            // Only include if it's not fully implemented or explicitly has a "to address" status
+            if (controlScore && (
+                controlScore.implementationStatus === 'notImplemented' || 
+                controlScore.implementationStatus === 'partiallyImplemented' ||
+                controlScore.state === 'Default')) {
+              
+              // Map implementation status to severity
+              let severity: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO' = 'MEDIUM';
+              
+              // Calculate percentage of max score
+              const percentOfMax = (profile.maxScore > 0) ? (profile.maxScore / latestScore.maxScore) * 100 : 0;
+              
+              // Set severity based on potential impact
+              if (percentOfMax >= 7) {
+                severity = 'HIGH';
+              } else if (percentOfMax >= 3) {
+                severity = 'MEDIUM';
+              } else if (percentOfMax >= 1) {
+                severity = 'LOW';
+              } else {
+                severity = 'INFO';
+              }
+              
+              // Create our recommendation object
+              const improvement: SecureScoreImprovement = {
+                id: profile.id,
+                title: profile.title,
+                description: profile.description || '',
+                remediation: profile.remediation || '',
+                impact: profile.userImpact || '',
+                category: profile.serviceCategory || 'Security',
+                service: profile.service || '',
+                actionUrl: profile.actionUrl || '',
+                score: controlScore.score || 0,
+                maxScore: profile.maxScore || 0,
+                percentComplete: controlScore.score / profile.maxScore * 100 || 0,
+                implementationStatus: controlScore.implementationStatus,
+                severity,
+                controlName: profile.controlName
+              };
+              
+              improvements.push(improvement);
+            }
+          }
+        }
+      } catch (firstError: any) {
+        console.warn(`First attempt failed: ${firstError.message}, trying fallback method...`);
+        
+        // Fallback method for older Graph API versions
+        try {
+          // Try an alternative endpoint to get the recommendations
+          const response = await this.client
+            .api('/security/securescores/latest/securescorecontrols')
+            .get();
+            
+          console.log(`Got ${response?.value?.length || 0} secure score controls from fallback endpoint`);
+          
+          if (response?.value?.length > 0) {
+            for (const control of response.value) {
+              // Only include controls that are not implemented or partially implemented
+              if (control.state !== 'Resolved') {
+                // Map state to severity
+                let severity: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO' = 'MEDIUM';
+                
+                // Get percentage score
+                const percentScore = (control.maxScore > 0) ? (control.maxScore / 100) * 100 : 0;
+                
+                if (percentScore >= 5) {
+                  severity = 'HIGH';
+                } else if (percentScore >= 3) {
+                  severity = 'MEDIUM'; 
+                } else if (percentScore >= 1) {
+                  severity = 'LOW';
+                } else {
+                  severity = 'INFO';
+                }
+                
+                const improvement: SecureScoreImprovement = {
+                  id: control.id || '',
+                  title: control.title || 'Security Recommendation',
+                  description: control.description || '',
+                  remediation: control.remediation || '',
+                  impact: control.userImpact || '',
+                  category: 'Security',
+                  service: control.serviceCategory || '',
+                  actionUrl: control.actionUrl || '',
+                  score: control.score || 0,
+                  maxScore: control.maxScore || 0,
+                  percentComplete: (control.score / control.maxScore) * 100 || 0,
+                  implementationStatus: control.state || 'unknown',
+                  severity,
+                  controlName: control.controlName || ''
+                };
+                
+                improvements.push(improvement);
+              }
+            }
+          }
+        } catch (secondError: any) {
+          console.error(`Both attempts to fetch secure score improvements failed: ${secondError.message}`);
+          // Let the original error propagate if both attempts fail
+          throw firstError;
+        }
+      }
+      
+      // Sort by severity (high to low) and then by maxScore (high to low)
+      return improvements.sort((a, b) => {
+        const severityOrder: Record<string, number> = { 'HIGH': 0, 'MEDIUM': 1, 'LOW': 2, 'INFO': 3 };
+        if (severityOrder[a.severity] !== severityOrder[b.severity]) {
+          return severityOrder[a.severity] - severityOrder[b.severity];
+        }
+        return b.maxScore - a.maxScore;
+      });
+    } catch (error: any) {
+      // Check for authentication errors
+      if (error.statusCode === 401 || 
+          (error.message && error.message.includes("authentication")) ||
+          (error.message && error.message.includes("authorized"))) {
+        console.error(`Authentication error in getSecureScoreImprovements for tenant ${this.connection.tenantId}:`, error.message);
+        
+        // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        throw new Error(`Authentication failed for Microsoft 365 tenant ${this.connection.tenantName}. Please reconnect this tenant.`);
+      }
+      
+      // Handle other errors
+      console.error(`Error in getSecureScoreImprovements for tenant ${this.connection.tenantId}:`, error);
+      throw new Error(`Failed to fetch secure score improvements: ${error.message || "Unknown error"}`);
+    }
+  }
+  
   async getMFAStatus(): Promise<{ enabled: number; disabled: number }> {
     try {
       if (!this.client) {

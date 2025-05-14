@@ -1881,6 +1881,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch secure score data", details: error.message });
     }
   }));
+  
+  // Get secure score improvement recommendations from Microsoft Graph API
+  app.get("/api/tenants/:id/secure-score-recommendations", isAuthenticated, asyncHandler(async (req, res) => {
+    try {
+      console.log("Secure score recommendations endpoint called for tenant", req.params.id);
+      const userId = (req.user as any).claims.sub;
+      const tenantId = parseInt(req.params.id);
+      
+      // Check if user has access to this tenant
+      const hasAccess = await hasTenantAccess(userId, tenantId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this tenant" });
+      }
+      
+      // Get the connection info for this tenant
+      const connection = await storage.getMicrosoft365Connection(tenantId);
+      if (!connection) {
+        console.log("No Microsoft 365 connection found for tenant", tenantId);
+        return res.status(404).json({ error: "No Microsoft 365 connection found for this tenant" });
+      }
+      
+      // Initialize the Microsoft Graph service with the connection
+      const graphService = new MicrosoftGraphService(connection);
+      
+      // Get the secure score recommendations
+      console.log("Fetching secure score recommendations from Microsoft Graph API");
+      const recommendations = await graphService.getSecureScoreImprovements();
+      console.log(`Retrieved ${recommendations.length} secure score recommendations for tenant ${tenantId}`);
+      
+      // Return the recommendations
+      res.json(recommendations);
+    } catch (error) {
+      console.error("Error fetching secure score recommendations:", error);
+      res.status(500).json({ error: "Failed to fetch secure score recommendations", details: error.message });
+    }
+  }));
 
   // Tenant Widget Recommendations Endpoints
   
