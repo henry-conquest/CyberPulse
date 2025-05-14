@@ -214,11 +214,12 @@ export class MicrosoftGraphService {
             // Get the corresponding control score for this profile
             const controlScore = controlScoresMap.get(profile.controlName);
             
-            // Only include if it's not fully implemented or explicitly has a "to address" status
-            if (controlScore && (
-                controlScore.implementationStatus === 'notImplemented' || 
-                controlScore.implementationStatus === 'partiallyImplemented' ||
-                controlScore.state === 'Default')) {
+            // Include all control profiles that have scores - we need to show all recommendations
+            // even if they're implemented, since users need to see the full picture
+            if (controlScore) {
+              // Log what we're looking at to debug
+              console.log(`Evaluating control: ${profile.title}, implementation status: ${controlScore.implementationStatus}, state: ${controlScore.state}, score: ${controlScore.score}/${profile.maxScore}`);
+            
               
               // Map implementation status to severity
               let severity: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO' = 'MEDIUM';
@@ -226,15 +227,19 @@ export class MicrosoftGraphService {
               // Calculate percentage of max score
               const percentOfMax = (profile.maxScore > 0) ? (profile.maxScore / latestScore.maxScore) * 100 : 0;
               
-              // Set severity based on potential impact
-              if (percentOfMax >= 7) {
+              // Set severity based on implementation status and potential impact
+              if (controlScore.implementationStatus === 'notImplemented') {
+                // Not implemented controls are always high severity
                 severity = 'HIGH';
-              } else if (percentOfMax >= 3) {
-                severity = 'MEDIUM';
-              } else if (percentOfMax >= 1) {
-                severity = 'LOW';
+              } else if (controlScore.implementationStatus === 'partiallyImplemented') {
+                // Partially implemented are medium or high based on impact
+                severity = (percentOfMax >= 3) ? 'HIGH' : 'MEDIUM';
+              } else if (controlScore.implementationStatus === 'implemented') {
+                // Implemented controls are lower severity, but still show as recommendations
+                severity = (percentOfMax >= 5) ? 'MEDIUM' : 'LOW';
               } else {
-                severity = 'INFO';
+                // Default fallback to MEDIUM for anything else
+                severity = 'MEDIUM';
               }
               
               // Create our recommendation object
@@ -273,22 +278,28 @@ export class MicrosoftGraphService {
           
           if (response?.value?.length > 0) {
             for (const control of response.value) {
-              // Only include controls that are not implemented or partially implemented
-              if (control.state !== 'Resolved') {
+              // Include all controls, we'll categorize by severity
+              {
+                console.log(`Fallback - Evaluating control: ${control.title}, state: ${control.state}, score: ${control.score}/${control.maxScore}`);
                 // Map state to severity
                 let severity: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO' = 'MEDIUM';
                 
                 // Get percentage score
                 const percentScore = (control.maxScore > 0) ? (control.maxScore / 100) * 100 : 0;
                 
-                if (percentScore >= 5) {
+                // Set severity based on state and score
+                if (control.state === 'NotImplemented') {
                   severity = 'HIGH';
-                } else if (percentScore >= 3) {
-                  severity = 'MEDIUM'; 
-                } else if (percentScore >= 1) {
-                  severity = 'LOW';
+                } else if (control.state === 'PartiallyImplemented') {
+                  severity = (percentScore >= 3) ? 'HIGH' : 'MEDIUM';
+                } else if (control.state === 'Implemented') {
+                  severity = (percentScore >= 5) ? 'MEDIUM' : 'LOW';
+                } else if (control.state === 'Default') {
+                  // Defaults to MEDIUM for controls with Default state
+                  severity = 'MEDIUM';
                 } else {
-                  severity = 'INFO';
+                  // Ensure some controls are marked high for visibility
+                  severity = (percentScore >= 3) ? 'HIGH' : 'MEDIUM';
                 }
                 
                 const improvement: SecureScoreImprovement = {
