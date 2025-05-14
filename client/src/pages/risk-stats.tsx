@@ -27,12 +27,15 @@ import {
   GhostIcon,
   Settings,
   Filter,
-  CheckCircle
+  CheckCircle,
+  History,
+  Clock
 } from "lucide-react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
+import SecureScoreHistoryDialog from "@/components/dashboard/SecureScoreHistoryDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -1222,6 +1225,12 @@ const SecureScoreCard = ({
   
   return (
     <>
+      {/* Secure Score History Dialog */}
+      <SecureScoreHistoryDialog
+        isOpen={historyDialogOpen}
+        onClose={() => setHistoryDialogOpen(false)}
+        tenantId={tenantId}
+      />
       
       {/* Secure Score Card with Recommendations Dialog */}
       <Dialog>
@@ -1275,7 +1284,7 @@ const SecureScoreCard = ({
                         setHistoryDialogOpen(true);
                       }}
                     >
-                      <History className="h-4 w-4 mr-1" /> History
+                      <Clock className="h-4 w-4 mr-1" /> History
                     </Button>
                   </div>
                 </div>
