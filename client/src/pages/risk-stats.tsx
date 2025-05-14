@@ -24,7 +24,10 @@ import {
   Plus,
   Edit,
   Trash2,
-  GhostIcon
+  GhostIcon,
+  Settings,
+  Filter,
+  CheckCircle
 } from "lucide-react";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
@@ -1036,7 +1039,7 @@ const SecureScoreRecommendationsDialog = ({
                         {rec.title}
                         {rec.isLive && (
                           <span className="ml-2 inline-flex items-center gap-x-1 text-xs text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
-                            <CircleCheck className="w-3 h-3" />
+                            <CheckCircle className="w-3 h-3" />
                             Microsoft
                           </span>
                         )}
