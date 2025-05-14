@@ -1195,6 +1195,7 @@ const SecureScoreCard = ({
   // Removed management of recommendations as per user's request
   // Only showing Microsoft recommendations directly from the Graph API
   const { user } = useAuth();
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   
   // Calculate gradient colors based on score
   const getScoreColor = (percent: number) => {
@@ -1261,9 +1262,22 @@ const SecureScoreCard = ({
                     {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
                     {secureScorePercent >= 70 && "Good security posture"}
                   </p>
-                  <Button variant="outline" size="sm" className="mt-3">
-                    <Info className="h-4 w-4 mr-1" /> View Secure Score Details
-                  </Button>
+                  <div className="flex gap-2 mt-3">
+                    <Button variant="outline" size="sm">
+                      <Info className="h-4 w-4 mr-1" /> View Details
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering the card dialog
+                        setHistoryDialogOpen(true);
+                      }}
+                    >
+                      <History className="h-4 w-4 mr-1" /> History
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
