@@ -17,10 +17,25 @@ const LoginPage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [_, setLocation] = useLocation();
   
-  // Check if user is already authenticated
+  // Check for query parameters and handle authentication
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // First, check for login type in query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const loginType = urlParams.get('type');
+        
+        if (loginType === 'staff') {
+          // Redirect to staff login
+          window.location.href = '/api/auth/staff-login';
+          return;
+        } else if (loginType === 'customer') {
+          // Redirect to customer login 
+          window.location.href = '/api/auth/customer-login';
+          return;
+        }
+        
+        // Otherwise check regular authentication
         const response = await fetch("/api/auth/user", {
           credentials: "include",
         });
