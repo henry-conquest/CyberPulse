@@ -95,13 +95,17 @@ export default function SecureScoreHistoryDialog({
           maxScore: item.maxScore
         });
       } else {
-        // No data for this month, use null or the previous month's data
-        const prevMonth = result.length > 0 ? result[result.length - 1] : null;
+        // No data for this month, use the previous month's data for continuity
+        type ChartDataPoint = { date: string; scorePercent: number; score: number; maxScore: number | null };
+        const prevMonth: ChartDataPoint = result.length > 0 
+          ? result[result.length - 1] as ChartDataPoint
+          : { date: formattedDate, scorePercent: 0, score: 0, maxScore: 0 };
+        
         result.push({
           date: formattedDate,
-          scorePercent: prevMonth ? prevMonth.scorePercent : null,
-          score: prevMonth ? prevMonth.score : null,
-          maxScore: prevMonth ? prevMonth.maxScore : null
+          scorePercent: prevMonth.scorePercent,
+          score: prevMonth.score,
+          maxScore: prevMonth.maxScore
         });
       }
       
@@ -112,16 +116,8 @@ export default function SecureScoreHistoryDialog({
     return result;
   };
   
-  // Prepare data for chart
-  const chartData = history?.map(item => ({
-    date: formatDate(item.recordedAt),
-    scorePercent: item.scorePercent,
-    score: item.score,
-    maxScore: item.maxScore
-  })).sort((a, b) => {
-    // Sort by date (oldest to newest)
-    return new Date(a.date).getTime() - new Date(b.date).getTime();
-  });
+  // Prepare data for chart - ensure all months are shown (no gaps)
+  const chartData = history ? generateContinuousMonthlyData(history) : [];
   
   // Calculate average score
   const averageScore = history && history.length > 0
