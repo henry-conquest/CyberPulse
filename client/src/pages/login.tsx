@@ -52,7 +52,7 @@ const LoginPage = () => {
     return () => subscription.unsubscribe();
   }, [form]);
 
-  const onSubmit = async (values: LoginFormValues) => {
+  const onSubmit = async (values: LoginFormValues, event?: React.BaseSyntheticEvent) => {
     setIsLocalLoading(true);
     try {
       console.log("Submitting login form:", values);
@@ -67,6 +67,9 @@ const LoginPage = () => {
         setIsLocalLoading(false);
         return;
       }
+      
+      // Prevent default form submission behavior
+      event?.preventDefault();
       
       console.log("Sending login request to /api/auth/login");
       const response = await fetch("/api/auth/login", {
@@ -89,8 +92,19 @@ const LoginPage = () => {
       const userData = await response.json();
       console.log("Login successful, user data:", userData);
       
-      // If login successful, use setLocation instead of window.location to avoid page reload
-      setLocation("/dashboard");
+      // Query the user endpoint to verify login was successful
+      const userCheckResponse = await fetch("/api/auth/user", {
+        credentials: "include"
+      });
+      
+      if (userCheckResponse.ok) {
+        console.log("User session verified, redirecting to dashboard");
+        // If login successful, use setLocation instead of window.location to avoid page reload
+        setLocation("/dashboard");
+      } else {
+        console.error("User session not established after login");
+        throw new Error("Login succeeded but session was not established");
+      }
       
     } catch (error) {
       console.error("Login error:", error);
