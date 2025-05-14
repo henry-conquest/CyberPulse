@@ -371,6 +371,22 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   return next();
 };
 
+// Middleware to check if user has specific role(s)
+export const isAuthorized = (allowedRoles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    
+    const user = req.user as any;
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ message: 'Forbidden - Required role not present' });
+    }
+    
+    return next();
+  };
+};
+
 // Middleware to check if user has access to tenant
 export const hasTenantAccess = (req: Request, res: Response, next: NextFunction) => {
   if (!req.isAuthenticated() || !req.user) {
