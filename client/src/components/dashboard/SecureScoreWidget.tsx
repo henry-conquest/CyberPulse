@@ -15,8 +15,11 @@ export default function SecureScoreWidget({
   currentScore, 
   previousScore, 
   currentPercent, 
-  previousPercent 
+  previousPercent,
+  tenantId
 }: SecureScoreWidgetProps) {
+  // State for history dialog
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   // Calculate score change
   const scoreChange = previousPercent !== undefined ? currentPercent - previousPercent : 0;
   const hasChanged = previousPercent !== undefined;
@@ -130,6 +133,26 @@ export default function SecureScoreWidget({
           No previous data available for comparison
         </div>
       )}
+      
+      {/* History Button */}
+      <div className="mt-4">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => setHistoryDialogOpen(true)}
+          className="flex items-center gap-1 text-xs"
+        >
+          <History className="w-3.5 h-3.5" />
+          View History
+        </Button>
+      </div>
+      
+      {/* History Dialog */}
+      <SecureScoreHistoryDialog
+        isOpen={historyDialogOpen}
+        onClose={() => setHistoryDialogOpen(false)}
+        tenantId={tenantId}
+      />
     </div>
   );
 }
