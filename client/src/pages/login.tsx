@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ const LoginPage = () => {
   const { toast } = useToast();
   const [isLocalLoading, setIsLocalLoading] = useState(false);
   const [showMfa, setShowMfa] = useState(false);
+  const [_, setLocation] = useLocation();
   
   // Initialize form
   const form = useForm<LoginFormValues>({
@@ -81,8 +82,8 @@ const LoginPage = () => {
         throw new Error(errorData?.message || "Login failed. Please check your credentials.");
       }
       
-      // If login successful, refresh page to update auth state
-      window.location.href = "/dashboard";
+      // If login successful, use navigate instead of window.location to avoid page reload
+      navigate("/dashboard");
       
     } catch (error) {
       console.error("Login error:", error);
