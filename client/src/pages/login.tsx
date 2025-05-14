@@ -12,8 +12,56 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
+// Form schema
+const loginFormSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormValues = z.infer<typeof loginFormSchema>;
+
 const LoginPage = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  const { toast } = useToast();
+  const [isLocalLoading, setIsLocalLoading] = useState(false);
+  
+  // Initialize form
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+  
+  const onSubmit = async (values: LoginFormValues) => {
+    setIsLocalLoading(true);
+    try {
+      const response = await fetch("/api/local-login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Login failed. Please check your credentials.");
+      }
+      
+      // If login successful, refresh page to update auth state
+      window.location.href = "/dashboard";
+      
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLocalLoading(false);
+    }
+  };
 
   // If user is already authenticated, show logged in state
   if (isLoading) {
@@ -60,7 +108,61 @@ const LoginPage = () => {
             Select how you would like to log in
           </CardDescription>
         </CardHeader>
+        
         <CardContent className="space-y-4">
+          {/* Local Admin Login Form */}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="admin@conquest.local" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button 
+                type="submit" 
+                className="w-full bg-green-600 hover:bg-green-700" 
+                size="lg"
+                disabled={isLocalLoading}
+              >
+                {isLocalLoading ? "Logging in..." : "Local Admin Login"}
+              </Button>
+            </form>
+          </Form>
+          
+          <p className="text-center text-sm text-muted-foreground">
+            For initial setup, use admin@conquest.local with password: admin
+          </p>
+          
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-300"></span>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-gray-500">or use Microsoft SSO</span>
+            </div>
+          </div>
+          
           <a href="/api/staff-login" className="w-full">
             <Button className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
               <FaMicrosoft className="mr-2 h-5 w-5" />
@@ -86,6 +188,7 @@ const LoginPage = () => {
           </a>
           <p className="text-center text-sm text-muted-foreground">For customers to view their tenant information</p>
         </CardContent>
+        
         <CardFooter className="flex flex-col items-center gap-2">
           <p className="text-center text-sm text-muted-foreground">
             Need help? Contact your account manager
