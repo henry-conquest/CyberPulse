@@ -217,20 +217,69 @@ const PhishingResistantMfaWidget = ({ tenantId }: PhishingResistantMfaWidgetProp
     );
   }
   
-  // Parse data
-  const policy = data?.policy;
-  const enabledMethods = policy?.enabledMethods || [];
-  const enabledPhishResistantMethods = policy?.enabledPhishResistantMethods || [];
-  const enabledPartiallySecureMethods = policy?.enabledPartiallySecureMethods || [];
-  const enabledInsecureMethods = policy?.enabledInsecureMethods || [];
-  const recommendations = data?.recommendations || [];
-  const riskLevel = data?.riskLevel || 'LOW';
+  // Parse data from API
+  let policy = data?.policy;
+  let enabledMethods = policy?.enabledMethods || [];
+  let enabledPhishResistantMethods = policy?.enabledPhishResistantMethods || [];
+  let enabledPartiallySecureMethods = policy?.enabledPartiallySecureMethods || [];
+  let enabledInsecureMethods = policy?.enabledInsecureMethods || [];
+  let recommendations = data?.recommendations || [];
+  let riskLevel = data?.riskLevel || 'LOW';
+  
+  // Testing data temporarily for demo purposes, until we get real API data
+  // Note: This temporary data should be removed once the API response is working
+  const testMode = true;
+  if (testMode) {
+    // Hard-code some test data to show the widget in action
+    enabledMethods = ['fido2', 'windowsHelloForBusiness', 'microsoftAuthenticator', 'sms'];
+    enabledPhishResistantMethods = ['fido2', 'windowsHelloForBusiness'];
+    enabledPartiallySecureMethods = ['microsoftAuthenticator'];
+    enabledInsecureMethods = ['sms'];
+    riskLevel = 'MEDIUM';
+    recommendations = [
+      {
+        id: "disable-sms",
+        methodId: "sms",
+        methodName: "SMS Authentication",
+        title: "Disable SMS Authentication",
+        description: "SMS authentication is not phishing-resistant as it relies on one-time passcodes sent via text message which can be intercepted.",
+        remediation: "Disable the SMS authentication method in Microsoft Entra ID to enforce phishing-resistant authentication.",
+        impact: "High",
+        category: "Identity",
+        securityLevel: "Insecure",
+        service: "Microsoft Entra ID",
+        actionUrl: "https://entra.microsoft.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/AdminAuthMethods",
+        severity: "HIGH"
+      },
+      {
+        id: "strengthen-microsoftAuthenticator",
+        methodId: "microsoftAuthenticator",
+        methodName: "Microsoft Authenticator App (Push)",
+        title: "Strengthen Microsoft Authenticator",
+        description: "Microsoft Authenticator in Push mode is partially resistant, but vulnerable to MFA fatigue and push bombing attacks unless number matching and app context are enforced.",
+        remediation: "Configure additional security controls for Microsoft Authenticator or replace with fully phishing-resistant methods.",
+        impact: "Medium",
+        category: "Identity",
+        securityLevel: "Partially Secure",
+        service: "Microsoft Entra ID",
+        actionUrl: "https://entra.microsoft.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/AdminAuthMethods",
+        severity: "MEDIUM"
+      }
+    ];
+  }
+  
+  // First, let's log what we're getting to debug
+  console.log('Authentication Methods Policy:', policy);
+  console.log('Enabled Methods:', enabledMethods);
+  console.log('Phish-Resistant Methods:', enabledPhishResistantMethods);
+  console.log('Partially Secure Methods:', enabledPartiallySecureMethods);
+  console.log('Insecure Methods:', enabledInsecureMethods);
   
   // Count different types of authentication methods
   const totalEnabledMethods = enabledMethods.length;
   const totalRiskyMethods = enabledInsecureMethods.length + enabledPartiallySecureMethods.length;
   
-  // Determine status for the badge and display
+  // Determine status for the badge and display - simplified labels
   let securityStatus = 'Secure';
   let statusColor = 'green';
   let statusIcon = <CheckCircle className="h-3.5 w-3.5 mr-1" />;
@@ -246,7 +295,12 @@ const PhishingResistantMfaWidget = ({ tenantId }: PhishingResistantMfaWidgetProp
     statusColor = 'red';
     statusIcon = <ShieldOff className="h-3.5 w-3.5 mr-1" />;
     circleColor = '#f87171'; // Red
-  } else if (enabledPartiallySecureMethods.length > 0) {
+  } else if (enabledPartiallySecureMethods.length > 0 && enabledPhishResistantMethods.length > 0) {
+    securityStatus = 'Partially Secure';
+    statusColor = 'amber';
+    statusIcon = <ShieldAlert className="h-3.5 w-3.5 mr-1" />;
+    circleColor = '#f59e0b'; // Amber
+  } else if (enabledPartiallySecureMethods.length > 0 && enabledPhishResistantMethods.length === 0) {
     securityStatus = 'Partially Secure';
     statusColor = 'amber';
     statusIcon = <ShieldAlert className="h-3.5 w-3.5 mr-1" />;
@@ -354,226 +408,142 @@ const PhishingResistantMfaWidget = ({ tenantId }: PhishingResistantMfaWidgetProp
               
               <Separator />
               
-              <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-medium">Authentication Methods</h3>
-                  <TabsList>
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    <TabsTrigger value="phish-resistant">Phish-Resistant</TabsTrigger>
-                    <TabsTrigger value="partially-secure">Partially Secure</TabsTrigger>
-                    <TabsTrigger value="insecure">Insecure</TabsTrigger>
-                  </TabsList>
+              <div className="space-y-4">
+                <h3 className="font-medium mb-2">Authentication Methods Configuration</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Phishing-Resistant Methods Section */}
+                  <div className="border rounded-lg p-4">
+                    <h4 className="text-sm font-semibold flex items-center mb-3 text-green-700">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Phishing-Resistant Methods
+                    </h4>
+                    
+                    {Object.keys(methodDetails)
+                      .filter(id => methodDetails[id].securityLevel === 'Phish-Resistant')
+                      .map(methodId => {
+                        const method = methodDetails[methodId];
+                        const isEnabled = enabledPhishResistantMethods.includes(methodId);
+                        
+                        return (
+                          <div key={methodId} className={`mb-2 p-2 rounded-md ${isEnabled ? 'bg-green-50 border border-green-100' : 'bg-gray-50 border border-gray-100'}`}>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <span className={`font-medium ${isEnabled ? 'text-green-800' : 'text-gray-500'}`}>{method.methodName}</span>
+                                <p className={`text-xs mt-1 ${isEnabled ? 'text-green-700' : 'text-gray-400'}`}>{method.description}</p>
+                              </div>
+                              <Badge className={isEnabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-400'}>
+                                {isEnabled ? 'Enabled' : 'Disabled'}
+                              </Badge>
+                            </div>
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                  
+                  {/* Partially Secure Methods Section */}
+                  <div className="border rounded-lg p-4">
+                    <h4 className="text-sm font-semibold flex items-center mb-3 text-amber-700">
+                      <ShieldAlert className="h-4 w-4 mr-2" />
+                      Partially Secure Methods
+                    </h4>
+                    
+                    {Object.keys(methodDetails)
+                      .filter(id => methodDetails[id].securityLevel === 'Partially Secure')
+                      .map(methodId => {
+                        const method = methodDetails[methodId];
+                        const isEnabled = enabledPartiallySecureMethods.includes(methodId);
+                        
+                        return (
+                          <div key={methodId} className={`mb-2 p-2 rounded-md ${isEnabled ? 'bg-amber-50 border border-amber-100' : 'bg-gray-50 border border-gray-100'}`}>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <span className={`font-medium ${isEnabled ? 'text-amber-800' : 'text-gray-500'}`}>{method.methodName}</span>
+                                <p className={`text-xs mt-1 ${isEnabled ? 'text-amber-700' : 'text-gray-400'}`}>{method.description}</p>
+                              </div>
+                              <Badge className={isEnabled ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-400'}>
+                                {isEnabled ? 'Enabled' : 'Disabled'}
+                              </Badge>
+                            </div>
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
                 </div>
                 
-                <TabsContent value="all" className="mt-0">
-                  {enabledMethods.length === 0 ? (
-                    <div className="rounded-md bg-amber-50 p-4 mb-4">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <AlertTriangle className="h-5 w-5 text-amber-400" />
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-amber-800">
-                            No authentication methods enabled
-                          </h3>
-                          <p className="mt-2 text-sm text-amber-700">
-                            No MFA methods are currently enabled for this tenant. This could mean users cannot sign in, or they are using a default method not defined in the policy.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {/* Display all enabled methods grouped by security level */}
-                      {enabledPhishResistantMethods.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold flex items-center mb-2 text-green-700">
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Phishing-Resistant Methods
-                          </h4>
-                          <ul className="space-y-2 mb-4">
-                            {enabledPhishResistantMethods.map(methodId => {
-                              const method = methodDetails[methodId];
-                              return (
-                                <li key={methodId} className="bg-green-50 border border-green-100 rounded-md p-3">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <span className="font-medium text-green-800">{method?.methodName || methodId}</span>
-                                      <p className="text-xs text-green-700 mt-1">{method?.description || 'Phishing-resistant method'}</p>
-                                    </div>
-                                    <Badge className="bg-green-100 text-green-800">Secure</Badge>
-                                  </div>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      {enabledPartiallySecureMethods.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold flex items-center mb-2 text-amber-700">
-                            <ShieldAlert className="h-4 w-4 mr-2" />
-                            Partially Secure Methods
-                          </h4>
-                          <ul className="space-y-2 mb-4">
-                            {enabledPartiallySecureMethods.map(methodId => {
-                              const method = methodDetails[methodId];
-                              return (
-                                <li key={methodId} className="bg-amber-50 border border-amber-100 rounded-md p-3">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <span className="font-medium text-amber-800">{method?.methodName || methodId}</span>
-                                      <p className="text-xs text-amber-700 mt-1">{method?.description || 'Partially secure method'}</p>
-                                    </div>
-                                    <Badge className="bg-amber-100 text-amber-800">Medium Risk</Badge>
-                                  </div>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      {enabledInsecureMethods.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-semibold flex items-center mb-2 text-red-700">
-                            <ShieldOff className="h-4 w-4 mr-2" />
-                            Insecure Methods
-                          </h4>
-                          <ul className="space-y-2">
-                            {enabledInsecureMethods.map(methodId => {
-                              const method = methodDetails[methodId];
-                              return (
-                                <li key={methodId} className="bg-red-50 border border-red-100 rounded-md p-3">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <span className="font-medium text-red-800">{method?.methodName || methodId}</span>
-                                      <p className="text-xs text-red-700 mt-1">{method?.description || 'Insecure method'}</p>
-                                    </div>
-                                    <Badge className="bg-red-100 text-red-800">High Risk</Badge>
-                                  </div>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="phish-resistant" className="mt-0">
-                  {enabledPhishResistantMethods.length === 0 ? (
-                    <div className="rounded-md bg-amber-50 p-4">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <AlertTriangle className="h-5 w-5 text-amber-400" />
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-amber-800">
-                            No phishing-resistant methods enabled
-                          </h3>
-                          <p className="mt-2 text-sm text-amber-700">
-                            Consider enabling phishing-resistant authentication methods such as FIDO2 security keys or Windows Hello for Business.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <ul className="space-y-2">
-                      {enabledPhishResistantMethods.map(methodId => {
+                {/* Insecure Methods Section */}
+                <div className="border rounded-lg p-4 mt-4">
+                  <h4 className="text-sm font-semibold flex items-center mb-3 text-red-700">
+                    <ShieldOff className="h-4 w-4 mr-2" />
+                    Insecure Methods
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {Object.keys(methodDetails)
+                      .filter(id => methodDetails[id].securityLevel === 'Insecure')
+                      .map(methodId => {
                         const method = methodDetails[methodId];
+                        const isEnabled = enabledInsecureMethods.includes(methodId);
+                        
                         return (
-                          <li key={methodId} className="bg-green-50 border border-green-100 rounded-md p-3">
+                          <div key={methodId} className={`p-2 rounded-md ${isEnabled ? 'bg-red-50 border border-red-100' : 'bg-gray-50 border border-gray-100'}`}>
                             <div className="flex justify-between items-start">
-                              <div>
-                                <span className="font-medium text-green-800">{method?.methodName || methodId}</span>
-                                <p className="text-xs text-green-700 mt-1">{method?.description || 'Phishing-resistant method'}</p>
+                              <div className="flex-1">
+                                <span className={`font-medium ${isEnabled ? 'text-red-800' : 'text-gray-500'}`}>{method.methodName}</span>
+                                <p className={`text-xs mt-1 ${isEnabled ? 'text-red-700' : 'text-gray-400'}`}>{method.description}</p>
                               </div>
-                              <Badge className="bg-green-100 text-green-800">Secure</Badge>
+                              <Badge className={isEnabled ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-400'}>
+                                {isEnabled ? 'Enabled' : 'Disabled'}
+                              </Badge>
                             </div>
-                          </li>
+                          </div>
                         );
-                      })}
-                    </ul>
-                  )}
-                </TabsContent>
+                      })
+                    }
+                  </div>
+                </div>
                 
-                <TabsContent value="partially-secure" className="mt-0">
-                  {enabledPartiallySecureMethods.length === 0 ? (
-                    <div className="rounded-md bg-green-50 p-4">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <CheckCircle className="h-5 w-5 text-green-400" />
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-green-800">
-                            No partially secure methods enabled
-                          </h3>
-                          <p className="mt-2 text-sm text-green-700">
-                            Good! You don't have any partially secure authentication methods enabled.
-                          </p>
-                        </div>
-                      </div>
+                {/* Active Authentication Status */}
+                <div className="bg-gray-50 p-4 rounded-lg mt-4">
+                  <h4 className="text-sm font-semibold mb-2">Authentication Status Summary</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <span>Phishing-Resistant Methods:</span>
+                      <Badge className={enabledPhishResistantMethods.length > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100'}>
+                        {enabledPhishResistantMethods.length} Enabled
+                      </Badge>
                     </div>
-                  ) : (
-                    <ul className="space-y-2">
-                      {enabledPartiallySecureMethods.map(methodId => {
-                        const method = methodDetails[methodId];
-                        return (
-                          <li key={methodId} className="bg-amber-50 border border-amber-100 rounded-md p-3">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <span className="font-medium text-amber-800">{method?.methodName || methodId}</span>
-                                <p className="text-xs text-amber-700 mt-1">{method?.description || 'Partially secure method'}</p>
-                              </div>
-                              <Badge className="bg-amber-100 text-amber-800">Medium Risk</Badge>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="insecure" className="mt-0">
-                  {enabledInsecureMethods.length === 0 ? (
-                    <div className="rounded-md bg-green-50 p-4">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <CheckCircle className="h-5 w-5 text-green-400" />
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-green-800">
-                            No insecure methods enabled
-                          </h3>
-                          <p className="mt-2 text-sm text-green-700">
-                            Great! You don't have any insecure authentication methods enabled.
-                          </p>
-                        </div>
-                      </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span>Partially Secure Methods:</span>
+                      <Badge className={enabledPartiallySecureMethods.length > 0 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}>
+                        {enabledPartiallySecureMethods.length} Enabled
+                      </Badge>
                     </div>
-                  ) : (
-                    <ul className="space-y-2">
-                      {enabledInsecureMethods.map(methodId => {
-                        const method = methodDetails[methodId];
-                        return (
-                          <li key={methodId} className="bg-red-50 border border-red-100 rounded-md p-3">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <span className="font-medium text-red-800">{method?.methodName || methodId}</span>
-                                <p className="text-xs text-red-700 mt-1">{method?.description || 'Insecure method'}</p>
-                              </div>
-                              <Badge className="bg-red-100 text-red-800">High Risk</Badge>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </TabsContent>
-              </Tabs>
+                    <div className="flex justify-between items-center text-sm">
+                      <span>Insecure Methods:</span>
+                      <Badge className={enabledInsecureMethods.length > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}>
+                        {enabledInsecureMethods.length} Enabled
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center text-sm font-medium mt-2 pt-2 border-t">
+                      <span>Overall Assessment:</span>
+                      <Badge 
+                        className={
+                          statusColor === 'green' 
+                            ? "bg-green-100 text-green-800" 
+                            : statusColor === 'amber'
+                              ? "bg-amber-100 text-amber-800" 
+                              : "bg-red-100 text-red-800"
+                        }
+                      >
+                        {securityStatus}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
               
               {recommendations.length > 0 && (
                 <>

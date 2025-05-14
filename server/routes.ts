@@ -753,6 +753,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get authentication methods policy
       console.log(`Fetching authentication methods policy for tenant ${tenantId}`);
+      
+      // Debug raw API response to see what we're actually getting
+      try {
+        // Direct API call for debugging
+        console.log('Attempting to fetch raw authentication methods policy...');
+        const accessToken = await storage.getMicrosoft365AccessToken(tenantId);
+        
+        if (accessToken) {
+          const url = 'https://graph.microsoft.com/v1.0/policies/authenticationMethodsPolicy';
+          const response = await fetch(url, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const rawData = await response.json();
+            console.log('Raw Auth Methods Policy Response:', JSON.stringify(rawData, null, 2));
+          } else {
+            console.error('API request failed:', response.status, await response.text());
+          }
+        } else {
+          console.error('No access token available for debugging');
+        }
+      } catch (err) {
+        console.error('Error fetching raw policy data:', err);
+      }
+      
       const policy = await graphService.getAuthenticationMethodsPolicy();
       
       if (!policy) {
@@ -760,6 +789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Retrieved authentication methods policy for tenant ${tenantId}`);
+      console.log('Processed policy structure:', JSON.stringify(policy, null, 2));
       
       // Create recommendations for auth methods based on security level
       const recommendations = [];
