@@ -12,6 +12,7 @@ import EditReport from "@/pages/edit-report";
 import RiskStats from "@/pages/risk-stats";
 import Recommendations from "@/pages/recommendations";
 import GlobalRecommendations from "@/pages/global-recommendations";
+import GlobalAdmins from "@/pages/global-admins";
 import Settings from "@/pages/settings";
 import Users from "@/pages/users";
 import Tenants from "@/pages/tenants";
@@ -93,6 +94,9 @@ function Router() {
       )} />
       <Route path="/tenants/:tenantId/recommendations" component={({ params }) => (
         <ProtectedRoute component={Recommendations} tenantId={params.tenantId} />
+      )} />
+      <Route path="/tenants/:tenantId/global-admins" component={({ params }) => (
+        <ProtectedRoute component={GlobalAdmins} tenantId={params.tenantId} />
       )} />
       
       {/* Admin routes */}

@@ -388,7 +388,7 @@ export class MicrosoftGraphService {
       console.log(`Found ${membersResponse.value.length} Global Administrators for tenant ${this.connection.tenantId}`);
       
       // Transform response to a more friendly format
-      return membersResponse.value.map(user => ({
+      return membersResponse.value.map((user: any) => ({
         id: user.id,
         displayName: user.displayName,
         email: user.mail || user.userPrincipalName,

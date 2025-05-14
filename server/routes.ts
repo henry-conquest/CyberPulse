@@ -645,6 +645,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(connectionWithoutSecret);
   }));
   
+  // Get global administrators for a Microsoft 365 tenant
+  app.get("/api/tenants/:id/microsoft365/global-administrators", isAuthenticated, asyncHandler(async (req, res) => {
+    try {
+      const userId = (req.user as any).claims.sub;
+      const tenantId = parseInt(req.params.id);
+      
+      // Check if user has access to this tenant
+      const hasAccess = await hasTenantAccess(userId, tenantId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this tenant" });
+      }
+      
+      // Get the connection info for this tenant
+      const connection = await storage.getMicrosoft365Connection(tenantId);
+      if (!connection) {
+        return res.status(404).json({ message: "No Microsoft 365 connection found for this tenant" });
+      }
+      
+      // Initialize the Microsoft Graph service with the connection
+      const graphService = new MicrosoftGraphService(connection);
+      
+      // Get the global administrators
+      console.log(`Fetching global administrators for tenant ${tenantId}`);
+      const admins = await graphService.getGlobalAdministrators();
+      
+      console.log(`Retrieved ${admins.length} global administrators for tenant ${tenantId}`);
+      
+      // Return the global administrators
+      res.json(admins);
+    } catch (error: any) {
+      console.error("Error fetching global administrators:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch global administrators", 
+        details: error.message || "Unknown error" 
+      });
+    }
+  }));
+
   // Microsoft 365 security insights endpoint
   app.get("/api/tenants/:id/microsoft365/security-insights", isAuthenticated, asyncHandler(async (req, res) => {
     const userId = (req.user as any).claims.sub;
