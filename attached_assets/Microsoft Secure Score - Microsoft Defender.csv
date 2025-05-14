@@ -1,0 +1,24 @@
+﻿Rank,Recommended action,Score impact,Points achieved,Status,Regressed,Have license?,Category,Product,Last synced 
+1,Enable Microsoft Entra ID Identity Protection sign-in risk policies,+2.53%,0/7,To address,No,No,Identity,Microsoft Entra ID,10/5/2025
+2,Enable Microsoft Entra ID Identity Protection user risk policies,+2.53%,0/7,To address,No,No,Identity,Microsoft Entra ID,10/5/2025
+3,Quarantine messages that are detected from impersonated users,+2.17%,0/6,To address,No,Yes,Apps,Defender for Office,14/5/2025
+4,Ensure additional storage providers are restricted in Outlook on the web,+1.81%,0/5,To address,No,Yes,Apps,Exchange Online,14/5/2025
+5,Ensure Safe Attachments policy is enabled,+1.81%,0/5,To address,No,Yes,Apps,Defender for Office,14/5/2025
+6,Ensure multifactor authentication is enabled for all users,+3.25%,4.5/9,To address,No,Yes,Identity,Microsoft Entra ID,10/5/2025
+7,Create an OAuth app policy to notify you about new OAuth applications,+1.44%,0/4,To address,No,No,Apps,Microsoft Defender for Cloud Apps,12/5/2025
+8,Create an app discovery policy to identify new and trending cloud apps in your org ,+1.08%,0/3,To address,No,Yes,Apps,Microsoft Defender for Cloud Apps,12/5/2025
+9,Ensure MailTips are enabled for end users,+1.08%,0/3,To address,No,Yes,Apps,Exchange Online,14/5/2025
+10,Ensure mailbox auditing for all users is Enabled,+1.08%,0/3,To address,No,Yes,Apps,Exchange Online,14/5/2025
+11,Ensure Safe Links for Office Applications is Enabled,+1.08%,0/3,To address,No,Yes,Apps,Defender for Office,14/5/2025
+12,Create a custom activity policy to get alerts about suspicious usage patterns,+0.72%,0/2,To address,No,No,Apps,Microsoft Defender for Cloud Apps,12/5/2025
+13,Publish M365 sensitivity label data classification policies,+0.72%,0/2,To address,No,Yes,Data,Microsoft Information Protection,14/5/2025
+14,Configure which users are allowed to present in Teams meetings,+0.72%,0/2,To address,No,Yes,Apps,Microsoft Teams,18/4/2025
+15,Deploy a log collector to discover shadow IT activity,+0.36%,0/1,To address,No,Yes,Apps,Microsoft Defender for Cloud Apps,12/5/2025
+16,Extend M365 sensitivity labeling to assets in Microsoft Purview data map,+0.36%,0/1,To address,No,No,Data,Microsoft Information Protection,14/5/2025
+17,Ensure the customer lockbox feature is enabled,+0.36%,0/1,To address,No,No,Apps,Exchange Online,14/5/2025
+18,Ensure that Auto-labeling data classification policies are set up and used,+0.36%,0/1,To address,No,No,Data,Microsoft Information Protection,14/5/2025
+19,Set the email bulk complaint level (BCL) threshold to be 6 or lower,+0.36%,0/1,To address,No,Yes,Apps,Defender for Office,14/5/2025
+20,Block users who reached the message limit,+0.36%,0/1,To address,No,Yes,Apps,Defender for Office,14/5/2025
+21,Restrict anonymous users from joining meetings,+0.36%,0/1,To address,No,Yes,Apps,Microsoft Teams,18/4/2025
+22,Designate more than one global admin,+0.36%,0/1,To address,No,Yes,Identity,Microsoft Entra ID,10/5/2025
+23,Use least privileged administrative roles,+0.36%,0/1,To address,No,Yes,Identity,Microsoft Entra ID,10/5/2025

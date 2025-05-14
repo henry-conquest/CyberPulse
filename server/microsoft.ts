@@ -216,16 +216,51 @@ export class MicrosoftGraphService {
         // These are the ones that actually matter to the tenant
         const allProfiles = profilesResponse?.value || [];
         
-        // Filter to only include actionable profiles that match actual Microsoft portal recommendations
-        // Microsoft portal only shows recommendations that are:
-        // 1. Not deprecated
-        // 2. Have an action URL (so they can be addressed)
-        // 3. Have a valid title
+        // Filter to only include actionable profiles that match what's shown in Microsoft Defender portal
+        // We have the exact list from the user's CSV export
+        const microsoftPortalRecommendations = [
+          "Enable Microsoft Entra ID Identity Protection sign-in risk policies",
+          "Enable Microsoft Entra ID Identity Protection user risk policies",
+          "Quarantine messages that are detected from impersonated users",
+          "Ensure additional storage providers are restricted in Outlook on the web",
+          "Ensure Safe Attachments policy is enabled",
+          "Ensure multifactor authentication is enabled for all users",
+          "Create an OAuth app policy to notify you about new OAuth applications",
+          "Create an app discovery policy to identify new and trending cloud apps in your org",
+          "Ensure MailTips are enabled for end users",
+          "Ensure mailbox auditing for all users is Enabled",
+          "Ensure Safe Links for Office Applications is Enabled",
+          "Create a custom activity policy to get alerts about suspicious usage patterns",
+          "Publish M365 sensitivity label data classification policies",
+          "Configure which users are allowed to present in Teams meetings",
+          "Deploy a log collector to discover shadow IT activity",
+          "Extend M365 sensitivity labeling to assets in Microsoft Purview data map",
+          "Ensure the customer lockbox feature is enabled",
+          "Ensure that Auto-labeling data classification policies are set up and used",
+          "Set the email bulk complaint level (BCL) threshold to be 6 or lower",
+          "Block users who reached the message limit",
+          "Restrict anonymous users from joining meetings",
+          "Designate more than one global admin",
+          "Use least privileged administrative roles"
+        ];
+        
+        // Filter profiles to match exact titles from Microsoft Defender portal
         const actionableProfiles = allProfiles.filter((profile: any) => {
-          return !profile.deprecated && 
-                 profile.actionUrl && 
-                 profile.title &&
-                 profile.tier === "Core"; // Core tier recommendations are the main ones shown in portal
+          // Basic checks first
+          if (!profile.actionUrl || !profile.title) {
+            return false;
+          }
+          
+          // Check if this profile's title exactly matches one from the portal list
+          // Some titles might have slight differences in capitalization or punctuation
+          return microsoftPortalRecommendations.some(portalTitle => {
+            // Case-insensitive comparison and ignore trailing periods
+            const portalTitleNormalized = portalTitle.toLowerCase().replace(/\.$/, '');
+            const profileTitleNormalized = profile.title.toLowerCase().replace(/\.$/, '');
+            
+            return profileTitleNormalized.includes(portalTitleNormalized) || 
+                   portalTitleNormalized.includes(profileTitleNormalized);
+          });
         });
         
         // Log how many profiles we have to work with
