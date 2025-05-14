@@ -57,6 +57,7 @@ export function setupPassport(app: Express) {
     usernameField: 'email',
     passwordField: 'password'
   }, async (email, password, done) => {
+    console.log('LocalStrategy authenticating:', email, 'password:', password ? '(provided)' : '(missing)');
     try {
       // For initial admin setup, allow a special account
       if (email === 'admin@conquest.local' && password === 'admin') {
@@ -121,8 +122,28 @@ export function setupPassport(app: Express) {
 // Authentication routes
 export function setupAuthRoutes(app: Express) {
   // Local login endpoint
-  app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
-    res.json(req.user);
+  app.post('/api/auth/login', (req, res, next) => {
+    console.log('Login attempt with:', req.body.email);
+    passport.authenticate('local', (err, user, info) => {
+      if (err) {
+        console.error('Login error:', err);
+        return next(err);
+      }
+      if (!user) {
+        console.log('Login failed - no user found:', info);
+        return res.status(401).json({ message: info?.message || 'Authentication failed' });
+      }
+      
+      console.log('User authenticated successfully, logging in');
+      req.login(user, (err) => {
+        if (err) {
+          console.error('Login error after authentication:', err);
+          return next(err);
+        }
+        console.log('User logged in successfully:', user.id);
+        return res.json(user);
+      });
+    })(req, res, next);
   });
   
   // Staff login (admin access)

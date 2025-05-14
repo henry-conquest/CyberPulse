@@ -68,19 +68,26 @@ const LoginPage = () => {
         return;
       }
       
+      console.log("Sending login request to /api/auth/login");
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(values),
+        credentials: "include", // Include credentials for session cookies
       });
+      
+      console.log("Login response status:", response.status);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         console.error("Login error:", errorData);
         throw new Error(errorData?.message || "Login failed. Please check your credentials.");
       }
+      
+      const userData = await response.json();
+      console.log("Login successful, user data:", userData);
       
       // If login successful, use setLocation instead of window.location to avoid page reload
       setLocation("/dashboard");
