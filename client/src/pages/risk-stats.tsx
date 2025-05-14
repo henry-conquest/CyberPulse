@@ -620,6 +620,24 @@ const DeviceRecommendationsDialog = ({
   );
 };
 
+// Interface for Microsoft secure score improvement recommendations
+interface SecureScoreImprovement {
+  id: string;
+  title: string;
+  description: string;
+  remediation: string;
+  impact: string;
+  category: string; 
+  service: string;
+  actionUrl: string;
+  score: number;
+  maxScore: number;
+  percentComplete: number;
+  implementationStatus: string;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+  controlName: string;
+}
+
 // Secure Score Recommendations Dialog
 const SecureScoreRecommendationsDialog = ({
   secureScore,
@@ -646,12 +664,26 @@ const SecureScoreRecommendationsDialog = ({
     queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`] });
     queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`] });
     queryClient.removeQueries({ queryKey: ['/api/global-recommendations'] });
+    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/secure-score-recommendations`] });
     
     // Trigger a refresh
     setRefreshKey(Date.now());
     
     console.log("SecureScoreRecommendationsDialog: Forced refresh of recommendation data");
   }, []);
+  
+  // Fetch live secure score recommendations from Microsoft
+  const { 
+    data: msRecommendations = [], 
+    isLoading: isMsRecommendationsLoading,
+    error: msRecommendationsError
+  } = useQuery<SecureScoreImprovement[]>({
+    queryKey: [`/api/tenants/${tenantId}/secure-score-recommendations`, refreshKey],
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+    retry: 1, // Only retry once to avoid excessive API calls if there's an issue
+  });
   
   // Fetch tenant widget recommendations
   const { data: tenantWidgetRecommendations = [] } = useQuery<TenantWidgetRecommendation[]>({
@@ -692,6 +724,39 @@ const SecureScoreRecommendationsDialog = ({
       return priorityMap[priority.toUpperCase()] || "Info";
     };
     
+    // Add Microsoft recommendations if available
+    if (msRecommendations && msRecommendations.length > 0) {
+      msRecommendations.forEach(rec => {
+        // Select appropriate icon based on severity
+        let icon;
+        switch(rec.severity) {
+          case 'HIGH':
+            icon = <XCircle className="h-5 w-5 text-red-500" />;
+            break;
+          case 'MEDIUM':
+            icon = <AlertTriangle className="h-5 w-5 text-amber-500" />;
+            break;
+          case 'LOW':
+            icon = <Info className="h-5 w-5 text-blue-500" />;
+            break;
+          default:
+            icon = <Info className="h-5 w-5 text-blue-500" />;
+        }
+        
+        recommendations.push({
+          icon,
+          title: rec.title,
+          description: rec.description,
+          remediation: rec.remediation,
+          impact: rec.impact,
+          score: rec.score,
+          priority: convertPriority(rec.severity),
+          actionUrl: rec.actionUrl,
+          isLive: true // Mark as live recommendation from Microsoft
+        });
+      });
+    }
+    
     // Only use recommendations that match the current widget type
     // Ensure we're using case-insensitive comparison for widget types to avoid issues
     // This is critical for proper categorization of recommendations
@@ -700,8 +765,8 @@ const SecureScoreRecommendationsDialog = ({
       return rec.widgetType && rec.widgetType.toUpperCase() === "SECURE_SCORE";
     });
     
-    // Add tenant-specific recommendations first
-    if (relevantRecommendations.length > 0 && globalRecommendations.length > 0) {
+    // Add tenant-specific recommendations only if we don't have Microsoft recommendations
+    if (msRecommendations.length === 0 && relevantRecommendations.length > 0 && globalRecommendations.length > 0) {
       // For each tenant widget recommendation, find the corresponding global recommendation
       relevantRecommendations.forEach(widgetRec => {
         const globalRec = globalRecommendations.find(rec => rec.id === widgetRec.globalRecommendationId);
