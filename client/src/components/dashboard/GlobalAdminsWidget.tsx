@@ -24,7 +24,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
   
   // Query to fetch global admins count
   const { data: admins = [], isLoading, isError, refetch } = useQuery<GlobalAdmin[]>({
-    queryKey: ['/api/tenants', tenantId, 'microsoft365/global-administrators'],
+    queryKey: [`/api/tenants/${tenantId}/microsoft365/global-administrators`],
     // Only fetch when needed (when dialog is opened or for initial count)
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
