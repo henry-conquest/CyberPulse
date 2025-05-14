@@ -840,7 +840,9 @@ const SecureScoreRecommendationsDialog = ({
         icon: <UserCheck className="h-5 w-5 text-red-500" />,
         title: "Strengthen Identity Security",
         description: "Configure MFA for all accounts, especially for privileged users and administrators.",
-        priority: "High"
+        priority: "High",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
@@ -849,7 +851,9 @@ const SecureScoreRecommendationsDialog = ({
         icon: <Mail className="h-5 w-5 text-red-500" />,
         title: "Enable Advanced Email Protection",
         description: "Protect against phishing and email-based attacks with anti-spam and anti-phishing policies.",
-        priority: "High"
+        priority: "High",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
@@ -880,7 +884,9 @@ const SecureScoreRecommendationsDialog = ({
         icon: <Users className="h-5 w-5 text-blue-500" />,
         title: "Implement Security Awareness Training",
         description: "Provide regular security awareness training for all employees.",
-        priority: "Low"
+        priority: "Low",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
@@ -890,7 +896,9 @@ const SecureScoreRecommendationsDialog = ({
         icon: <Check className="h-5 w-5 text-green-500" />,
         title: "Maintain Current Security Posture",
         description: "Your Microsoft 365 secure score is good. Continue to monitor and maintain your current security settings.",
-        priority: "Info"
+        priority: "Info",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
