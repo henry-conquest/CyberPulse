@@ -95,9 +95,6 @@ function Router() {
       <Route path="/tenants/:tenantId/recommendations" component={({ params }) => (
         <ProtectedRoute component={Recommendations} tenantId={params.tenantId} />
       )} />
-      <Route path="/tenants/:tenantId/global-admins" component={({ params }) => (
-        <ProtectedRoute component={GlobalAdmins} tenantId={params.tenantId} />
-      )} />
       
       {/* Admin routes */}
       <Route path="/users" component={() => <ProtectedRoute component={Users} roles={[UserRoles.ADMIN]} />} />

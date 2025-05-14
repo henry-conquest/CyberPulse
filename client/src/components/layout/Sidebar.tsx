@@ -114,13 +114,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               >
                 Report Periods
               </NavItem>
-              <NavItem 
-                href={`/tenants/${currentTenantId}/global-admins`} 
-                icon={<UserCog className="h-5 w-5" />}
-                isActive={location.endsWith("/global-admins")}
-              >
-                Global Admins
-              </NavItem>
             </>
           )}
         </div>
