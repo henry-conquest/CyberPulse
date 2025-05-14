@@ -25,6 +25,44 @@ interface ControlScore {
   implementationStatus: string;
 }
 
+// Interface for secure score improvement recommendations
+interface SecureScoreImprovement {
+  id: string;
+  rank: number;
+  title: string;
+  description: string;
+  status: 'toAddress' | 'addressed' | 'thirdParty' | 'default';
+  severity: 'high' | 'medium' | 'low' | 'informational';
+  category: string;
+  impact: string;
+  remediation: string;
+  remediationImpact: string;
+  actionUrl: string;
+  implementedDateTime?: string;
+  lastModifiedDateTime: string;
+  percentComplete: number;
+  pointsIncrease: number;
+  service: string;
+}
+
+// Interface for secure score improvement recommendations
+interface SecureScoreImprovement {
+  id: string;
+  title: string;
+  description: string;
+  remediation: string;
+  impact: string;
+  category: string; 
+  service: string;
+  actionUrl: string;
+  score: number;
+  maxScore: number;
+  percentComplete: number;
+  implementationStatus: string;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+  controlName: string;
+}
+
 // Interface for specific security metrics we track
 interface SecurityMetrics {
   secureScore: number;
