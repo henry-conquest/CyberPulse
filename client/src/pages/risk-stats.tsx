@@ -900,7 +900,7 @@ const SecureScoreRecommendationsDialog = ({
   };
   
   return (
-    <DialogContent className="max-w-3xl">
+    <DialogContent className="max-w-3xl max-h-[90vh]">
       <DialogHeader>
         <DialogTitle className="text-xl">Microsoft Secure Score Recommendations</DialogTitle>
         <DialogDescription>
@@ -1019,7 +1019,7 @@ const SecureScoreRecommendationsDialog = ({
         )}
         
         {/* Recommendations List */}
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
           {recommendations.length > 0 ? (
             recommendations.map((rec, index) => (
               <div 
