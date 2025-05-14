@@ -321,6 +321,9 @@ export type InsertUserTenantAccess = z.infer<typeof insertUserTenantAccessSchema
 export const UserRoles = {
   ADMIN: "admin",
   READONLY: "readonly",
+  ANALYST: "analyst",
+  ACCOUNT_MANAGER: "account_manager",
+  ANALYST_NOTES: "analyst_notes"
 } as const;
 
 export const ReportStatus = {
