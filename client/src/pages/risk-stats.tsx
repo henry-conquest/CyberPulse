@@ -352,7 +352,7 @@ const DeviceRecommendationsDialog = ({
     // Only use device score recommendations based on their widget type
     // This ensures we only display recommendations properly assigned to this widget
     const deviceScoreRecs = tenantWidgetRecommendations.filter(
-      rec => rec.widgetType.toUpperCase() === 'DEVICE_SCORE'
+      rec => rec.widgetType && rec.widgetType.toUpperCase() === 'DEVICE_SCORE'
     );
     
     // Add tenant-specific recommendations first
@@ -651,7 +651,7 @@ const SecureScoreRecommendationsDialog = ({
     // Only use recommendations that match the current widget type
     // Ensure we're using case-insensitive comparison for widget types to avoid issues
     const relevantRecommendations = tenantWidgetRecommendations.filter(
-      rec => rec.widgetType.toUpperCase() === "SECURE_SCORE"
+      rec => rec.widgetType && rec.widgetType.toUpperCase() === "SECURE_SCORE"
     );
     
     // Add tenant-specific recommendations first

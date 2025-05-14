@@ -189,9 +189,13 @@ export default function GlobalRecommendations() {
       // Invalidate global recommendations
       queryClient.invalidateQueries({ queryKey: ["/api/global-recommendations"] });
       
-      // Also invalidate all tenant widget recommendations to ensure changes are reflected in widgets
-      // Use a partial key match to invalidate all tenant widget recommendation queries
+      // Invalidate ALL tenant widget recommendations for ALL widget types to ensure 
+      // changes are reflected correctly when moving between widgets
       queryClient.invalidateQueries({ queryKey: ["/api/tenants"], exact: false });
+      
+      // Force invalidation for specific recommendation types to ensure they refresh
+      queryClient.invalidateQueries({ queryKey: ["/api/tenants", "widget-recommendations", "SECURE_SCORE"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["/api/tenants", "widget-recommendations", "DEVICE_SCORE"], exact: false });
       
       setIsEditDialogOpen(false);
       toast({
