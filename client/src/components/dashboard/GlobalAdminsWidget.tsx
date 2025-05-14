@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +44,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
   };
 
   // Content for the dialog
-  const DialogContent = () => {
+  const renderDialogContent = () => {
     if (isLoading) {
       return (
         <div className="flex items-center justify-center py-12">
@@ -115,10 +115,10 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-md">{admin.displayName}</CardTitle>
+                    <CardTitle className="text-md">{admin.displayName || 'Unknown User'}</CardTitle>
                     <div className="flex items-center mt-1 text-sm text-muted-foreground">
                       <Mail className="h-3.5 w-3.5 mr-1" />
-                      {admin.email}
+                      {admin.email || 'No email provided'}
                     </div>
                   </div>
                   {!admin.accountEnabled && (
@@ -198,37 +198,11 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
             <Shield className="mr-2 h-5 w-5" />
             Microsoft 365 Global Administrators
           </DialogTitle>
+          <DialogDescription>
+            View and manage Microsoft 365 global administrator accounts
+          </DialogDescription>
         </DialogHeader>
-        <div className="overflow-y-auto py-4">
-          {/* Admin list content */}
-          {admins.length > 0 ? (
-            <div className="space-y-4">
-              {admins.map((admin) => (
-                <div key={admin.id} className="border rounded-lg p-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {admin.displayName.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-medium">{admin.displayName}</h4>
-                      <p className="text-sm text-muted-foreground">{admin.email}</p>
-                      {admin.jobTitle && (
-                        <p className="text-xs text-muted-foreground mt-1">{admin.jobTitle}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6">
-              <UserX className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No global administrators found</p>
-            </div>
-          )}
-        </div>
+        {renderDialogContent()}
       </DialogContent>
     </Dialog>
   );
