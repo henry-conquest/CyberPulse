@@ -82,8 +82,8 @@ const LoginPage = () => {
         throw new Error(errorData?.message || "Login failed. Please check your credentials.");
       }
       
-      // If login successful, use navigate instead of window.location to avoid page reload
-      navigate("/dashboard");
+      // If login successful, use setLocation instead of window.location to avoid page reload
+      setLocation("/dashboard");
       
     } catch (error) {
       console.error("Login error:", error);
