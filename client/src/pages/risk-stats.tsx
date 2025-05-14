@@ -771,15 +771,15 @@ const SecureScoreRecommendationsDialog = ({
       return priorityMap[priority.toUpperCase()] || "Info";
     };
     
-    // Add Microsoft recommendations if available - limit to top 10 important recommendations
+    // Add Microsoft recommendations if available - all 23 addressable recommendations
     if (msRecommendations && msRecommendations.length > 0) {
       // Sort recommendations by severity (HIGH, MEDIUM, LOW, INFO)
       const prioritizedRecs = [...msRecommendations].sort((a, b) => {
-        const severityOrder = { 'HIGH': 0, 'MEDIUM': 1, 'LOW': 2, 'INFO': 3 };
+        const severityOrder: Record<string, number> = { 'HIGH': 0, 'MEDIUM': 1, 'LOW': 2, 'INFO': 3 };
         const severityA = a?.severity?.toUpperCase() || 'INFO';
         const severityB = b?.severity?.toUpperCase() || 'INFO';
-        return (severityOrder[severityA] || 3) - (severityOrder[severityB] || 3);
-      }).slice(0, 10); // Limit to top 10 recommendations
+        return (severityOrder[severityA] ?? 3) - (severityOrder[severityB] ?? 3);
+      }).slice(0, 25); // Show up to 25 recommendations to cover all addressable ones
       
       prioritizedRecs.forEach(rec => {
         // Select appropriate icon based on severity
