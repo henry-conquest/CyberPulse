@@ -52,6 +52,44 @@ export function setupPassport(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Set up local strategy for username/password auth
+  passport.use(new Strategy({
+    usernameField: 'email',
+    passwordField: 'password'
+  }, async (email, password, done) => {
+    try {
+      // For initial admin setup, allow a special account
+      if (email === 'admin@conquest.local' && password === 'admin') {
+        // Check if admin user exists, if not create it
+        let adminUser = await storage.getUserByEmail('admin@conquest.local');
+        
+        if (!adminUser) {
+          adminUser = await storage.createUser({
+            id: 'admin-local-' + Date.now(),
+            email: 'admin@conquest.local',
+            firstName: 'Admin',
+            lastName: 'User',
+            role: UserRoles.ADMIN
+          });
+        }
+        
+        return done(null, adminUser);
+      }
+      
+      // Normal user authentication
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return done(null, false, { message: 'User not found' });
+      }
+      
+      // For now, we'll just check if the email matches since we don't have passwords
+      // In a real implementation, you would check hashed passwords here
+      return done(null, user);
+    } catch (error) {
+      return done(error);
+    }
+  }));
+
   // Serialize user to session
   passport.serializeUser((user: any, done) => {
     done(null, user.id);
@@ -70,6 +108,11 @@ export function setupPassport(app: Express) {
 
 // Authentication routes
 export function setupAuthRoutes(app: Express) {
+  // Local login endpoint
+  app.post('/api/local-login', passport.authenticate('local'), (req, res) => {
+    res.json(req.user);
+  });
+  
   // Staff login (admin access)
   app.get('/api/staff-login', (req, res) => {
     try {
