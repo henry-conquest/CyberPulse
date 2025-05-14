@@ -216,32 +216,25 @@ export class MicrosoftGraphService {
         // These are the ones that actually matter to the tenant
         const allProfiles = profilesResponse?.value || [];
         
-        // Use exact titles from the Microsoft Defender portal CSV
-        // This ensures we only show the 23 recommendations that are "To address"
-        const microsoftPortalRecommendations = [
-          "Enable Microsoft Entra ID Identity Protection sign-in risk policies",
-          "Enable Microsoft Entra ID Identity Protection user risk policies",
-          "Quarantine messages that are detected from impersonated users",
-          "Ensure additional storage providers are restricted in Outlook on the web",
-          "Ensure Safe Attachments policy is enabled",
-          "Ensure multifactor authentication is enabled for all users",
-          "Create an OAuth app policy to notify you about new OAuth applications",
-          "Create an app discovery policy to identify new and trending cloud apps in your org",
-          "Ensure MailTips are enabled for end users",
-          "Ensure mailbox auditing for all users is Enabled",
-          "Ensure Safe Links for Office Applications is Enabled",
-          "Create a custom activity policy to get alerts about suspicious usage patterns",
-          "Publish M365 sensitivity label data classification policies",
-          "Configure which users are allowed to present in Teams meetings",
-          "Deploy a log collector to discover shadow IT activity",
-          "Extend M365 sensitivity labeling to assets in Microsoft Purview data map",
-          "Ensure the customer lockbox feature is enabled",
-          "Ensure that Auto-labeling data classification policies are set up and used",
-          "Set the email bulk complaint level (BCL) threshold to be 6 or lower",
-          "Block users who reached the message limit",
-          "Restrict anonymous users from joining meetings",
-          "Designate more than one global admin",
-          "Use least privileged administrative roles"
+        // Rather than using a static list of recommendations,
+        // we'll filter based on the implementation status to show all
+        // addressable recommendations dynamically. This ensures we're showing
+        // the same recommendations as the Microsoft Defender portal.
+        
+        // Implementation statuses that indicate a recommendation needs addressing:
+        // - 'thirdParty' = implemented by third party solution
+        // - 'planned' = in planning stages
+        // - 'notImplemented' = not implemented
+        // - 'unknownFutureValue' = unknown status
+        // - 'default' = default settings, may need addressing
+        // - 'alternate' = alternate implementation
+        
+        const addressableStatuses = [
+          'notImplemented',
+          'planned',
+          'unknownFutureValue',
+          'default',
+          'alternate'
         ];
         
         // Map control scores for easy lookup - we need to check implementation status
@@ -274,8 +267,15 @@ export class MicrosoftGraphService {
           }
           
           // Implementation status check - include items that aren't fully implemented
-          // Microsoft shows items as "To address" when they don't have 
-          // "The setting is properly configured" status
+          // Microsoft shows items as "To address" when their implementation status
+          // indicates they need attention
+          
+          // First, always include if it's in one of our explicitly addressable statuses
+          if (addressableStatuses.includes(controlScore.state)) {
+            return true;
+          }
+          
+          // Also include if it's not properly configured according to the implementation status
           return controlScore.implementationStatus !== "The setting is properly configured";
           
         });
