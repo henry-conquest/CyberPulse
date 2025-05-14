@@ -155,6 +155,38 @@ const RecommendationSelector = ({
   widgetType: string;
   onClose: () => void;
 }) => {
+  // For Microsoft Secure Score, we only use recommendations from the Microsoft Graph API
+  if (widgetType.toUpperCase() === "SECURE_SCORE") {
+    return (
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Microsoft Secure Score Recommendations</DialogTitle>
+          <DialogDescription>
+            Secure Score recommendations are provided directly from Microsoft and cannot be manually managed.
+            The system will automatically display all available Microsoft recommendations.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <div className="p-4 border rounded-md bg-blue-50">
+            <div className="flex items-start">
+              <Info className="h-5 w-5 text-blue-500 mr-3 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-blue-900">Microsoft Managed Recommendations</h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  These recommendations come directly from Microsoft's Security portal "To address" list 
+                  and are automatically updated when your Microsoft Secure Score changes.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    );
+  }
+  
   const queryClient = useQueryClient();
   const [selectedRecommendations, setSelectedRecommendations] = useState<number[]>([]);
   
