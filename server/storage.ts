@@ -12,8 +12,6 @@ import {
   tenantWidgetRecommendations,
   auditLogs,
   secureScoreHistory,
-  microsoftTenantMapping,
-  userTenantAccess,
   type User,
   type UpsertUser,
   type Tenant,
@@ -40,10 +38,6 @@ import {
   type InsertAuditLog,
   type SecureScoreHistory,
   type InsertSecureScoreHistory,
-  type MicrosoftTenantMapping,
-  type InsertMicrosoftTenantMapping,
-  type UserTenantAccess,
-  type InsertUserTenantAccess,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, desc, asc, sql, like, or } from "drizzle-orm";
@@ -53,10 +47,6 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  createUser(user: UpsertUser): Promise<User>;
-  updateUser(id: string, user: Partial<UpsertUser>): Promise<User>;
-  getUserByMicrosoftId(microsoftId: string): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   getUsersByRole(role: string): Promise<User[]>;
   updateUserRole(userId: string, role: string): Promise<User>;
@@ -145,15 +135,6 @@ export interface IStorage {
   getTenantWidgetRecommendation(id: number): Promise<TenantWidgetRecommendation | undefined>;
   updateTenantWidgetRecommendation(id: number, recommendation: Partial<InsertTenantWidgetRecommendation>): Promise<TenantWidgetRecommendation>;
   deleteTenantWidgetRecommendation(id: number): Promise<void>;
-  
-  // Microsoft tenant mapping operations
-  createMicrosoftTenantMapping(mapping: InsertMicrosoftTenantMapping): Promise<MicrosoftTenantMapping>;
-  getMicrosoftTenantMapping(microsoftTenantId: string): Promise<MicrosoftTenantMapping | undefined>;
-  
-  // User tenant access operations
-  createUserTenantAccess(access: InsertUserTenantAccess): Promise<UserTenantAccess>;
-  getUserTenantAccess(userId: string, tenantId: number): Promise<UserTenantAccess | undefined>;
-  getUserTenantAccessByUserId(userId: string): Promise<UserTenantAccess[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -175,42 +156,6 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .returning();
-    return user;
-  }
-  
-  async createUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .returning();
-    return user;
-  }
-  
-  async updateUser(id: string, userData: Partial<UpsertUser>): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ 
-        ...userData,
-        updatedAt: new Date() 
-      })
-      .where(eq(users.id, id))
-      .returning();
-    return user;
-  }
-  
-  async getUserByMicrosoftId(microsoftId: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, microsoftId));
-    return user;
-  }
-  
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email));
     return user;
   }
 
@@ -887,52 +832,6 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(tenantWidgetRecommendations)
       .where(eq(tenantWidgetRecommendations.id, id));
-  }
-
-  // Microsoft tenant mapping operations
-  async createMicrosoftTenantMapping(mapping: InsertMicrosoftTenantMapping): Promise<MicrosoftTenantMapping> {
-    const [newMapping] = await db
-      .insert(microsoftTenantMapping)
-      .values(mapping)
-      .returning();
-    return newMapping;
-  }
-  
-  async getMicrosoftTenantMapping(microsoftTenantId: string): Promise<MicrosoftTenantMapping | undefined> {
-    const [mapping] = await db
-      .select()
-      .from(microsoftTenantMapping)
-      .where(eq(microsoftTenantMapping.microsoftTenantId, microsoftTenantId));
-    return mapping;
-  }
-  
-  // User tenant access operations
-  async createUserTenantAccess(access: InsertUserTenantAccess): Promise<UserTenantAccess> {
-    const [newAccess] = await db
-      .insert(userTenantAccess)
-      .values(access)
-      .returning();
-    return newAccess;
-  }
-  
-  async getUserTenantAccess(userId: string, tenantId: number): Promise<UserTenantAccess | undefined> {
-    const [access] = await db
-      .select()
-      .from(userTenantAccess)
-      .where(
-        and(
-          eq(userTenantAccess.userId, userId),
-          eq(userTenantAccess.tenantId, tenantId)
-        )
-      );
-    return access;
-  }
-  
-  async getUserTenantAccessByUserId(userId: string): Promise<UserTenantAccess[]> {
-    return await db
-      .select()
-      .from(userTenantAccess)
-      .where(eq(userTenantAccess.userId, userId));
   }
 }
 

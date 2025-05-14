@@ -38,8 +38,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").default("user").notNull(), // admin, readonly
-  microsoftTenantId: varchar("microsoft_tenant_id"), // The Microsoft tenant ID this user came from
+  role: varchar("role").default("user").notNull(), // admin, analyst, account_manager
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -212,40 +211,12 @@ export const auditLogs = pgTable("audit_logs", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
-// Microsoft tenant mapping to our application tenants
-export const microsoftTenantMapping = pgTable("microsoft_tenant_mapping", {
-  id: serial("id").primaryKey(),
-  microsoftTenantId: varchar("microsoft_tenant_id").notNull().unique(),
-  appTenantId: integer("app_tenant_id").references(() => tenants.id),
-  isStaffTenant: boolean("is_staff_tenant").notNull().default(false), // Whether this is our staff tenant
-  domainName: varchar("domain_name"), // Primary domain name for this tenant
-  tenantName: varchar("tenant_name"), // Friendly name for the tenant
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// User tenant access permissions
-export const userTenantAccess = pgTable("user_tenant_access", {
-  id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  tenantId: integer("tenant_id").notNull().references(() => tenants.id),
-  role: varchar("role").notNull().default("readonly"), // "admin" or "readonly"
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-}, (table) => {
-  return {
-    unq: unique().on(table.userId, table.tenantId),
-  };
-});
-
 // Define insert schemas for the tables
 export const insertTenantSchema = createInsertSchema(tenants).omit({ createdAt: true, updatedAt: true });
 export const insertSecureScoreHistorySchema = createInsertSchema(secureScoreHistory).omit({ id: true });
 export type SecureScoreHistory = typeof secureScoreHistory.$inferSelect;
 export type InsertSecureScoreHistory = typeof secureScoreHistory.$inferInsert;
 export const insertUserTenantSchema = createInsertSchema(userTenants).omit({ createdAt: true });
-export const insertMicrosoftTenantMappingSchema = createInsertSchema(microsoftTenantMapping).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertUserTenantAccessSchema = createInsertSchema(userTenantAccess).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertMicrosoft365ConnectionSchema = createInsertSchema(microsoft365Connections).omit({ 
   createdAt: true, 
   updatedAt: true 
@@ -312,18 +283,14 @@ export type TenantWidgetRecommendation = typeof tenantWidgetRecommendations.$inf
 export type InsertTenantWidgetRecommendation = z.infer<typeof insertTenantWidgetRecommendationSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
-export type MicrosoftTenantMapping = typeof microsoftTenantMapping.$inferSelect;
-export type InsertMicrosoftTenantMapping = z.infer<typeof insertMicrosoftTenantMappingSchema>;
-export type UserTenantAccess = typeof userTenantAccess.$inferSelect;
-export type InsertUserTenantAccess = z.infer<typeof insertUserTenantAccessSchema>;
 
 // Enums
 export const UserRoles = {
   ADMIN: "admin",
-  READONLY: "readonly",
   ANALYST: "analyst",
+  ANALYST_NOTES: "analyst_notes",
   ACCOUNT_MANAGER: "account_manager",
-  ANALYST_NOTES: "analyst_notes"
+  USER: "user",
 } as const;
 
 export const ReportStatus = {

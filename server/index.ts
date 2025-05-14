@@ -3,7 +3,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { scheduleQuarterlyReports } from "./reports";
 import { scheduleMonthlySecureScoreSnapshots } from "./secure-score-history";
-import { setupSession, setupPassport, setupAuthRoutes } from "./microsoft-auth";
 
 const app = express();
 app.use(express.json());
@@ -40,11 +39,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Setup session and passport
-  setupSession(app);
-  setupPassport(app);
-  setupAuthRoutes(app);
-  
   const server = await registerRoutes(app);
   
   // Schedule automatic quarterly report generation

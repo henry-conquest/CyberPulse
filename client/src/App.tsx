@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -18,7 +18,6 @@ import Users from "@/pages/users";
 import Tenants from "@/pages/tenants";
 import Integrations from "./pages/integrations";
 import SecureScorePage from "@/pages/secure-score";
-import LoginPage from "@/pages/login";
 
 import { useAuth } from "@/hooks/useAuth";
 import Layout from "@/components/layout/Layout";
@@ -36,8 +35,9 @@ function ProtectedRoute({ component: Component, roles, ...rest }: {
   }
   
   if (!user) {
-    // Use Redirect component instead of window.location for SPA navigation
-    return <Redirect to="/login" />;
+    // Redirect to login
+    window.location.href = "/api/login";
+    return null;
   }
   
   // Check role-based access
@@ -51,12 +51,8 @@ function ProtectedRoute({ component: Component, roles, ...rest }: {
 function Router() {
   return (
     <Switch>
-      {/* Login route - directly accessible */}
-      <Route path="/login" component={LoginPage} />
-      
       {/* Main routes */}
       <Route path="/" component={() => <ProtectedRoute component={Companies} />} />
-      <Route path="/dashboard" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/companies" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
       

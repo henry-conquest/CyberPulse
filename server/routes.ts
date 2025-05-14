@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { isAuthenticated, isAdmin, isAuthorized } from "./microsoft-auth";
+import { setupAuth, isAuthenticated, isAuthorized } from "./replitAuth";
 import { z } from "zod";
 import { 
   insertTenantSchema, 
@@ -47,7 +47,7 @@ import { ClientSecretCredential } from "@azure/identity";
 import { TokenCredentialAuthenticationProvider } from "@microsoft/microsoft-graph-client/authProviders/azureTokenCredentials";
 
 // Helper to check if user has access to a tenant
-async function checkTenantAccess(userId: string, tenantId: number): Promise<boolean> {
+async function hasTenantAccess(userId: string, tenantId: number): Promise<boolean> {
   // First check if user is an admin - admins have access to all tenants
   const user = await storage.getUser(userId);
   if (user?.role === UserRoles.ADMIN) {
@@ -72,6 +72,9 @@ const asyncHandler = (fn: (req: Request, res: Response) => Promise<any>) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth middleware
+  await setupAuth(app);
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
@@ -424,7 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Check if user has access to this tenant
     const user = await storage.getUser(userId);
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
@@ -482,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const tenantId = parseInt(req.params.id);
     
     const user = await storage.getUser(userId);
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
@@ -545,7 +548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const tenantId = parseInt(req.params.id);
     
     const user = await storage.getUser(userId);
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
@@ -649,7 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tenantId = parseInt(req.params.id);
       
       // Check if user has access to this tenant
-      const hasAccess = await checkTenantAccess(userId, tenantId);
+      const hasAccess = await hasTenantAccess(userId, tenantId);
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this tenant" });
       }
@@ -696,7 +699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tenantId = parseInt(req.params.id);
       
       // Check if user has access to this tenant
-      const hasAccess = await checkTenantAccess(userId, tenantId);
+      const hasAccess = await hasTenantAccess(userId, tenantId);
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this tenant" });
       }
@@ -734,7 +737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tenantId = parseInt(req.params.id);
       
       // Check if user has access to this tenant
-      const hasAccess = await checkTenantAccess(userId, tenantId);
+      const hasAccess = await hasTenantAccess(userId, tenantId);
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this tenant" });
       }
@@ -944,7 +947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Check if user has access to this tenant
     const user = await storage.getUser(userId);
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
@@ -1029,7 +1032,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const tenantId = parseInt(req.params.id);
     
     const user = await storage.getUser(userId);
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
@@ -1111,7 +1114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`Fetching security data for tenant: ${tenantId}, user: ${userId}`);
     
     const user = await storage.getUser(userId);
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
       console.log(`User ${userId} does not have access to tenant ${tenantId}`);
@@ -1138,7 +1141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const tenantId = parseInt(req.params.id);
     
     const user = await storage.getUser(userId);
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
@@ -1161,7 +1164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Check if user has access to the tenant
     const user = await storage.getUser(userId);
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
@@ -1187,7 +1190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const tenantId = parseInt(req.params.id);
     
     // Check if user has access to this tenant
-    const hasAccess = await checkTenantAccess(userId, tenantId);
+    const hasAccess = await hasTenantAccess(userId, tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
     }
@@ -1233,7 +1236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Check if user has access to the tenant this report belongs to
     const user = await storage.getUser(userId);
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, report.tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, report.tenantId);
     
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this report" });
@@ -1256,7 +1259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Check if user has access to this tenant
     const user = await storage.getUser(userId);
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
@@ -1306,7 +1309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check if user has access to this tenant
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
@@ -1353,7 +1356,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check if user has access to the tenant this report belongs to
-    const hasAccess = await checkTenantAccess(userId, report.tenantId);
+    const hasAccess = await hasTenantAccess(userId, report.tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this report" });
     }
@@ -1415,7 +1418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check if user has access to the tenant this report belongs to
-    const hasAccess = await checkTenantAccess(userId, report.tenantId);
+    const hasAccess = await hasTenantAccess(userId, report.tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this report" });
     }
@@ -1444,7 +1447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check if user has access to the tenant this report belongs to
-    const hasAccess = await checkTenantAccess(userId, report.tenantId);
+    const hasAccess = await hasTenantAccess(userId, report.tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this report" });
     }
@@ -1474,7 +1477,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check if user has access to the tenant this report belongs to
-    const hasAccess = await checkTenantAccess(userId, report.tenantId);
+    const hasAccess = await hasTenantAccess(userId, report.tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this report" });
     }
@@ -1509,7 +1512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check if user has access to the tenant this report belongs to
-    const hasAccess = await checkTenantAccess(userId, report.tenantId);
+    const hasAccess = await hasTenantAccess(userId, report.tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this report" });
     }
@@ -1538,7 +1541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check if user has access to the tenant this report belongs to
-    const hasAccess = await checkTenantAccess(userId, report.tenantId);
+    const hasAccess = await hasTenantAccess(userId, report.tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this report" });
     }
@@ -1579,7 +1582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`Refresh request for report ID ${reportId} of tenant ${tenantId}`);
     
     // Check if user has access to this tenant
-    const hasAccess = await checkTenantAccess(userId, tenantId);
+    const hasAccess = await hasTenantAccess(userId, tenantId);
     if (!hasAccess && (req.user as any)?.role !== UserRoles.ADMIN) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
     }
@@ -1624,7 +1627,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const tenantId = parseInt(req.params.id);
     
     // Check if user has access to this tenant
-    const hasAccess = await checkTenantAccess(userId, tenantId);
+    const hasAccess = await hasTenantAccess(userId, tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
     }
@@ -1674,7 +1677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check if user has access to the tenant this report belongs to
-    const hasAccess = await checkTenantAccess(userId, report.tenantId);
+    const hasAccess = await hasTenantAccess(userId, report.tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this report" });
     }
@@ -1716,7 +1719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const tenantId = parseInt(req.params.id);
     
     const user = await storage.getUser(userId);
-    const hasAccess = user?.role === UserRoles.ADMIN || await checkTenantAccess(userId, tenantId);
+    const hasAccess = user?.role === UserRoles.ADMIN || await hasTenantAccess(userId, tenantId);
     
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
@@ -1731,7 +1734,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const tenantId = parseInt(req.params.id);
     
     // Check if user has access to this tenant
-    const hasAccess = await checkTenantAccess(userId, tenantId);
+    const hasAccess = await hasTenantAccess(userId, tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
     }
@@ -1766,7 +1769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check if user has access to the tenant this recommendation belongs to
-    const hasAccess = await checkTenantAccess(userId, recommendation.tenantId);
+    const hasAccess = await hasTenantAccess(userId, recommendation.tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this recommendation" });
     }
@@ -1803,7 +1806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Check if user has access to the tenant this recommendation belongs to
-    const hasAccess = await checkTenantAccess(userId, recommendation.tenantId);
+    const hasAccess = await hasTenantAccess(userId, recommendation.tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this recommendation" });
     }
@@ -1985,7 +1988,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const tenantId = parseInt(req.params.id);
     
     // Check if user has access to this tenant
-    const hasAccess = await checkTenantAccess(userId, tenantId);
+    const hasAccess = await hasTenantAccess(userId, tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
     }
@@ -2008,7 +2011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const tenantId = parseInt(req.params.id);
     
     // Check if user has access to this tenant
-    const hasAccess = await checkTenantAccess(userId, tenantId);
+    const hasAccess = await hasTenantAccess(userId, tenantId);
     if (!hasAccess) {
       return res.status(403).json({ message: "You don't have access to this tenant" });
     }
@@ -2044,7 +2047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`User ID: ${userId}, Tenant ID: ${tenantId}`);
     
     // Check if user has access to this tenant
-    const hasAccess = await checkTenantAccess(userId, tenantId);
+    const hasAccess = await hasTenantAccess(userId, tenantId);
     console.log(`User has access to tenant: ${hasAccess}`);
     
     if (!hasAccess) {
@@ -2141,7 +2144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tenantId = parseInt(req.params.id);
       
       // Check if user has access to this tenant
-      const hasAccess = await checkTenantAccess(userId, tenantId);
+      const hasAccess = await hasTenantAccess(userId, tenantId);
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this tenant" });
       }
@@ -2187,7 +2190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tenantId = parseInt(req.params.id);
       
       // Check if user has access to this tenant
-      const hasAccess = await checkTenantAccess(userId, tenantId);
+      const hasAccess = await hasTenantAccess(userId, tenantId);
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this tenant" });
       }
