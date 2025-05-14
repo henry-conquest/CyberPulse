@@ -220,8 +220,9 @@ export class MicrosoftGraphService {
         console.log(`DEBUG: Working with ${allProfiles.length} profiles`);
         
         if (allProfiles.length > 0) {
-          // Take the first 5 profiles as recommendations regardless of status
-          for (let i = 0; i < Math.min(5, allProfiles.length); i++) {
+          // Show all available profiles - don't limit to just 5
+          // This ensures users see all Microsoft recommendations
+          for (let i = 0; i < allProfiles.length; i++) {
             const profile = allProfiles[i];
             console.log(`DEBUG: Adding recommendation for ${profile.title}`);
             
