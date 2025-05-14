@@ -36,6 +36,7 @@ import "react-circular-progressbar/dist/styles.css";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import SecureScoreHistoryDialog from "@/components/dashboard/SecureScoreHistoryDialog";
+import GlobalAdminsWidget from "@/components/dashboard/GlobalAdminsWidget";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -1562,9 +1563,9 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
       </div>
 
       {/* Microsoft Score Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Microsoft Secure Score Card */}
-        <div>
+        <div className="md:col-span-1">
           <SecureScoreCard
             secureScore={secureScore}
             secureScorePercent={secureScorePercent}
@@ -1575,13 +1576,20 @@ export default function RiskStats({ tenantId, id }: RiskStatsProps) {
         </div>
         
         {/* Microsoft Device Score Card */}
-        <div>
+        <div className="md:col-span-1">
           <DeviceScoreCard
             deviceScore={deviceScore}
             deviceScorePercent={deviceScorePercent}
             deviceMetrics={securityData.deviceMetrics || {}}
             securityData={securityData}
             maxScore={10}
+            tenantId={Number(tenantId)}
+          />
+        </div>
+        
+        {/* Global Admins Widget */}
+        <div className="md:col-span-1">
+          <GlobalAdminsWidget 
             tenantId={Number(tenantId)}
           />
         </div>
