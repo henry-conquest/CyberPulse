@@ -391,17 +391,29 @@ export class MicrosoftGraphService {
       console.log("Raw Global Admin data sample:", JSON.stringify(membersResponse.value[0] || {}, null, 2));
       
       // Transform response to a more friendly format
-      const admins = membersResponse.value.map((user: any) => ({
-        id: user.id,
-        displayName: user.displayName || 'Unknown User',
-        email: user.mail || user.userPrincipalName || null,
-        jobTitle: user.jobTitle || 'Not specified',
-        department: user.department || 'Not specified',
-        companyName: user.companyName || 'Not specified',
-        accountEnabled: user.accountEnabled !== undefined ? user.accountEnabled : false
-      }));
+      const admins = membersResponse.value.map((user: any) => {
+        // Debug each user's data
+        console.log(`Processing admin user data:`);
+        console.log(`- ID: ${user.id}`);
+        console.log(`- Display Name: ${user.displayName || '(not provided)'}`);
+        console.log(`- Mail: ${user.mail || '(not provided)'}`);
+        console.log(`- UPN: ${user.userPrincipalName || '(not provided)'}`);
+        console.log(`- Job Title: ${user.jobTitle || '(not provided)'}`);
+        console.log(`- Department: ${user.department || '(not provided)'}`);
+        console.log(`- Account Enabled: ${user.accountEnabled !== undefined ? user.accountEnabled : '(not provided)'}`);
+        
+        return {
+          id: user.id,
+          displayName: user.displayName || 'Unknown User',
+          email: user.mail || user.userPrincipalName || null,
+          jobTitle: user.jobTitle || 'Not specified',
+          department: user.department || 'Not specified',
+          companyName: user.companyName || 'Not specified',
+          accountEnabled: user.accountEnabled !== undefined ? user.accountEnabled : false
+        };
+      });
       
-      console.log("Transformed Global Admins data:", JSON.stringify(admins, null, 2));
+      console.log("Total Global Admins processed:", admins.length);
       return admins;
       
     } catch (error: any) {

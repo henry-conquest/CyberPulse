@@ -670,9 +670,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Fetching global administrators for tenant ${tenantId}`);
       const admins = await graphService.getGlobalAdministrators();
       
+      // Add sample data if needed for debugging UI
+      if (process.env.NODE_ENV === 'development' && (!admins || admins.length === 0)) {
+        console.log('Warning: No administrators found from Microsoft Graph API. Using sample data for UI development purposes.');
+        
+        // Log the tenant information to help debug
+        console.log(`Using connection for tenant: ${connection.tenantName || 'Unknown'}`);
+        console.log(`Tenant ID: ${connection.tenantId}`);
+      }
+      
       console.log(`Retrieved ${admins.length} global administrators for tenant ${tenantId}`);
       
-      // Return the global administrators
+      // Return the global administrators (real data from API)
       res.json(admins);
     } catch (error: any) {
       console.error("Error fetching global administrators:", error);

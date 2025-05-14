@@ -104,9 +104,17 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
               </Badge>
             )}
           </div>
-          <Button onClick={handleRefresh} variant="outline" size="sm">
-            Refresh
-          </Button>
+          <div className="flex space-x-2">
+            <Button onClick={() => {
+              // Log the admins array to the console for debugging
+              console.log("Global Admins Data:", JSON.stringify(admins, null, 2));
+            }} variant="outline" size="sm">
+              Debug
+            </Button>
+            <Button onClick={handleRefresh} variant="outline" size="sm">
+              Refresh
+            </Button>
+          </div>
         </div>
         
         <div className="space-y-4 max-h-[60vh] overflow-y-auto px-6 pb-6">
