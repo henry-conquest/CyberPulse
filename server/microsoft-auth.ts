@@ -16,6 +16,13 @@ import {
 } from "./microsoft-oauth";
 import { UserRoles } from "@shared/schema";
 
+// Extend the session type to include loginType
+declare module 'express-session' {
+  interface SessionData {
+    loginType?: 'staff' | 'customer';
+  }
+}
+
 // Setup session store
 export function setupSession(app: Express) {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
