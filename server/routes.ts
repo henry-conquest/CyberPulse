@@ -1912,7 +1912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return the recommendations
       res.json(recommendations);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching secure score recommendations:", error);
       res.status(500).json({ error: "Failed to fetch secure score recommendations", details: error.message });
     }
