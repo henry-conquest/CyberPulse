@@ -233,7 +233,7 @@ export class MicrosoftGraphService {
           const allProfiles = profilesResponse.value;
           
           // Filter profiles to only include ones that match our exact "To address" recommendations
-          const matchingProfiles = allProfiles.filter((profile: any) => {
+          const matchingProfiles = allProfiles.filter(profile => {
             return staticRecommendations.some(rec => rec.title === profile.title);
           });
           
@@ -258,7 +258,7 @@ export class MicrosoftGraphService {
                 maxScore: profile.maxScore || 0,
                 percentComplete: 0, // Will be calculated
                 implementationStatus: 'notImplemented',
-                severity: matchingRec.severity as 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO',
+                severity: matchingRec.severity,
                 controlName: profile.name || '',
                 isLive: true
               };
@@ -364,6 +364,7 @@ export class MicrosoftGraphService {
       // Handle other errors
       console.error(`Error in getSecureScoreImprovements for tenant ${this.connection.tenantId}:`, error);
       throw new Error(`Failed to fetch secure score recommendations: ${error.message || "Unknown error"}`);
+    }
     }
   }
 }

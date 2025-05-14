@@ -233,7 +233,7 @@ export class MicrosoftGraphService {
           const allProfiles = profilesResponse.value;
           
           // Filter profiles to only include ones that match our exact "To address" recommendations
-          const matchingProfiles = allProfiles.filter((profile: any) => {
+          const matchingProfiles = allProfiles.filter(profile => {
             return staticRecommendations.some(rec => rec.title === profile.title);
           });
           
@@ -258,7 +258,7 @@ export class MicrosoftGraphService {
                 maxScore: profile.maxScore || 0,
                 percentComplete: 0, // Will be calculated
                 implementationStatus: 'notImplemented',
-                severity: matchingRec.severity as 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO',
+                severity: matchingRec.severity,
                 controlName: profile.name || '',
                 isLive: true
               };
@@ -347,6 +347,27 @@ export class MicrosoftGraphService {
         console.error(`Authentication error in getSecureScoreImprovements for tenant ${this.connection.tenantId}:`, error.message);
         
         // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        throw new Error(`Authentication failed for Microsoft 365 tenant ${this.connection.tenantName}. Please reconnect this tenant.`);
+      }
+      
+      // Handle other errors
+      console.error(`Error in getSecureScoreImprovements for tenant ${this.connection.tenantId}:`, error);
+      throw new Error(`Failed to fetch secure score recommendations: ${error.message || "Unknown error"}`);
+    }
+          const profile = matchingProfiles[i];
+          console.log(`DEBUG: Adding recommendation for ${profile.title}`);
+          
         if ('accessToken' in this.connection) {
           try {
             await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
