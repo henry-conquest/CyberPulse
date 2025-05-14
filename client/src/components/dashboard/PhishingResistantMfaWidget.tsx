@@ -317,33 +317,26 @@ const PhishingResistantMfaWidget = ({ tenantId }: PhishingResistantMfaWidgetProp
       <CardContent>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <div className="flex flex-col items-center justify-center h-44">
-            <Badge 
-              className={
-                riskLevel === 'LOW' 
-                  ? "bg-green-100 text-green-800 mb-3" 
-                  : riskLevel === 'MEDIUM' 
-                    ? "bg-amber-100 text-amber-800 mb-3"
-                    : "bg-red-100 text-red-800 mb-3"
-              }
-            >
-              {riskLevel === 'LOW' ? 'Low Risk' : riskLevel === 'MEDIUM' ? 'Moderate Risk' : 'High Risk'}
-            </Badge>
             
             <div className={`
               w-32 h-32 rounded-full flex items-center justify-center mb-4
-              ${statusColor === 'green' ? 'bg-green-50 border-2 border-green-300' : 
-                statusColor === 'amber' ? 'bg-amber-50 border-2 border-amber-300' : 
+              ${riskLevel === 'LOW' ? 'bg-green-50 border-2 border-green-300' : 
+                riskLevel === 'MEDIUM' ? 'bg-amber-50 border-2 border-amber-300' : 
                 'bg-red-50 border-2 border-red-300'}
             `}>
               <div className="text-center">
-                {statusIcon}
+                {riskLevel === 'LOW' ? <CheckCircle className="h-8 w-8 mx-auto text-green-500" /> :
+                 riskLevel === 'MEDIUM' ? <ShieldAlert className="h-8 w-8 mx-auto text-amber-500" /> :
+                 <ShieldOff className="h-8 w-8 mx-auto text-red-500" />}
                 <div className={`
                   text-xl font-semibold mt-1
-                  ${statusColor === 'green' ? 'text-green-700' : 
-                    statusColor === 'amber' ? 'text-amber-700' : 
+                  ${riskLevel === 'LOW' ? 'text-green-700' : 
+                    riskLevel === 'MEDIUM' ? 'text-amber-700' : 
                     'text-red-700'}
                 `}>
-                  {securityStatus}
+                  {riskLevel === 'LOW' ? 'Low Risk' : 
+                   riskLevel === 'MEDIUM' ? 'Moderate Risk' : 
+                   'High Risk'}
                 </div>
               </div>
             </div>
