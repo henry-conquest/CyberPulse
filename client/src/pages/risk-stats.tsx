@@ -691,18 +691,14 @@ const SecureScoreRecommendationsDialog = ({
   const [refreshKey, setRefreshKey] = useState(Date.now());
   const queryClient = useQueryClient();
   
-  // Use effect to force refresh when dialog opens
+  // Use effect to force refresh when dialog opens AND on each render
+  // This is critical to ensure fresh data is always fetched when the dialog opens
   useEffect(() => {
-    // Force clear all recommendation caches when dialog opens
-    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`] });
-    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`] });
-    queryClient.removeQueries({ queryKey: ['/api/global-recommendations'] });
-    queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/secure-score-recommendations`] });
-    
-    // Trigger a refresh
+    // Force refresh data on each render - Dialog's onOpenChange already cleared the cache
+    // Set a unique timestamp to force new queries
     setRefreshKey(Date.now());
     
-    console.log("SecureScoreRecommendationsDialog: Forced refresh of recommendation data");
+    console.log("SecureScoreRecommendationsDialog: Refreshed with new key:", Date.now());
   }, []);
   
   // Fetch live secure score recommendations from Microsoft
@@ -1285,7 +1281,19 @@ const SecureScoreCard = ({
       )}
       
       {/* Secure Score Card with Recommendations Dialog */}
-      <Dialog>
+      <Dialog onOpenChange={(open) => {
+        if (open) {
+          // Force refresh data when the dialog is opened
+          const queryClient = useQueryClient();
+          // Clear all recommendation caches to ensure fresh data
+          queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/SECURE_SCORE`] });
+          queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/widget-recommendations/DEVICE_SCORE`] });
+          queryClient.removeQueries({ queryKey: ['/api/global-recommendations'] });
+          queryClient.removeQueries({ queryKey: [`/api/tenants/${tenantId}/secure-score-recommendations`] });
+          
+          console.log("SecureScore dialog opened - forcing data refresh");
+        }
+      }}>
         <DialogTrigger asChild>
           <Card className="overflow-hidden cursor-pointer hover:border-primary transition-colors">
             <CardHeader className="pb-2">
