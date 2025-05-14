@@ -345,4 +345,84 @@ export class MicrosoftGraphService {
       throw new Error(`Failed to fetch secure score recommendations: ${error.message || "Unknown error"}`);
     }
   }
+  
+  /**
+   * Get global administrator users from Microsoft Entra ID
+   * @returns Array of global admin users with details
+   */
+  async getGlobalAdministrators() {
+    try {
+      if (!this.client) {
+        this.initializeClient();
+        if (!this.client) {
+          throw new Error("Microsoft Graph client not initialized");
+        }
+      }
+      
+      console.log(`Fetching global administrators for tenant ${this.connection.tenantId}`);
+      
+      // First, get the Global Administrator directory role
+      const rolesResponse = await this.client
+        .api('/directoryRoles')
+        .filter("displayName eq 'Global Administrator'")
+        .get();
+      
+      if (!rolesResponse?.value || rolesResponse.value.length === 0) {
+        console.log("No Global Administrator role found");
+        return [];
+      }
+      
+      const globalAdminRole = rolesResponse.value[0];
+      
+      // Get all members of the Global Administrator role
+      const membersResponse = await this.client
+        .api(`/directoryRoles/${globalAdminRole.id}/members`)
+        .select('id,displayName,userPrincipalName,mail,jobTitle,department,companyName,accountEnabled')
+        .get();
+      
+      if (!membersResponse?.value) {
+        console.log("No Global Administrator members found");
+        return [];
+      }
+      
+      console.log(`Found ${membersResponse.value.length} Global Administrators for tenant ${this.connection.tenantId}`);
+      
+      // Transform response to a more friendly format
+      return membersResponse.value.map(user => ({
+        id: user.id,
+        displayName: user.displayName,
+        email: user.mail || user.userPrincipalName,
+        jobTitle: user.jobTitle || 'Not specified',
+        department: user.department || 'Not specified',
+        companyName: user.companyName || 'Not specified',
+        accountEnabled: user.accountEnabled || false
+      }));
+      
+    } catch (error: any) {
+      // Check for authentication errors
+      if (error.statusCode === 401 || 
+          (error.message && error.message.includes("authentication")) ||
+          (error.message && error.message.includes("authorized"))) {
+        console.error(`Authentication error in getGlobalAdministrators for tenant ${this.connection.tenantId}:`, error.message);
+        
+        // Flag OAuth connection as needing reconnection if it's an OAuth connection
+        if ('accessToken' in this.connection) {
+          try {
+            await storage.updateMicrosoft365OAuthConnection(this.connection.id, {
+              needsReconnection: true
+            });
+            console.log(`Marked connection ${this.connection.id} as needing reconnection due to authentication error`);
+          } catch (updateError) {
+            console.error("Failed to update OAuth connection status:", updateError);
+          }
+        }
+        
+        throw new Error(`Authentication failed for Microsoft 365 tenant ${this.connection.tenantName}. Please reconnect this tenant.`);
+      }
+      
+      // Handle other errors
+      console.error(`Error fetching global administrators for tenant ${this.connection.tenantId}:`, error);
+      throw new Error(`Failed to fetch global administrators: ${error.message || "Unknown error"}`);
+    }
+  }
 }
