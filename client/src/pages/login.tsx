@@ -245,8 +245,8 @@ const LoginPage = () => {
             </div>
           </div>
           
-          <a href="/api/staff-login" className="w-full">
-            <Button className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
+          <a href="/api/auth/staff-login" className="w-full">
+            <Button className="w-full bg-blue-600 hover:bg-blue-700" size="lg" type="button">
               <FaMicrosoft className="mr-2 h-5 w-5" />
               Staff Login
             </Button>
@@ -262,8 +262,8 @@ const LoginPage = () => {
             </div>
           </div>
           
-          <a href="/api/customer-login" className="w-full">
-            <Button className="w-full bg-gray-600 hover:bg-gray-700" size="lg" variant="outline">
+          <a href="/api/auth/customer-login" className="w-full">
+            <Button className="w-full bg-gray-600 hover:bg-gray-700" size="lg" variant="outline" type="button">
               <FaMicrosoft className="mr-2 h-5 w-5" />
               Customer Login
             </Button>

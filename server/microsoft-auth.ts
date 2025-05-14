@@ -126,7 +126,7 @@ export function setupAuthRoutes(app: Express) {
   });
   
   // Staff login (admin access)
-  app.get('/api/staff-login', (req, res) => {
+  app.get('/api/auth/staff-login', (req, res) => {
     try {
       // Generate a state parameter for security
       const state = generateState();
@@ -148,7 +148,7 @@ export function setupAuthRoutes(app: Express) {
   });
 
   // Customer login (readonly access to their tenant only)
-  app.get('/api/customer-login', (req, res) => {
+  app.get('/api/auth/customer-login', (req, res) => {
     try {
       // Generate a state parameter for security
       const state = generateState();
