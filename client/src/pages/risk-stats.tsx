@@ -107,6 +107,21 @@ interface TenantWidgetRecommendation {
   updatedAt: string;
 }
 
+// Extended interface for Microsoft API recommendations
+interface MicrosoftRecommendation {
+  id: string;
+  title: string;
+  description: string;
+  priority: string;
+  icon: React.ReactNode;
+  isLive?: boolean;
+  impact?: string;
+  remediation?: string;
+  score?: number;
+  maxScore?: number;
+  actionUrl?: string;
+}
+
 // Risk severity component
 const RiskSeverity = ({ score }: { score: number }) => {
   let riskLevel = "Low";
