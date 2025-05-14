@@ -458,7 +458,9 @@ const DeviceRecommendationsDialog = ({
         icon: <ShieldCheck className="h-5 w-5 text-amber-500" />,
         title: "Update Device Software",
         description: "Establish regular patch management for operating systems and applications.",
-        priority: "Medium"
+        priority: "Medium",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
@@ -467,7 +469,9 @@ const DeviceRecommendationsDialog = ({
         icon: <Info className="h-5 w-5 text-blue-500" />,
         title: "Implement Managed Detection & Response",
         description: "Consider adding 24/7 monitoring and response capabilities.",
-        priority: "Low"
+        priority: "Low",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
@@ -477,7 +481,9 @@ const DeviceRecommendationsDialog = ({
         icon: <Check className="h-5 w-5 text-green-500" />,
         title: "Maintain Current Device Security",
         description: "Your device security is good. Continue to monitor and maintain your current policies.",
-        priority: "Info"
+        priority: "Info",
+        isLive: false,
+        actionUrl: undefined
       });
     }
     
@@ -786,13 +792,13 @@ const SecureScoreRecommendationsDialog = ({
         
         recommendations.push({
           icon,
-          title: rec.title,
-          description: rec.description,
-          remediation: rec.remediation,
-          impact: rec.impact,
-          score: rec.score,
-          priority: convertPriority(rec.severity),
-          actionUrl: rec.actionUrl,
+          title: rec?.title || "Microsoft Recommendation",
+          description: rec?.description || "No description available",
+          remediation: rec?.remediation,
+          impact: rec?.impact,
+          score: rec?.score,
+          priority: convertPriority(rec?.severity || "INFO"),
+          actionUrl: rec?.actionUrl,
           isLive: true // Mark as live recommendation from Microsoft
         });
       });
@@ -818,10 +824,12 @@ const SecureScoreRecommendationsDialog = ({
           
           recommendations.push({
             icon: <Info className="h-5 w-5 text-blue-500" />,
-            title: widgetRec.title || globalRec.title,
-            description: widgetRec.description || globalRec.description,
-            priority: convertPriority(widgetRec.priority || globalRec.priority),
-            isCustom: true
+            title: widgetRec?.title || globalRec?.title || "Custom Recommendation",
+            description: widgetRec?.description || globalRec?.description || "No description available",
+            priority: convertPriority(widgetRec?.priority || globalRec?.priority || "INFO"),
+            isCustom: true,
+            isLive: false,
+            actionUrl: undefined
           });
         }
       });
