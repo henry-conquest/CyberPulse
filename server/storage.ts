@@ -145,6 +145,15 @@ export interface IStorage {
   getTenantWidgetRecommendation(id: number): Promise<TenantWidgetRecommendation | undefined>;
   updateTenantWidgetRecommendation(id: number, recommendation: Partial<InsertTenantWidgetRecommendation>): Promise<TenantWidgetRecommendation>;
   deleteTenantWidgetRecommendation(id: number): Promise<void>;
+  
+  // Microsoft tenant mapping operations
+  createMicrosoftTenantMapping(mapping: InsertMicrosoftTenantMapping): Promise<MicrosoftTenantMapping>;
+  getMicrosoftTenantMapping(microsoftTenantId: string): Promise<MicrosoftTenantMapping | undefined>;
+  
+  // User tenant access operations
+  createUserTenantAccess(access: InsertUserTenantAccess): Promise<UserTenantAccess>;
+  getUserTenantAccess(userId: string, tenantId: number): Promise<UserTenantAccess | undefined>;
+  getUserTenantAccessByUserId(userId: string): Promise<UserTenantAccess[]>;
 }
 
 export class DatabaseStorage implements IStorage {

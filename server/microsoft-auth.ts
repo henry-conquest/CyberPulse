@@ -223,9 +223,9 @@ export function setupAuthRoutes(app: Express) {
           });
         } else {
           // Check if user has access to this tenant
-          const access = await storage.getUserTenantAccess(user.id, mapping.appTenantId);
+          const access = await storage.getUserTenantAccess(user.id, mapping.appTenantId || 0);
           
-          if (!access) {
+          if (!access && mapping.appTenantId) {
             // Create user-tenant access
             await storage.createUserTenantAccess({
               userId: user.id,
