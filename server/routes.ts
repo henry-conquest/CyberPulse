@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, isAuthorized } from "./replitAuth";
+import { setupAuth, isAuthenticated, isAuthorized } from "./auth";
 import { z } from "zod";
 import { 
   insertTenantSchema, 
@@ -77,6 +77,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    console.log("🔍 Session ID:", req.sessionID);
+    console.log("🔍 Session contents:", req.session);
+    console.log("🔍 Is Authenticated:", req.isAuthenticated());
+    console.log("🔍 User:", req.user);
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -397,7 +401,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/tenants", isAuthenticated, asyncHandler(async (req, res) => {
     const userId = (req.user as any).claims.sub;
     const user = await storage.getUser(userId);
-    
     // Admin gets all tenants, others get only their assigned tenants
     const tenants = user?.role === UserRoles.ADMIN 
       ? await storage.getAllTenants()
