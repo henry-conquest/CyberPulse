@@ -1,5 +1,5 @@
-import { NinjaOneConnection } from "@shared/schema";
-import axios from "axios";
+import { NinjaOneConnection } from '@shared/schema';
+import axios from 'axios';
 
 // Interface for NinjaOne device data
 interface NinjaOneDevice {
@@ -74,14 +74,14 @@ export class NinjaOneService {
       const response = await axios.post(
         `${this.baseUrl}/v2/oauth/token`,
         {
-          grant_type: "client_credentials",
+          grant_type: 'client_credentials',
           client_id: this.clientId,
           client_secret: this.clientSecret,
-          scope: "monitoring",
+          scope: 'monitoring',
         },
         {
           headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
+            'Content-Type': 'application/x-www-form-urlencoded',
           },
         }
       );
@@ -89,17 +89,12 @@ export class NinjaOneService {
       this.accessToken = response.data.access_token;
       this.tokenExpires = now + response.data.expires_in * 1000;
     } catch (error) {
-      console.error("Error authenticating with NinjaOne:", error);
-      throw new Error("Failed to authenticate with NinjaOne");
+      console.error('Error authenticating with NinjaOne:', error);
+      throw new Error('Failed to authenticate with NinjaOne');
     }
   }
 
-  private async request<T>(
-    method: string,
-    endpoint: string,
-    params?: any,
-    data?: any
-  ): Promise<T> {
+  private async request<T>(method: string, endpoint: string, params?: any, data?: any): Promise<T> {
     await this.authenticate();
 
     try {
@@ -108,7 +103,7 @@ export class NinjaOneService {
         url: `${this.baseUrl}${endpoint}`,
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         params,
         data,
@@ -127,19 +122,19 @@ export class NinjaOneService {
       params.organizationId = organizationId;
     }
 
-    return this.request<NinjaOneDevice[]>("GET", "/v2/devices", params);
+    return this.request<NinjaOneDevice[]>('GET', '/v2/devices', params);
   }
 
   async getDeviceById(deviceId: number): Promise<NinjaOneDevice> {
-    return this.request<NinjaOneDevice>("GET", `/v2/device/${deviceId}`);
+    return this.request<NinjaOneDevice>('GET', `/v2/device/${deviceId}`);
   }
 
   async getDeviceMetrics(): Promise<NinjaOneMetrics> {
     try {
       const devices = await this.getDevices();
-      
+
       const totalDevices = devices.length;
-      
+
       let compliantDevices = 0;
       let nonCompliantDevices = 0;
       let unknownDevices = 0;
@@ -147,23 +142,23 @@ export class NinjaOneService {
       let antivirusInstalled = 0;
       let upToDate = 0;
       let missingPatches = 0;
-      
-      devices.forEach(device => {
+
+      devices.forEach((device) => {
         // Check if device is compliant
-        const isCompliant = 
-          !device.offline && 
-          device.diskEncrypted && 
-          device.antivirus?.installed && 
-          device.antivirus?.updated && 
-          (device.patches?.missing === 0);
-        
-        const isNonCompliant = 
-          device.offline || 
-          !device.diskEncrypted || 
-          !device.antivirus?.installed || 
-          !device.antivirus?.updated || 
-          (device.patches?.missing > 0);
-        
+        const isCompliant =
+          !device.offline &&
+          device.diskEncrypted &&
+          device.antivirus?.installed &&
+          device.antivirus?.updated &&
+          device.patches?.missing === 0;
+
+        const isNonCompliant =
+          device.offline ||
+          !device.diskEncrypted ||
+          !device.antivirus?.installed ||
+          !device.antivirus?.updated ||
+          device.patches?.missing > 0;
+
         if (isCompliant) {
           compliantDevices++;
         } else if (isNonCompliant) {
@@ -171,27 +166,25 @@ export class NinjaOneService {
         } else {
           unknownDevices++;
         }
-        
+
         // Count specific metrics
         if (device.diskEncrypted) {
           encryptionEnabled++;
         }
-        
+
         if (device.antivirus?.installed) {
           antivirusInstalled++;
         }
-        
+
         if (device.patches?.missing === 0) {
           upToDate++;
         } else {
-          missingPatches += (device.patches?.missing || 0);
+          missingPatches += device.patches?.missing || 0;
         }
       });
-      
-      const compliancePercentage = totalDevices > 0 
-        ? Math.round((compliantDevices / totalDevices) * 100) 
-        : 0;
-      
+
+      const compliancePercentage = totalDevices > 0 ? Math.round((compliantDevices / totalDevices) * 100) : 0;
+
       return {
         totalDevices,
         compliantDevices,
@@ -202,12 +195,12 @@ export class NinjaOneService {
           encryptionEnabled,
           antivirusInstalled,
           upToDate,
-          missingPatches
-        }
+          missingPatches,
+        },
       };
     } catch (error) {
-      console.error("Error getting device metrics from NinjaOne:", error);
-      
+      console.error('Error getting device metrics from NinjaOne:', error);
+
       // Return mock data if API call fails
       return {
         totalDevices: 24,
@@ -219,8 +212,8 @@ export class NinjaOneService {
           encryptionEnabled: 20,
           antivirusInstalled: 22,
           upToDate: 18,
-          missingPatches: 12
-        }
+          missingPatches: 12,
+        },
       };
     }
   }

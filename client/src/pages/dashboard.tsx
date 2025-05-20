@@ -1,26 +1,26 @@
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { Download, Building, Plus, Check, AlertTriangle, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { useLocation, Link } from "wouter";
-import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
+import { Download, Building, Plus, Check, AlertTriangle, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { useLocation, Link } from 'wouter';
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
 
-import RiskGauge from "@/components/dashboard/RiskGauge";
-import RiskIndicator from "@/components/dashboard/RiskIndicator";
-import SecurityItem from "@/components/dashboard/SecurityItem";
-import ThreatTable, { Threat } from "@/components/dashboard/ThreatTable";
-import AnalystComments from "@/components/dashboard/AnalystComments";
-import SecureScoreWidget from "@/components/dashboard/SecureScoreWidget";
-import SecureScoreTrendWidget from "@/components/dashboard/SecureScoreTrendWidget";
-import CurrentSecureScoreWidget from "@/components/dashboard/CurrentSecureScoreWidget";
-import LiveSecureScoreWidget from "@/components/dashboard/LiveSecureScoreWidget";
-import ReportBasedSecureScoreWidget from "@/components/dashboard/ReportBasedSecureScoreWidget";
+import RiskGauge from '@/components/dashboard/RiskGauge';
+import RiskIndicator from '@/components/dashboard/RiskIndicator';
+import SecurityItem from '@/components/dashboard/SecurityItem';
+import ThreatTable, { Threat } from '@/components/dashboard/ThreatTable';
+import AnalystComments from '@/components/dashboard/AnalystComments';
+import SecureScoreWidget from '@/components/dashboard/SecureScoreWidget';
+import SecureScoreTrendWidget from '@/components/dashboard/SecureScoreTrendWidget';
+import CurrentSecureScoreWidget from '@/components/dashboard/CurrentSecureScoreWidget';
+import LiveSecureScoreWidget from '@/components/dashboard/LiveSecureScoreWidget';
+import ReportBasedSecureScoreWidget from '@/components/dashboard/ReportBasedSecureScoreWidget';
 
 interface DashboardProps {
   tenantId?: string;
@@ -36,7 +36,7 @@ export default function Dashboard({ tenantId }: DashboardProps) {
   // Navigate to companies page if no tenant ID is provided
   useEffect(() => {
     if (!tenantId) {
-      setLocation("/companies");
+      setLocation('/companies');
     }
   }, [tenantId, setLocation]);
 
@@ -51,16 +51,16 @@ export default function Dashboard({ tenantId }: DashboardProps) {
     queryKey: [`/api/tenants/${tenantId}/security-data`],
     enabled: !!tenantId,
   });
-  
+
   // Fetch latest report for this tenant to get current secure score
   const { data: reports } = useQuery({
     queryKey: [`/api/reports/by-tenant?tenantId=${tenantId}`],
     enabled: !!tenantId,
   });
-  
+
   // Get the latest report (most recent quarter)
   const latestReport = reports && reports.length > 0 ? reports[0] : null;
-  
+
   // Debug: Log the report data to see what we're getting
   useEffect(() => {
     if (latestReport) {
@@ -72,32 +72,34 @@ export default function Dashboard({ tenantId }: DashboardProps) {
   }, [latestReport]);
 
   // Format threat data for the threat table
-  const threats: Threat[] = !securityData ? [] : [
-    {
-      id: 1,
-      type: "Phishing Attempt",
-      source: "External Email",
-      target: "finance@company.com",
-      detected: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-      status: "blocked"
-    },
-    {
-      id: 2,
-      type: "Suspicious Sign-in",
-      source: "Unknown Location",
-      target: "j.smith@company.com",
-      detected: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
-      status: "investigating"
-    },
-    {
-      id: 3,
-      type: "Malware Detection",
-      source: "Endpoint",
-      target: "LAPTOP-MK42X",
-      detected: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), // 6 days ago
-      status: "remediated"
-    }
-  ];
+  const threats: Threat[] = !securityData
+    ? []
+    : [
+        {
+          id: 1,
+          type: 'Phishing Attempt',
+          source: 'External Email',
+          target: 'finance@company.com',
+          detected: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+          status: 'blocked',
+        },
+        {
+          id: 2,
+          type: 'Suspicious Sign-in',
+          source: 'Unknown Location',
+          target: 'j.smith@company.com',
+          detected: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
+          status: 'investigating',
+        },
+        {
+          id: 3,
+          type: 'Malware Detection',
+          source: 'Endpoint',
+          target: 'LAPTOP-MK42X',
+          detected: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), // 6 days ago
+          status: 'remediated',
+        },
+      ];
 
   const recommendedActionsText = `After reviewing the current Cyber Security posture, the cumulative Risk Level of a breach is currently "High".
 
@@ -117,9 +119,9 @@ Cyber Security and the threats associated are a continuous moving target, howeve
   const handleGenerateReport = async () => {
     if (!selectedTenantId) {
       toast({
-        title: "No tenant selected",
-        description: "Please select a tenant to generate a report.",
-        variant: "destructive"
+        title: 'No tenant selected',
+        description: 'Please select a tenant to generate a report.',
+        variant: 'destructive',
       });
       return;
     }
@@ -135,36 +137,36 @@ Cyber Security and the threats associated are a continuous moving target, howeve
         title: `Cyber Risk Report - ${month} ${year}`,
         month,
         year,
-        status: "draft",
-        analystComments: recommendedActionsText
+        status: 'draft',
+        analystComments: recommendedActionsText,
       };
 
       const response = await apiRequest('POST', `/api/tenants/${selectedTenantId}/reports`, reportData);
       const report = await response.json();
 
       toast({
-        title: "Report generated",
-        description: "The report has been created and is available in the Reports section."
+        title: 'Report generated',
+        description: 'The report has been created and is available in the Reports section.',
       });
 
       // Redirect to the new report
       window.location.href = `/reports/${report.id}`;
     } catch (error) {
-      console.error("Error generating report:", error);
+      console.error('Error generating report:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate report. Please try again.",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to generate report. Please try again.',
+        variant: 'destructive',
       });
     }
   };
 
   const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', { 
-      month: 'short', 
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
       day: 'numeric',
       hour: 'numeric',
-      minute: '2-digit'
+      minute: '2-digit',
     }).format(date);
   };
 
@@ -193,9 +195,7 @@ Cyber Security and the threats associated are a continuous moving target, howeve
           </p>
           <Button onClick={() => window.location.reload()}>Retry</Button>
           <Button variant="outline" className="ml-3" asChild>
-            <Link href="/companies">
-              Change Company
-            </Link>
+            <Link href="/companies">Change Company</Link>
           </Button>
         </div>
       </div>
@@ -203,21 +203,19 @@ Cyber Security and the threats associated are a continuous moving target, howeve
   }
 
   // Get the tenant name from our API query
-  const tenantName = tenant?.name || "Company";
-  
+  const tenantName = tenant?.name || 'Company';
+
   // If tenant data is not available, show a message
   if (!tenant) {
     return (
       <div className="max-w-7xl mx-auto py-8">
         <h1 className="text-2xl font-bold mb-6">Select a Company</h1>
-        <p className="text-secondary-600 mb-8">
-          Choose a company to view their cyber risk dashboard and reports.
-        </p>
-        
+        <p className="text-secondary-600 mb-8">Choose a company to view their cyber risk dashboard and reports.</p>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {user?.tenants?.map((tenant: any) => (
-            <Card 
-              key={tenant.id} 
+            <Card
+              key={tenant.id}
               className="hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => setSelectedTenantId(tenant.id)}
             >
@@ -227,12 +225,8 @@ Cyber Security and the threats associated are a continuous moving target, howeve
                     <Building className="h-8 w-8 text-primary" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">{tenant.name}</h3>
-                  <p className="text-sm text-secondary-500 mb-4">
-                    Client Organization
-                  </p>
-                  <Button className="mt-2">
-                    View Dashboard
-                  </Button>
+                  <p className="text-sm text-secondary-500 mb-4">Client Organization</p>
+                  <Button className="mt-2">View Dashboard</Button>
                 </div>
               </CardContent>
             </Card>
@@ -248,7 +242,7 @@ Cyber Security and the threats associated are a continuous moving target, howeve
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold">{selectedTenant?.name || tenant?.name || "Organization"}</h3>
+            <h3 className="text-lg font-semibold">{selectedTenant?.name || tenant?.name || 'Organization'}</h3>
             <p className="text-secondary-500">Executive Cyber Risk Dashboard - Q2 2025 (Apr-Jun)</p>
           </div>
           <div className="mt-4 md:mt-0 flex space-x-3 items-center">
@@ -262,18 +256,16 @@ Cyber Security and the threats associated are a continuous moving target, howeve
           </div>
         </div>
       </div>
-      
+
       {/* Microsoft Secure Score Widget */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Microsoft Secure Score</h2>
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/tenants/${tenantId}/secure-score`}>
-              View Detailed Score
-            </Link>
+            <Link href={`/tenants/${tenantId}/secure-score`}>View Detailed Score</Link>
           </Button>
         </div>
-        
+
         <Card className="border-amber-200 bg-amber-50">
           <CardHeader>
             <CardTitle className="text-lg text-amber-700">Secure Score Now Available Separately</CardTitle>
@@ -286,14 +278,12 @@ Cyber Security and the threats associated are a continuous moving target, howeve
               The Microsoft Secure Score widget is now available on a dedicated page for better visibility and analysis.
             </p>
             <Button asChild>
-              <Link href={`/tenants/${tenantId}/secure-score`}>
-                Go to Secure Score
-              </Link>
+              <Link href={`/tenants/${tenantId}/secure-score`}>Go to Secure Score</Link>
             </Button>
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Current Threats */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-4">Current Threats</h2>
@@ -318,12 +308,15 @@ Cyber Security and the threats associated are a continuous moving target, howeve
                       <td className="px-4 py-3">{threat.target}</td>
                       <td className="px-4 py-3">{formatDate(threat.detected)}</td>
                       <td className="px-4 py-3">
-                        <span 
+                        <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                            ${threat.status === 'blocked' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
-                             threat.status === 'quarantined' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
-                             'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}`
-                          }
+                            ${
+                              threat.status === 'blocked'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                : threat.status === 'quarantined'
+                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                            }`}
                         >
                           {capitalizeFirstLetter(threat.status)}
                         </span>
@@ -344,7 +337,9 @@ Cyber Security and the threats associated are a continuous moving target, howeve
           <CardContent className="pt-6">
             <div className="prose max-w-none">
               {recommendedActionsText.split('\n\n').map((paragraph, i) => (
-                <p key={i} className={i === 0 ? "font-semibold" : ""}>{paragraph}</p>
+                <p key={i} className={i === 0 ? 'font-semibold' : ''}>
+                  {paragraph}
+                </p>
               ))}
             </div>
           </CardContent>

@@ -1,46 +1,72 @@
-import nodemailer from "nodemailer";
-import { Report, ReportRecipient } from "@shared/schema";
-import { storage } from "./storage";
+import nodemailer from 'nodemailer';
+import { Report, ReportRecipient } from '@shared/schema';
+import { storage } from './storage';
+import { MicrosoftGraphService } from './microsoft';
+import { getMicrosoft365ConnectionForTenant } from './microsoft-oauth';
 
 // Email service for sending reports
 export class EmailService {
   private transporter: nodemailer.Transporter;
-  
+
   constructor() {
     // In a production environment, you would use actual SMTP credentials
     // For development, we'll use ethereal.email for testing
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.ethereal.email",
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: process.env.SMTP_SECURE === "true",
+      host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: process.env.SMTP_USER || "ethereal_user",
-        pass: process.env.SMTP_PASS || "ethereal_password",
+        user: process.env.SMTP_USER || 'ethereal_user',
+        pass: process.env.SMTP_PASS || 'ethereal_password',
       },
     });
   }
-  
+
+  async sendInviteEmail(email: string, token: string, tenantId: string) {
+    const inviteUrl = `http://localhost:5010/accept-invite?token=${token}`;
+
+    const htmlBody = `
+    <p>Hello,</p>
+
+    <p>You have been invited to join the <strong>Conquest Wildman</strong> client portal.</p>
+
+    <p>Within this portal, you will be able to interact with our service and view important information about your business.</p>
+
+    <p><a href="${inviteUrl}" style="color: #0078d4; text-decoration: none;"><strong>Click here to accept your invite</strong></a></p>
+
+    <p>Upon clicking, you will be redirected to your Microsoft 365 login page for authentication. Once verified by our team, you will receive a further email with instructions on platform usage.</p>
+
+    <p>If you have any issues, please contact us at <a href="mailto:support@conquestwildman.co.uk">support@conquestwildman.co.uk</a>.</p>
+
+    <br/>
+
+    <p style="font-size:14px; color:#333;">Kind regards,</p>
+    <p style="font-size:14px; color:#333;">
+      <strong>The Conquest Wildman Team</strong><br/>
+      <a href="https://conquestwildman.co.uk" style="color:#0078d4;">www.conquestwildman.co.uk</a>
+    </p>
+  `;
+
+
+    const connection = await getMicrosoft365ConnectionForTenant(tenantId);
+    const graph = new MicrosoftGraphService(connection);
+
+    await graph.sendGraphEmail(email, 'You’re invited to Conquest Wildman', htmlBody);
+  }
+
   async sendReportEmail(report: Report, recipient: ReportRecipient, pdfBuffer: Buffer): Promise<boolean> {
     try {
       const tenant = await storage.getTenant(report.tenantId);
       if (!tenant) {
-        throw new Error("Tenant not found");
+        throw new Error('Tenant not found');
       }
-      
-      const riskLevel = report.overallRiskScore < 30 
-        ? "Low" 
-        : report.overallRiskScore < 70 
-          ? "Medium" 
-          : "High";
-      
-      const riskColor = riskLevel === "Low" 
-        ? "#10b981" 
-        : riskLevel === "Medium" 
-          ? "#f59e0b" 
-          : "#ef4444";
-      
+
+      const riskLevel = report.overallRiskScore < 30 ? 'Low' : report.overallRiskScore < 70 ? 'Medium' : 'High';
+
+      const riskColor = riskLevel === 'Low' ? '#10b981' : riskLevel === 'Medium' ? '#f59e0b' : '#ef4444';
+
       const mailOptions = {
-        from: `"CyberPulse" <${process.env.SMTP_FROM || "reports@cyberpulse.example.com"}>`,
+        from: `"CyberPulse" <${process.env.SMTP_FROM || 'reports@cyberpulse.example.com'}>`,
         to: recipient.email,
         subject: `Cyber Risk Report - ${tenant.name} - ${report.month} ${report.year}`,
         html: `
@@ -51,7 +77,7 @@ export class EmailService {
             </div>
             
             <div style="padding: 20px; background-color: white;">
-              <p>Hello ${recipient.name || ""},</p>
+              <p>Hello ${recipient.name || ''},</p>
               
               <p>Attached is your latest cyber risk report. Here's a summary of the findings:</p>
               
@@ -89,43 +115,43 @@ export class EmailService {
           },
         ],
       };
-      
+
       const info = await this.transporter.sendMail(mailOptions);
-      console.log("Email sent:", info.messageId);
-      
+      console.log('Email sent:', info.messageId);
+
       // Update recipient record
       await storage.updateReportRecipient(recipient.id, { sentAt: new Date() });
-      
+
       return true;
     } catch (error) {
-      console.error("Error sending email:", error);
+      console.error('Error sending email:', error);
       return false;
     }
   }
-  
+
   async sendReportToAllRecipients(report: Report, pdfBuffer: Buffer): Promise<boolean> {
     try {
       const recipients = await storage.getReportRecipients(report.id);
-      
+
       if (recipients.length === 0) {
         console.warn(`No recipients found for report ID ${report.id}`);
         return false;
       }
-      
+
       const results = await Promise.all(
-        recipients.map(recipient => this.sendReportEmail(report, recipient, pdfBuffer))
+        recipients.map((recipient) => this.sendReportEmail(report, recipient, pdfBuffer))
       );
-      
+
       // Update report status
-      await storage.updateReport(report.id, { 
-        status: "sent",
-        sentAt: new Date() 
+      await storage.updateReport(report.id, {
+        status: 'sent',
+        sentAt: new Date(),
       });
-      
+
       // If all emails were sent successfully
-      return results.every(result => result === true);
+      return results.every((result) => result === true);
     } catch (error) {
-      console.error("Error sending report to all recipients:", error);
+      console.error('Error sending report to all recipients:', error);
       return false;
     }
   }

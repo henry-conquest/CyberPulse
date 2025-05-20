@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
-import { 
-  Check, 
-  Clock, 
-  FileEdit, 
-  FileText, 
-  Send, 
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'wouter';
+import {
+  Check,
+  Clock,
+  FileEdit,
+  FileText,
+  Send,
   Users,
   Eye,
   Calendar,
@@ -15,35 +15,17 @@ import {
   ChevronDown,
   X,
   RefreshCw,
-} from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { apiRequest } from "@/lib/queryClient";
+} from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { apiRequest } from '@/lib/queryClient';
 
 interface Report {
   id: number;
@@ -53,7 +35,7 @@ interface Report {
   year: number;
   startDate: string;
   endDate: string;
-  status: "new" | "reviewed" | "analyst_ready" | "manager_ready" | "sent";
+  status: 'new' | 'reviewed' | 'analyst_ready' | 'manager_ready' | 'sent';
   overallRiskScore: number;
   sentAt: string | null;
 }
@@ -65,25 +47,25 @@ interface Tenant {
 
 const getQuarterLabel = (quarter: number, year: number) => {
   const months = {
-    1: "January - March",
-    2: "April - June",
-    3: "July - September",
-    4: "October - December"
+    1: 'January - March',
+    2: 'April - June',
+    3: 'July - September',
+    4: 'October - December',
   };
   return `${months[quarter as 1 | 2 | 3 | 4]} ${year}`;
 };
 
 const getStatusIcon = (status: string) => {
   switch (status) {
-    case "new":
+    case 'new':
       return <FileText className="h-5 w-5 text-slate-500" />;
-    case "reviewed":
+    case 'reviewed':
       return <FileEdit className="h-5 w-5 text-blue-500" />;
-    case "analyst_ready":
+    case 'analyst_ready':
       return <Clock className="h-5 w-5 text-purple-500" />;
-    case "manager_ready":
+    case 'manager_ready':
       return <Check className="h-5 w-5 text-green-500" />;
-    case "sent":
+    case 'sent':
       return <Send className="h-5 w-5 text-teal-500" />;
     default:
       return <FileText className="h-5 w-5 text-slate-500" />;
@@ -92,15 +74,15 @@ const getStatusIcon = (status: string) => {
 
 const getStatusBadge = (status: string) => {
   switch (status) {
-    case "new":
+    case 'new':
       return <Badge className="bg-slate-500">New</Badge>;
-    case "reviewed":
+    case 'reviewed':
       return <Badge className="bg-blue-500">Reviewed</Badge>;
-    case "analyst_ready":
+    case 'analyst_ready':
       return <Badge className="bg-purple-500">Analyst Ready</Badge>;
-    case "manager_ready":
+    case 'manager_ready':
       return <Badge className="bg-green-500">Manager Ready</Badge>;
-    case "sent":
+    case 'sent':
       return <Badge className="bg-teal-500">Sent</Badge>;
     default:
       return <Badge>{status}</Badge>;
@@ -113,7 +95,7 @@ const isCurrentQuarter = (report: Report): boolean => {
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
   const currentQuarter = Math.floor(currentMonth / 3) + 1;
-  
+
   return report.year === currentYear && report.quarter === currentQuarter;
 };
 
@@ -121,13 +103,14 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  const riskScoreColor = report.overallRiskScore >= 75 
-    ? "text-red-500" 
-    : report.overallRiskScore >= 50 
-      ? "text-orange-500" 
-      : "text-green-500";
-  
+
+  const riskScoreColor =
+    report.overallRiskScore >= 75
+      ? 'text-red-500'
+      : report.overallRiskScore >= 50
+        ? 'text-orange-500'
+        : 'text-green-500';
+
   const current = isCurrentQuarter(report);
 
   // Mutation for refreshing a report
@@ -137,68 +120,62 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
       const response = await fetch(`/api/tenants/${report.tenantId}/reports/${report.id}/refresh`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to refresh report');
       }
-      
+
       return await response.json();
     },
     onSuccess: (data) => {
       toast({
-        title: "Success!",
-        description: "Report has been refreshed with the latest data.",
-        variant: "default",
+        title: 'Success!',
+        description: 'Report has been refreshed with the latest data.',
+        variant: 'default',
       });
       // Refresh the reports list
-      queryClient.invalidateQueries({ queryKey: [`/api/reports/by-tenant?tenantId=${report.tenantId}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/reports/by-tenant?tenantId=${report.tenantId}`],
+      });
       // Also invalidate the specific report data
-      queryClient.invalidateQueries({ queryKey: [`/api/tenants/${report.tenantId}/reports/${report.id}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/tenants/${report.tenantId}/reports/${report.id}`],
+      });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error?.message || "Failed to refresh report. Please try again later.",
-        variant: "destructive",
+        title: 'Error',
+        description: error?.message || 'Failed to refresh report. Please try again later.',
+        variant: 'destructive',
       });
     },
     onSettled: () => {
       setIsRefreshing(false);
-    }
+    },
   });
-  
+
   const handleRefresh = (e: React.MouseEvent) => {
     e.preventDefault();
     refreshReportMutation.mutate();
   };
 
   return (
-    <Card className={cn(
-      "w-full hover:shadow-md transition-shadow", 
-      current ? "border-2 border-blue-500" : ""
-    )}>
-      {current && (
-        <div className="bg-blue-500 text-white text-xs font-semibold py-1 text-center">
-          CURRENT QUARTER
-        </div>
-      )}
-      <CardHeader className={cn("pb-2", current ? "pt-3" : "")}>
+    <Card className={cn('w-full hover:shadow-md transition-shadow', current ? 'border-2 border-blue-500' : '')}>
+      {current && <div className="bg-blue-500 text-white text-xs font-semibold py-1 text-center">CURRENT QUARTER</div>}
+      <CardHeader className={cn('pb-2', current ? 'pt-3' : '')}>
         <div className="flex justify-between items-start">
           <div className="space-y-1">
             <CardTitle className="text-xl flex items-center">
               {getQuarterLabel(report.quarter, report.year)}
-              {current && (
-                <Badge className="ml-2 bg-blue-100 text-blue-800 hover:bg-blue-100">
-                  Current
-                </Badge>
-              )}
+              {current && <Badge className="ml-2 bg-blue-100 text-blue-800 hover:bg-blue-100">Current</Badge>}
             </CardTitle>
             <CardDescription>
-              Report Period: {new Date(report.startDate).toLocaleDateString()} - {new Date(report.endDate).toLocaleDateString()}
+              Report Period: {new Date(report.startDate).toLocaleDateString()} -{' '}
+              {new Date(report.endDate).toLocaleDateString()}
             </CardDescription>
           </div>
           <div className="flex items-center space-x-2">
@@ -206,14 +183,16 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div>
-                    {getStatusIcon(report.status)}
-                  </div>
+                  <div>{getStatusIcon(report.status)}</div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="capitalize">{report.status === "analyst_ready" ? "Analyst Ready" : 
-                    report.status === "manager_ready" ? "Manager Ready" : 
-                    report.status.charAt(0).toUpperCase() + report.status.slice(1)}</p>
+                  <p className="capitalize">
+                    {report.status === 'analyst_ready'
+                      ? 'Analyst Ready'
+                      : report.status === 'manager_ready'
+                        ? 'Manager Ready'
+                        : report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -224,9 +203,7 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
         <div className="flex justify-between items-center">
           <div>
             <div className="text-sm text-muted-foreground">Risk Score</div>
-            <div className={cn("text-2xl font-bold", riskScoreColor)}>
-              {report.overallRiskScore}%
-            </div>
+            <div className={cn('text-2xl font-bold', riskScoreColor)}>{report.overallRiskScore}%</div>
           </div>
           <div>
             {report.sentAt ? (
@@ -251,23 +228,18 @@ const ReportPeriodCard = ({ report }: { report: Report }) => {
               View Risk Stats
             </Link>
           </Button>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
-            {isRefreshing ? "Refreshing..." : "Refresh Data"}
+
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={cn('h-4 w-4 mr-2', isRefreshing && 'animate-spin')} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
           </Button>
         </div>
-        
-        {report.status !== "sent" && (
+
+        {report.status !== 'sent' && (
           <Button size="sm" variant="default" asChild>
             <Link href={`/tenants/${report.tenantId}/reports/${report.id}/edit`}>
               <FileEdit className="h-4 w-4 mr-2" />
-              {report.status === "new" ? "Review" : "Edit"}
+              {report.status === 'new' ? 'Review' : 'Edit'}
             </Link>
           </Button>
         )}
@@ -280,7 +252,7 @@ export default function ReportPeriods() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Get tenantId from URL if present
   const urlTenantId = (() => {
     if (typeof window !== 'undefined') {
@@ -290,22 +262,22 @@ export default function ReportPeriods() {
     }
     return null;
   })();
-  
+
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
   const currentQuarter = Math.floor(currentMonth / 3) + 1;
-  
+
   const [selectedTenantId, setSelectedTenantId] = useState<number | null>(urlTenantId);
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedQuarter, setSelectedQuarter] = useState<number | null>(null);
   const [showPastReports, setShowPastReports] = useState<boolean>(true);
   const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
-  
+
   const { data: tenants, isLoading: isLoadingTenants } = useQuery<Tenant[]>({
-    queryKey: ["/api/tenants"],
+    queryKey: ['/api/tenants'],
   });
-  
+
   // Mutation for generating a quarterly report
   const generateQuarterlyReportMutation = useMutation({
     mutationFn: async (tenantId: number) => {
@@ -313,38 +285,40 @@ export default function ReportPeriods() {
       const response = await fetch(`/api/tenants/${tenantId}/generate-quarterly-report`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to generate report');
       }
-      
+
       return await response.json();
     },
     onSuccess: (data) => {
       toast({
-        title: "Success!",
+        title: 'Success!',
         description: `Quarterly report for Q${data.quarter} ${data.year} has been created successfully.`,
-        variant: "default",
+        variant: 'default',
       });
       // Refresh the reports list
-      queryClient.invalidateQueries({ queryKey: [`/api/reports/by-tenant?tenantId=${selectedTenantId}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/reports/by-tenant?tenantId=${selectedTenantId}`],
+      });
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error?.message || "Failed to generate quarterly report. Please try again later.",
-        variant: "destructive",
+        title: 'Error',
+        description: error?.message || 'Failed to generate quarterly report. Please try again later.',
+        variant: 'destructive',
       });
     },
     onSettled: () => {
       setIsGeneratingReport(false);
-    }
+    },
   });
-  
+
   const { data: reports, isLoading: isLoadingReports } = useQuery<Report[]>({
     queryKey: [`/api/reports/by-tenant?tenantId=${selectedTenantId}`],
     enabled: !!selectedTenantId,
@@ -355,7 +329,7 @@ export default function ReportPeriods() {
     // If we have a tenantId in the URL, use that
     if (urlTenantId) {
       setSelectedTenantId(urlTenantId);
-    } 
+    }
     // Otherwise, use the first tenant
     else if (tenants && tenants.length > 0 && !selectedTenantId) {
       setSelectedTenantId(tenants[0].id);
@@ -364,38 +338,39 @@ export default function ReportPeriods() {
 
   // Generate array of years from 2020 to current year + 1
   const years = Array.from({ length: currentYear - 2020 + 2 }, (_, i) => 2020 + i);
-  
+
   // Filter reports based on selection
-  const filteredReports = reports?.filter(report => {
-    // Filter by year if selected
-    if (selectedYear && report.year !== selectedYear) {
-      return false;
-    }
-    
-    // Filter by quarter if selected
-    if (selectedQuarter && report.quarter !== selectedQuarter) {
-      return false;
-    }
-    
-    // Filter past reports if toggle is off
-    if (!showPastReports) {
-      const isPastReport = 
-        (report.year < currentYear) || 
-        (report.year === currentYear && report.quarter < currentQuarter);
-      return !isPastReport;
-    }
-    
-    return true;
-  }).sort((a, b) => {
-    // Sort by year descending, then by quarter descending
-    if (a.year !== b.year) return b.year - a.year;
-    return (b.quarter || 1) - (a.quarter || 1);
-  });
-  
+  const filteredReports = reports
+    ?.filter((report) => {
+      // Filter by year if selected
+      if (selectedYear && report.year !== selectedYear) {
+        return false;
+      }
+
+      // Filter by quarter if selected
+      if (selectedQuarter && report.quarter !== selectedQuarter) {
+        return false;
+      }
+
+      // Filter past reports if toggle is off
+      if (!showPastReports) {
+        const isPastReport =
+          report.year < currentYear || (report.year === currentYear && report.quarter < currentQuarter);
+        return !isPastReport;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Sort by year descending, then by quarter descending
+      if (a.year !== b.year) return b.year - a.year;
+      return (b.quarter || 1) - (a.quarter || 1);
+    });
+
   // Group reports by year and quarter for better organization
   const reportsByYearAndQuarter: Record<string, Report[]> = {};
-  
-  filteredReports?.forEach(report => {
+
+  filteredReports?.forEach((report) => {
     const key = `${report.year}-Q${report.quarter}`;
     if (!reportsByYearAndQuarter[key]) {
       reportsByYearAndQuarter[key] = [];
@@ -408,15 +383,13 @@ export default function ReportPeriods() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Report Periods</h1>
-          <p className="text-muted-foreground">
-            View and manage quarterly cyber risk reports for your clients
-          </p>
+          <p className="text-muted-foreground">View and manage quarterly cyber risk reports for your clients</p>
         </div>
-        
+
         <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-4">
           <div className="w-full sm:w-auto">
-            <Select 
-              value={selectedTenantId?.toString() || ""} 
+            <Select
+              value={selectedTenantId?.toString() || ''}
               onValueChange={(value) => setSelectedTenantId(parseInt(value))}
               disabled={isLoadingTenants}
             >
@@ -424,7 +397,7 @@ export default function ReportPeriods() {
                 <SelectValue placeholder="Select client" />
               </SelectTrigger>
               <SelectContent>
-                {tenants?.map(tenant => (
+                {tenants?.map((tenant) => (
                   <SelectItem key={tenant.id} value={tenant.id.toString()}>
                     {tenant.name}
                   </SelectItem>
@@ -432,18 +405,15 @@ export default function ReportPeriods() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="w-full sm:w-auto">
-            <Select 
-              value={selectedYear?.toString() || ""} 
-              onValueChange={(value) => setSelectedYear(parseInt(value))}
-            >
+            <Select value={selectedYear?.toString() || ''} onValueChange={(value) => setSelectedYear(parseInt(value))}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Year" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Years</SelectItem>
-                {years.map(year => (
+                {years.map((year) => (
                   <SelectItem key={year} value={year.toString()}>
                     {year}
                   </SelectItem>
@@ -451,11 +421,11 @@ export default function ReportPeriods() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="w-full sm:w-auto">
-            <Select 
-              value={selectedQuarter?.toString() || ""} 
-              onValueChange={(value) => value ? setSelectedQuarter(parseInt(value)) : setSelectedQuarter(null)}
+            <Select
+              value={selectedQuarter?.toString() || ''}
+              onValueChange={(value) => (value ? setSelectedQuarter(parseInt(value)) : setSelectedQuarter(null))}
             >
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Quarter" />
@@ -469,34 +439,25 @@ export default function ReportPeriods() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <Button>
             <Calendar className="h-4 w-4 mr-2" />
             Create New Report
           </Button>
         </div>
       </div>
-      
+
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Switch 
-            id="show-past-reports" 
-            checked={showPastReports} 
-            onCheckedChange={setShowPastReports} 
-          />
-          <label 
-            htmlFor="show-past-reports" 
-            className="text-sm font-medium cursor-pointer"
-          >
+          <Switch id="show-past-reports" checked={showPastReports} onCheckedChange={setShowPastReports} />
+          <label htmlFor="show-past-reports" className="text-sm font-medium cursor-pointer">
             Show Past Reports
           </label>
         </div>
-        
-        <div className="text-sm text-muted-foreground">
-          {filteredReports?.length || 0} Reports
-        </div>
+
+        <div className="text-sm text-muted-foreground">{filteredReports?.length || 0} Reports</div>
       </div>
-      
+
       {!selectedTenantId ? (
         <div className="flex flex-col items-center justify-center py-12">
           <Users className="h-12 w-12 text-slate-300 mb-4" />
@@ -507,7 +468,7 @@ export default function ReportPeriods() {
         </div>
       ) : isLoadingReports ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4].map(i => (
+          {[1, 2, 3, 4].map((i) => (
             <Card key={i} className="w-full">
               <CardHeader className="pb-2">
                 <Skeleton className="h-6 w-3/4 mb-2" />
@@ -531,13 +492,13 @@ export default function ReportPeriods() {
       ) : filteredReports && filteredReports.length > 0 ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredReports.map(report => (
+            {filteredReports.map((report) => (
               <ReportPeriodCard key={report.id} report={report} />
             ))}
           </div>
-          
+
           {/* Create a placeholder for current quarter if no report exists for it */}
-          {!filteredReports.some(r => r.year === currentYear && r.quarter === currentQuarter) && (
+          {!filteredReports.some((r) => r.year === currentYear && r.quarter === currentQuarter) && (
             <div className="mt-8 p-6 border border-dashed border-gray-300 rounded-lg bg-gray-50">
               <div className="text-center">
                 <Calendar className="h-8 w-8 text-blue-500 mx-auto mb-3" />
@@ -545,15 +506,31 @@ export default function ReportPeriods() {
                 <p className="text-muted-foreground mb-4">
                   There's no report for Q{currentQuarter} {currentYear} yet. Create one to start tracking this period.
                 </p>
-                <Button 
+                <Button
                   onClick={() => generateQuarterlyReportMutation.mutate(selectedTenantId as number)}
                   disabled={isGeneratingReport || generateQuarterlyReportMutation.isPending}
                 >
-                  {(isGeneratingReport || generateQuarterlyReportMutation.isPending) ? (
+                  {isGeneratingReport || generateQuarterlyReportMutation.isPending ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       Generating...
                     </>
@@ -573,17 +550,27 @@ export default function ReportPeriods() {
           <CalendarIcon className="h-12 w-12 text-slate-300 mb-4" />
           <h3 className="text-xl font-medium mb-1">No Reports Found</h3>
           <p className="text-muted-foreground text-center max-w-md mb-6">
-            There are no quarterly reports for this client{selectedYear ? ` in ${selectedYear}` : ''}
+            There are no quarterly reports for this client
+            {selectedYear ? ` in ${selectedYear}` : ''}
           </p>
-          <Button 
+          <Button
             onClick={() => generateQuarterlyReportMutation.mutate(selectedTenantId as number)}
             disabled={isGeneratingReport || generateQuarterlyReportMutation.isPending}
           >
-            {(isGeneratingReport || generateQuarterlyReportMutation.isPending) ? (
+            {isGeneratingReport || generateQuarterlyReportMutation.isPending ? (
               <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Generating...
               </>

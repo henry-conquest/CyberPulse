@@ -1,7 +1,7 @@
-import React from "react";
-import Sidebar from "./Sidebar";
-import TopBar from "./TopBar";
-import { useAuth } from "@/hooks/useAuth";
+import React from 'react';
+import Sidebar from './Sidebar';
+import TopBar from './TopBar';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -40,13 +40,11 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="flex h-screen">
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-      
+
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        
-        <main className="flex-1 overflow-y-auto bg-secondary-50 p-4 md:p-6">
-          {children}
-        </main>
+
+        <main className="flex-1 overflow-y-auto bg-secondary-50 p-4 md:p-6">{children}</main>
       </div>
     </div>
   );
