@@ -1,12 +1,19 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, ShieldAlert, User, Mail, Briefcase, Building, AlertCircle, ShieldOff } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Loader2, ShieldAlert, User, Mail, Briefcase, Building, AlertCircle, ShieldOff } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 type MfaUser = {
   id: string;
@@ -21,9 +28,14 @@ type MfaUser = {
 export default function MfaUsersWidget({ tenantId }: { tenantId: string | number }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
-  
+
   // Query to fetch users without MFA enabled
-  const { data: usersWithoutMfa = [], isLoading, isError, refetch } = useQuery<MfaUser[]>({
+  const {
+    data: usersWithoutMfa = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<MfaUser[]>({
     queryKey: [`/api/tenants/${tenantId}/microsoft365/users-without-mfa`],
     // Only fetch when needed (when dialog is opened or for initial count)
     refetchOnWindowFocus: false,
@@ -34,8 +46,8 @@ export default function MfaUsersWidget({ tenantId }: { tenantId: string | number
   const handleRefresh = () => {
     refetch();
     toast({
-      title: "Refreshing MFA data",
-      description: "Fetching the latest data from Microsoft 365..."
+      title: 'Refreshing MFA data',
+      description: 'Fetching the latest data from Microsoft 365...',
     });
   };
 
@@ -96,14 +108,16 @@ export default function MfaUsersWidget({ tenantId }: { tenantId: string | number
               <CardContent className="p-4 flex items-start gap-4">
                 <Avatar className="h-10 w-10 border">
                   <AvatarFallback className="bg-primary/10">
-                    {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}
+                    {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="space-y-1 flex-1 min-w-0">
                   <div className="font-medium flex items-center">
                     {user.displayName}
                     {!user.accountEnabled && (
-                      <Badge variant="outline" className="ml-2 bg-muted">Disabled</Badge>
+                      <Badge variant="outline" className="ml-2 bg-muted">
+                        Disabled
+                      </Badge>
                     )}
                   </div>
                   <div className="flex items-center text-muted-foreground">
@@ -132,7 +146,7 @@ export default function MfaUsersWidget({ tenantId }: { tenantId: string | number
       </div>
     );
   };
-  
+
   // Main widget card with dialog
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -162,7 +176,7 @@ export default function MfaUsersWidget({ tenantId }: { tenantId: string | number
               </>
             )}
           </div>
-          
+
           <div className="mt-6 text-center">
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">

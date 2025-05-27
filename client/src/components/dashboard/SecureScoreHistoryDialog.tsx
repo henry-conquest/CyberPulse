@@ -1,14 +1,8 @@
-import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { useQuery } from "@tanstack/react-query";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { Loader2, AlertCircle, InfoIcon } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useQuery } from '@tanstack/react-query';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Loader2, AlertCircle, InfoIcon } from 'lucide-react';
 
 interface SecureScoreHistoryDialogProps {
   isOpen: boolean;
@@ -27,64 +21,69 @@ interface SecureScoreHistory {
   reportYear: number | null;
 }
 
-export default function SecureScoreHistoryDialog({
-  isOpen,
-  onClose,
-  tenantId
-}: SecureScoreHistoryDialogProps) {
+export default function SecureScoreHistoryDialog({ isOpen, onClose, tenantId }: SecureScoreHistoryDialogProps) {
   // Refresh key will force a query refresh when the dialog is opened
   const [refreshKey, setRefreshKey] = useState(0);
-  
+
   // Reset the refresh key when the dialog opens to force a data refresh
   useEffect(() => {
     if (isOpen) {
       setRefreshKey(Date.now());
     }
   }, [isOpen]);
-  
+
   // Query to fetch secure score history - up to 24 months
-  const { data: history, isLoading, error } = useQuery<SecureScoreHistory[]>({
+  const {
+    data: history,
+    isLoading,
+    error,
+  } = useQuery<SecureScoreHistory[]>({
     queryKey: [`/api/tenants/${tenantId}/secure-score-history?limit=24`, refreshKey],
     enabled: isOpen, // Only fetch when dialog is open
   });
-  
+
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      year: 'numeric',
+    });
   };
-  
+
   // Create a continuous list of months for x-axis (no gaps)
   const generateContinuousMonthlyData = (history: SecureScoreHistory[]) => {
     if (!history || history.length === 0) return [];
-    
+
     // Sort by date (oldest first)
-    const sortedHistory = [...history].sort((a, b) => 
-      new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime()
+    const sortedHistory = [...history].sort(
+      (a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime()
     );
-    
+
     const firstDate = new Date(sortedHistory[0].recordedAt);
     const lastDate = new Date(sortedHistory[sortedHistory.length - 1].recordedAt);
-    
+
     // Create a map of existing dates for quick lookup
     const historyMap = new Map();
-    sortedHistory.forEach(item => {
+    sortedHistory.forEach((item) => {
       const date = new Date(item.recordedAt);
       const key = `${date.getMonth()}-${date.getFullYear()}`;
       historyMap.set(key, item);
     });
-    
+
     // Generate all months between first and last date
     const result = [];
     const currentDate = new Date(firstDate);
     currentDate.setDate(1); // Set to first day of month
-    
+
     while (currentDate <= lastDate) {
       const key = `${currentDate.getMonth()}-${currentDate.getFullYear()}`;
-      const monthName = currentDate.toLocaleDateString('en-US', { month: 'short' });
+      const monthName = currentDate.toLocaleDateString('en-US', {
+        month: 'short',
+      });
       const yearName = currentDate.getFullYear();
       const formattedDate = `${monthName} ${yearName}`;
-      
+
       if (historyMap.has(key)) {
         // Use actual data
         const item = historyMap.get(key);
@@ -92,55 +91,60 @@ export default function SecureScoreHistoryDialog({
           date: formattedDate,
           scorePercent: item.scorePercent,
           score: item.score,
-          maxScore: item.maxScore
+          maxScore: item.maxScore,
         });
       } else {
         // No data for this month, use the previous month's data for continuity
-        type ChartDataPoint = { date: string; scorePercent: number; score: number; maxScore: number | null };
-        const prevMonth: ChartDataPoint = result.length > 0 
-          ? result[result.length - 1] as ChartDataPoint
-          : { date: formattedDate, scorePercent: 0, score: 0, maxScore: 0 };
-        
+        type ChartDataPoint = {
+          date: string;
+          scorePercent: number;
+          score: number;
+          maxScore: number | null;
+        };
+        const prevMonth: ChartDataPoint =
+          result.length > 0
+            ? (result[result.length - 1] as ChartDataPoint)
+            : { date: formattedDate, scorePercent: 0, score: 0, maxScore: 0 };
+
         result.push({
           date: formattedDate,
           scorePercent: prevMonth.scorePercent,
           score: prevMonth.score,
-          maxScore: prevMonth.maxScore
+          maxScore: prevMonth.maxScore,
         });
       }
-      
+
       // Move to next month
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
-    
+
     return result;
   };
-  
+
   // Prepare data for chart - ensure all months are shown (no gaps)
   const chartData = history ? generateContinuousMonthlyData(history) : [];
-  
+
   // Calculate average score
-  const averageScore = history && history.length > 0
-    ? Number((history.reduce((sum, item) => sum + item.scorePercent, 0) / history.length).toFixed(1))
-    : 0;
-    
+  const averageScore =
+    history && history.length > 0
+      ? Number((history.reduce((sum, item) => sum + item.scorePercent, 0) / history.length).toFixed(1))
+      : 0;
+
   // Determine color based on average score
   const getScoreColor = (score: number): string => {
-    if (score >= 70) return "text-green-600";
-    if (score >= 40) return "text-yellow-600";
-    return "text-red-600";
+    if (score >= 70) return 'text-green-600';
+    if (score >= 40) return 'text-yellow-600';
+    return 'text-red-600';
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[800px]">
         <DialogHeader>
           <DialogTitle className="text-xl">Secure Score History</DialogTitle>
-          <DialogDescription>
-            Monthly snapshots of Microsoft 365 Secure Score over the past 24 months
-          </DialogDescription>
+          <DialogDescription>Monthly snapshots of Microsoft 365 Secure Score over the past 24 months</DialogDescription>
         </DialogHeader>
-        
+
         <div className="mt-4">
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
@@ -148,9 +152,7 @@ export default function SecureScoreHistoryDialog({
               <span className="ml-2">Loading history...</span>
             </div>
           ) : error ? (
-            <div className="p-4 text-center text-red-600">
-              Error loading secure score history. Please try again.
-            </div>
+            <div className="p-4 text-center text-red-600">Error loading secure score history. Please try again.</div>
           ) : history && history.length > 0 ? (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -159,58 +161,54 @@ export default function SecureScoreHistoryDialog({
                   <p className={`text-2xl font-bold ${getScoreColor(history[0].scorePercent)}`}>
                     {history[0].scorePercent.toFixed(1)}%
                   </p>
-                  <p className="text-xs text-gray-500">
-                    {formatDate(history[0].recordedAt)}
-                  </p>
+                  <p className="text-xs text-gray-500">{formatDate(history[0].recordedAt)}</p>
                 </div>
-                
+
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="text-sm font-medium text-gray-500">Average Score</h3>
-                  <p className={`text-2xl font-bold ${getScoreColor(averageScore)}`}>
-                    {averageScore}%
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Last {history.length} months
-                  </p>
+                  <p className={`text-2xl font-bold ${getScoreColor(averageScore)}`}>{averageScore}%</p>
+                  <p className="text-xs text-gray-500">Last {history.length} months</p>
                 </div>
-                
+
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h3 className="text-sm font-medium text-gray-500">Trend</h3>
-                  <p className={`text-2xl font-bold ${
-                    history[0].scorePercent > history[history.length - 1].scorePercent
-                      ? "text-green-600"
-                      : history[0].scorePercent < history[history.length - 1].scorePercent
-                      ? "text-red-600"
-                      : "text-gray-600"
-                  }`}>
+                  <p
+                    className={`text-2xl font-bold ${
+                      history[0].scorePercent > history[history.length - 1].scorePercent
+                        ? 'text-green-600'
+                        : history[0].scorePercent < history[history.length - 1].scorePercent
+                          ? 'text-red-600'
+                          : 'text-gray-600'
+                    }`}
+                  >
                     {history[0].scorePercent > history[history.length - 1].scorePercent
-                      ? "Improving"
+                      ? 'Improving'
                       : history[0].scorePercent < history[history.length - 1].scorePercent
-                      ? "Declining"
-                      : "Stable"}
+                        ? 'Declining'
+                        : 'Stable'}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    Based on historical data
-                  </p>
+                  <p className="text-xs text-gray-500">Based on historical data</p>
                 </div>
               </div>
-              
+
               <div className="h-64 md:h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={chartData}
-                    margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-                  >
+                  <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                    <YAxis 
-                      domain={[0, 100]} 
-                      tickCount={6} 
+                    <YAxis
+                      domain={[0, 100]}
+                      tickCount={6}
                       width={40}
                       tick={{ fontSize: 12 }}
-                      label={{ value: 'Score %', angle: -90, position: 'insideLeft', fontSize: 12 }}
+                      label={{
+                        value: 'Score %',
+                        angle: -90,
+                        position: 'insideLeft',
+                        fontSize: 12,
+                      }}
                     />
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
                       labelFormatter={(label) => `Date: ${label}`}
                     />
@@ -227,10 +225,12 @@ export default function SecureScoreHistoryDialog({
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              
+
               <div className="text-sm text-gray-500">
-                <p>Note: This chart shows the historical trend of your Microsoft 365 Secure Score. 
-                Monthly snapshots are taken automatically at the end of each month.</p>
+                <p>
+                  Note: This chart shows the historical trend of your Microsoft 365 Secure Score. Monthly snapshots are
+                  taken automatically at the end of each month.
+                </p>
                 <p className="mt-1">Use this data to track your security improvement journey over time.</p>
               </div>
             </div>
@@ -244,8 +244,8 @@ export default function SecureScoreHistoryDialog({
                   History will appear here after the first month-end snapshot is taken.
                 </p>
                 <p className="text-gray-500 text-sm mt-2">
-                  The system will collect authentic Microsoft 365 Secure Score data over time,
-                  allowing you to track your security improvements.
+                  The system will collect authentic Microsoft 365 Secure Score data over time, allowing you to track
+                  your security improvements.
                 </p>
               </div>
             </div>

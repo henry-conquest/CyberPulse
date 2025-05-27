@@ -1,20 +1,20 @@
-import { useEffect, useState } from "react";
-import { useLocation, useParams, useRoute, useRouter } from "wouter";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, AlertCircle } from "lucide-react";
-import { UserRoles } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from 'react';
+import { useLocation, useParams, useRoute, useRouter } from 'wouter';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { UserRoles } from '@shared/schema';
+import { apiRequest } from '@/lib/queryClient';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Form schema
 const formSchema = z.object({
@@ -28,81 +28,87 @@ export default function EditReport() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
-  const [, params] = useRoute<{ tenantId: string, reportId: string }>("/tenants/:tenantId/reports/:reportId/edit");
+  const [, params] = useRoute<{ tenantId: string; reportId: string }>('/tenants/:tenantId/reports/:reportId/edit');
   const tenantId = params ? parseInt(params.tenantId) : 0;
   const reportId = params ? parseInt(params.reportId) : 0;
-  
+
   // Check if user is authorized (admin or analyst)
   const isAuthorized = user?.role === UserRoles.ADMIN || user?.role === UserRoles.ANALYST;
-  
+
   // Fetch report data
-  const { data: report, isLoading, error } = useQuery({
+  const {
+    data: report,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: [`/api/tenants/${tenantId}/reports/${reportId}`],
-    enabled: !!tenantId && !!reportId
+    enabled: !!tenantId && !!reportId,
   });
-  
+
   // Setup form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      summary: "",
-      recommendations: "",
-      analystComments: "",
+      summary: '',
+      recommendations: '',
+      analystComments: '',
     },
   });
-  
+
   // Update form values when data is loaded
   useEffect(() => {
     if (report) {
       form.reset({
-        analystComments: report.analystComments || "",
+        analystComments: report.analystComments || '',
       });
     }
   }, [report, form]);
-  
+
   // Handle form submission
   const onSubmit = async (values: FormValues) => {
     try {
       await fetch(`/api/tenants/${tenantId}/reports/${reportId}`, {
-        method: "PATCH",
+        method: 'PATCH',
         headers: {
-          "Content-Type": "application/json"
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(values)
+        body: JSON.stringify(values),
       });
-      
+
       // Invalidate report queries to refresh data
-      queryClient.invalidateQueries({ queryKey: [`/api/tenants/${tenantId}/reports/${reportId}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/reports/by-tenant"] });
-      
-      toast({
-        title: "Report updated",
-        description: "The report has been successfully updated.",
+      queryClient.invalidateQueries({
+        queryKey: [`/api/tenants/${tenantId}/reports/${reportId}`],
       });
-      
+      queryClient.invalidateQueries({ queryKey: ['/api/reports/by-tenant'] });
+
+      toast({
+        title: 'Report updated',
+        description: 'The report has been successfully updated.',
+      });
+
       // Redirect back to report page
       setLocation(`/tenants/${tenantId}/reports`);
     } catch (error) {
-      console.error("Error updating report:", error);
+      console.error('Error updating report:', error);
       toast({
-        title: "Error",
-        description: "Failed to update the report. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update the report. Please try again.',
+        variant: 'destructive',
       });
     }
   };
-  
+
   // Redirect if not authorized
   if (!isLoading && !isAuthorized) {
     toast({
-      title: "Access denied",
+      title: 'Access denied',
       description: "You don't have permission to edit this report.",
-      variant: "destructive",
+      variant: 'destructive',
     });
     setLocation(`/tenants/${tenantId}/reports`);
     return null;
   }
-  
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -111,7 +117,7 @@ export default function EditReport() {
       </div>
     );
   }
-  
+
   if (error || !report) {
     return (
       <Alert variant="destructive" className="max-w-3xl mx-auto mt-8">
@@ -121,7 +127,7 @@ export default function EditReport() {
       </Alert>
     );
   }
-  
+
   return (
     <div className="container max-w-4xl py-8">
       <Card>
@@ -134,7 +140,6 @@ export default function EditReport() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              
               <FormField
                 control={form.control}
                 name="analystComments"
@@ -148,20 +153,14 @@ export default function EditReport() {
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription>
-                      Optional comments from the analyst reviewing this report.
-                    </FormDescription>
+                    <FormDescription>Optional comments from the analyst reviewing this report.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <div className="flex justify-end space-x-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setLocation(`/tenants/${tenantId}/reports`)}
-                >
+                <Button type="button" variant="outline" onClick={() => setLocation(`/tenants/${tenantId}/reports`)}>
                   Cancel
                 </Button>
                 <Button type="submit">Save Changes</Button>

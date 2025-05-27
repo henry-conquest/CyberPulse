@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
-import { useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { Loader2, Shield, Mail, Briefcase, Building, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from 'react';
+import { useParams } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, Shield, Mail, Briefcase, Building, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 // Create a simple PageHeader component
 const PageHeader = ({ title, description }: { title: string; description: string }) => (
@@ -30,22 +30,28 @@ type GlobalAdmin = {
 export default function GlobalAdminsPage() {
   const { tenantId } = useParams();
   const { toast } = useToast();
-  
+
   // Query to fetch global admins
-  const { data: admins = [], isLoading, isError, error, refetch } = useQuery<GlobalAdmin[]>({
+  const {
+    data: admins = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery<GlobalAdmin[]>({
     queryKey: ['/api/tenants', tenantId, 'microsoft365/global-administrators'],
-    enabled: !!tenantId
+    enabled: !!tenantId,
   });
-  
+
   // Handle refresh button click
   const handleRefresh = () => {
     refetch();
     toast({
-      title: "Refreshing administrators",
-      description: "Fetching the latest data from Microsoft 365..."
+      title: 'Refreshing administrators',
+      description: 'Fetching the latest data from Microsoft 365...',
     });
   };
-  
+
   if (isLoading) {
     return (
       <div className="h-full w-full flex items-center justify-center p-6">
@@ -54,7 +60,7 @@ export default function GlobalAdminsPage() {
       </div>
     );
   }
-  
+
   if (isError) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -62,27 +68,26 @@ export default function GlobalAdminsPage() {
           title="Global Administrators"
           description="View users with global administrator rights in Microsoft 365"
         />
-        
+
         <Alert variant="destructive" className="mt-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error loading administrators</AlertTitle>
           <AlertDescription>
-            {error instanceof Error ? error.message : "Failed to load global administrators. Please try again."}
+            {error instanceof Error ? error.message : 'Failed to load global administrators. Please try again.'}
           </AlertDescription>
         </Alert>
-        
-        <Button onClick={handleRefresh} className="mt-4">Retry</Button>
+
+        <Button onClick={handleRefresh} className="mt-4">
+          Retry
+        </Button>
       </div>
     );
   }
-  
+
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <PageHeader
-        title="Global Administrators"
-        description="Users with global administrator rights in Microsoft 365"
-      />
-      
+      <PageHeader title="Global Administrators" description="Users with global administrator rights in Microsoft 365" />
+
       <div className="flex justify-between items-center my-6">
         <div>
           <Badge variant="outline" className="text-sm font-medium">
@@ -93,7 +98,7 @@ export default function GlobalAdminsPage() {
           Refresh
         </Button>
       </div>
-      
+
       {/* Display if no admins are found */}
       {(!admins || admins.length === 0) && (
         <Card className="mb-6">
@@ -108,7 +113,7 @@ export default function GlobalAdminsPage() {
           </CardContent>
         </Card>
       )}
-      
+
       {/* Display admins if found */}
       {admins && admins.length > 0 && (
         <div className="grid gap-4">
@@ -130,7 +135,7 @@ export default function GlobalAdminsPage() {
                   )}
                 </div>
               </CardHeader>
-              
+
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div className="flex items-center text-muted-foreground">

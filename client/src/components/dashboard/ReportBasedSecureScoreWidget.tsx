@@ -1,23 +1,22 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
-import { Check, AlertTriangle, XCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
+import { Check, AlertTriangle, XCircle } from 'lucide-react';
 
 interface ReportBasedSecureScoreWidgetProps {
   secureScore: number;
   secureScorePercent: number;
 }
 
-export default function ReportBasedSecureScoreWidget({ 
-  secureScore, 
-  secureScorePercent 
+export default function ReportBasedSecureScoreWidget({
+  secureScore,
+  secureScorePercent,
 }: ReportBasedSecureScoreWidgetProps) {
-  
   // Calculate gradient colors based on score
   const getScoreColor = (percent: number) => {
-    if (percent >= 70) return "#22c55e"; // green
-    if (percent >= 40) return "#eab308"; // yellow
-    return "#ef4444"; // red
+    if (percent >= 70) return '#22c55e'; // green
+    if (percent >= 40) return '#eab308'; // yellow
+    return '#ef4444'; // red
   };
 
   // Get appropriate icon for the score
@@ -29,9 +28,9 @@ export default function ReportBasedSecureScoreWidget({
 
   // Get score description
   const getScoreDescription = (percent: number) => {
-    if (percent >= 70) return "Good";
-    if (percent >= 40) return "Needs Improvement";
-    return "Critical";
+    if (percent >= 70) return 'Good';
+    if (percent >= 40) return 'Needs Improvement';
+    return 'Critical';
   };
 
   const scoreColor = getScoreColor(secureScorePercent);
@@ -55,8 +54,8 @@ export default function ReportBasedSecureScoreWidget({
                 styles={buildStyles({
                   pathColor: scoreColor,
                   textColor: scoreColor,
-                  trailColor: "#e5e7eb",
-                  textSize: "22px",
+                  trailColor: '#e5e7eb',
+                  textSize: '22px',
                 })}
               />
             </div>
@@ -69,9 +68,9 @@ export default function ReportBasedSecureScoreWidget({
                 Score: {secureScore.toFixed(1)} / {maxScore}
               </p>
               <p className="text-sm text-gray-600">
-                {secureScorePercent < 40 && "Urgent action required"}
-                {secureScorePercent >= 40 && secureScorePercent < 70 && "Improvement needed"}
-                {secureScorePercent >= 70 && "Good security posture"}
+                {secureScorePercent < 40 && 'Urgent action required'}
+                {secureScorePercent >= 40 && secureScorePercent < 70 && 'Improvement needed'}
+                {secureScorePercent >= 70 && 'Good security posture'}
               </p>
             </div>
           </div>
@@ -83,18 +82,18 @@ export default function ReportBasedSecureScoreWidget({
           <CardTitle className="text-lg">Score Details</CardTitle>
           <CardDescription>Security assessment summary</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">          
+        <CardContent className="space-y-2">
           <div>
             <span className="text-sm font-medium">Security gap:</span>
             <span className="text-sm ml-2 text-gray-600">
               {maxScore - secureScore} points ({100 - secureScorePercent}%)
             </span>
           </div>
-          
+
           <div className="pt-2">
             <p className="text-sm text-gray-600">
-              Your Microsoft Secure Score represents your security posture across all Microsoft 365 services.
-              Higher scores indicate better protection against threats.
+              Your Microsoft Secure Score represents your security posture across all Microsoft 365 services. Higher
+              scores indicate better protection against threats.
             </p>
           </div>
         </CardContent>

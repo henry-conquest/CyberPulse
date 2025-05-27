@@ -1,26 +1,13 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -29,39 +16,22 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  PlusCircle,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-  XCircle,
-  Edit,
-  Trash,
-  Filter,
-} from "lucide-react";
-import { format } from "date-fns";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+} from '@/components/ui/dialog';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { PlusCircle, CheckCircle, AlertCircle, Clock, XCircle, Edit, Trash, Filter } from 'lucide-react';
+import { format } from 'date-fns';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
 const recommendationSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters long"),
-  description: z.string().min(10, "Description must be at least 10 characters long"),
-  category: z.enum(["identity", "training", "device", "cloud", "threat"]),
-  priority: z.enum(["high", "medium", "low"]),
+  title: z.string().min(3, 'Title must be at least 3 characters long'),
+  description: z.string().min(10, 'Description must be at least 10 characters long'),
+  category: z.enum(['identity', 'training', 'device', 'cloud', 'threat']),
+  priority: z.enum(['high', 'medium', 'low']),
   assignedTo: z.string().optional(),
 });
 
@@ -70,9 +40,9 @@ type Recommendation = {
   tenantId: number;
   title: string;
   description: string;
-  category: "identity" | "training" | "device" | "cloud" | "threat";
-  priority: "high" | "medium" | "low";
-  status: "open" | "in_progress" | "completed" | "dismissed";
+  category: 'identity' | 'training' | 'device' | 'cloud' | 'threat';
+  priority: 'high' | 'medium' | 'low';
+  status: 'open' | 'in_progress' | 'completed' | 'dismissed';
   createdBy: string;
   assignedTo?: string;
   createdAt: string;
@@ -82,27 +52,25 @@ type Recommendation = {
 
 export default function Recommendations() {
   const { user } = useAuth();
-  const [selectedTenantId, setSelectedTenantId] = useState<number | null>(
-    user?.tenants?.[0]?.id || null
-  );
+  const [selectedTenantId, setSelectedTenantId] = useState<number | null>(user?.tenants?.[0]?.id || null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRecommendation, setEditingRecommendation] = useState<Recommendation | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
 
   // Form for creating/editing recommendations
   const form = useForm<z.infer<typeof recommendationSchema>>({
     resolver: zodResolver(recommendationSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      category: "identity",
-      priority: "medium",
+      title: '',
+      description: '',
+      category: 'identity',
+      priority: 'medium',
       assignedTo: user?.id,
     },
   });
@@ -136,25 +104,27 @@ export default function Recommendations() {
   const createRecommendationMutation = useMutation({
     mutationFn: async (data: z.infer<typeof recommendationSchema>) => {
       if (!selectedTenantId) {
-        throw new Error("No tenant selected");
+        throw new Error('No tenant selected');
       }
       const response = await apiRequest('POST', `/api/tenants/${selectedTenantId}/recommendations`, data);
       return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Recommendation created",
-        description: "The recommendation has been created successfully",
+        title: 'Recommendation created',
+        description: 'The recommendation has been created successfully',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/tenants', selectedTenantId, 'recommendations'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/tenants', selectedTenantId, 'recommendations'],
+      });
       setIsCreateDialogOpen(false);
       form.reset();
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create recommendation",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create recommendation',
+        variant: 'destructive',
       });
     },
   });
@@ -167,18 +137,20 @@ export default function Recommendations() {
     },
     onSuccess: () => {
       toast({
-        title: "Recommendation updated",
-        description: "The recommendation has been updated successfully",
+        title: 'Recommendation updated',
+        description: 'The recommendation has been updated successfully',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/tenants', selectedTenantId, 'recommendations'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/tenants', selectedTenantId, 'recommendations'],
+      });
       setIsEditDialogOpen(false);
       setEditingRecommendation(null);
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update recommendation",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update recommendation',
+        variant: 'destructive',
       });
     },
   });
@@ -190,16 +162,18 @@ export default function Recommendations() {
     },
     onSuccess: () => {
       toast({
-        title: "Recommendation deleted",
-        description: "The recommendation has been deleted successfully",
+        title: 'Recommendation deleted',
+        description: 'The recommendation has been deleted successfully',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/tenants', selectedTenantId, 'recommendations'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/tenants', selectedTenantId, 'recommendations'],
+      });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete recommendation",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete recommendation',
+        variant: 'destructive',
       });
     },
   });
@@ -207,21 +181,25 @@ export default function Recommendations() {
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const response = await apiRequest('PATCH', `/api/recommendations/${id}`, { status });
+      const response = await apiRequest('PATCH', `/api/recommendations/${id}`, {
+        status,
+      });
       return response.json();
     },
     onSuccess: (_, { status }) => {
       toast({
-        title: "Status updated",
-        description: `Recommendation marked as ${status.replace("_", " ")}`,
+        title: 'Status updated',
+        description: `Recommendation marked as ${status.replace('_', ' ')}`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/tenants', selectedTenantId, 'recommendations'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/tenants', selectedTenantId, 'recommendations'],
+      });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update status",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update status',
+        variant: 'destructive',
       });
     },
   });
@@ -236,7 +214,7 @@ export default function Recommendations() {
   };
 
   const handleDeleteRecommendation = (id: number) => {
-    if (confirm("Are you sure you want to delete this recommendation? This action cannot be undone.")) {
+    if (confirm('Are you sure you want to delete this recommendation? This action cannot be undone.')) {
       deleteRecommendationMutation.mutate(id);
     }
   };
@@ -254,9 +232,9 @@ export default function Recommendations() {
   const filteredRecommendations = recommendations
     ? recommendations.filter((rec: Recommendation) => {
         return (
-          (statusFilter === "all" || rec.status === statusFilter) &&
-          (categoryFilter === "all" || rec.category === categoryFilter) &&
-          (priorityFilter === "all" || rec.priority === priorityFilter)
+          (statusFilter === 'all' || rec.status === statusFilter) &&
+          (categoryFilter === 'all' || rec.category === categoryFilter) &&
+          (priorityFilter === 'all' || rec.priority === priorityFilter)
         );
       })
     : [];
@@ -264,13 +242,13 @@ export default function Recommendations() {
   // Get status badge
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "open":
+      case 'open':
         return <Badge variant="secondary">Open</Badge>;
-      case "in_progress":
+      case 'in_progress':
         return <Badge variant="default">In Progress</Badge>;
-      case "completed":
+      case 'completed':
         return <Badge variant="success">Completed</Badge>;
-      case "dismissed":
+      case 'dismissed':
         return <Badge variant="outline">Dismissed</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
@@ -280,11 +258,11 @@ export default function Recommendations() {
   // Get priority badge
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
-      case "high":
+      case 'high':
         return <Badge variant="destructive">High</Badge>;
-      case "medium":
+      case 'medium':
         return <Badge variant="warning">Medium</Badge>;
-      case "low":
+      case 'low':
         return <Badge variant="success">Low</Badge>;
       default:
         return <Badge variant="outline">{priority}</Badge>;
@@ -294,11 +272,11 @@ export default function Recommendations() {
   // Get category badge
   const getCategoryBadge = (category: string) => {
     const categoryLabels: Record<string, string> = {
-      identity: "Identity",
-      training: "Training",
-      device: "Devices",
-      cloud: "Cloud",
-      threat: "Threat",
+      identity: 'Identity',
+      training: 'Training',
+      device: 'Devices',
+      cloud: 'Cloud',
+      threat: 'Threat',
     };
 
     return <Badge variant="outline">{categoryLabels[category] || category}</Badge>;
@@ -309,9 +287,7 @@ export default function Recommendations() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Recommendations</h1>
-          <p className="text-secondary-500">
-            Track and manage security recommendations for your organization
-          </p>
+          <p className="text-secondary-500">Track and manage security recommendations for your organization</p>
         </div>
         <div className="mt-4 md:mt-0">
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -324,11 +300,9 @@ export default function Recommendations() {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Create New Recommendation</DialogTitle>
-                <DialogDescription>
-                  Add a new security recommendation for the organization.
-                </DialogDescription>
+                <DialogDescription>Add a new security recommendation for the organization.</DialogDescription>
               </DialogHeader>
-              
+
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleCreateRecommendation)} className="space-y-4">
                   <FormField
@@ -344,7 +318,7 @@ export default function Recommendations() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="description"
@@ -352,17 +326,13 @@ export default function Recommendations() {
                       <FormItem>
                         <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            {...field} 
-                            placeholder="Detailed description of the recommendation..." 
-                            rows={5}
-                          />
+                          <Textarea {...field} placeholder="Detailed description of the recommendation..." rows={5} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -370,10 +340,7 @@ export default function Recommendations() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Category</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                          >
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select category" />
@@ -391,17 +358,14 @@ export default function Recommendations() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="priority"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Priority</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                          >
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select priority" />
@@ -418,7 +382,7 @@ export default function Recommendations() {
                       )}
                     />
                   </div>
-                  
+
                   {users && (
                     <FormField
                       control={form.control}
@@ -426,10 +390,7 @@ export default function Recommendations() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Assign To (Optional)</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                          >
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select assignee" />
@@ -452,13 +413,13 @@ export default function Recommendations() {
                       )}
                     />
                   )}
-                  
+
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                       Cancel
                     </Button>
                     <Button type="submit" disabled={createRecommendationMutation.isPending}>
-                      {createRecommendationMutation.isPending ? "Creating..." : "Create Recommendation"}
+                      {createRecommendationMutation.isPending ? 'Creating...' : 'Create Recommendation'}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -467,14 +428,14 @@ export default function Recommendations() {
           </Dialog>
         </div>
       </div>
-      
+
       {/* Filters */}
       <div className="flex flex-wrap gap-4 mb-6">
         <div className="flex items-center">
           <Filter className="h-4 w-4 mr-2 text-secondary-500" />
           <span className="text-sm text-secondary-500 mr-2">Filters:</span>
         </div>
-        
+
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Status" />
@@ -487,7 +448,7 @@ export default function Recommendations() {
             <SelectItem value="dismissed">Dismissed</SelectItem>
           </SelectContent>
         </Select>
-        
+
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Category" />
@@ -501,7 +462,7 @@ export default function Recommendations() {
             <SelectItem value="threat">Threat Protection</SelectItem>
           </SelectContent>
         </Select>
-        
+
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Priority" />
@@ -514,14 +475,12 @@ export default function Recommendations() {
           </SelectContent>
         </Select>
       </div>
-      
+
       {/* Recommendation list */}
       <Card>
         <CardHeader>
           <CardTitle>Security Recommendations</CardTitle>
-          <CardDescription>
-            Prioritized list of security improvements
-          </CardDescription>
+          <CardDescription>Prioritized list of security improvements</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -548,50 +507,46 @@ export default function Recommendations() {
                     <TableCell>{getCategoryBadge(recommendation.category)}</TableCell>
                     <TableCell>{getPriorityBadge(recommendation.priority)}</TableCell>
                     <TableCell>{getStatusBadge(recommendation.status)}</TableCell>
-                    <TableCell>{format(new Date(recommendation.createdAt), "MMM d, yyyy")}</TableCell>
+                    <TableCell>{format(new Date(recommendation.createdAt), 'MMM d, yyyy')}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {recommendation.status === "open" && (
-                          <Button 
-                            size="sm" 
+                        {recommendation.status === 'open' && (
+                          <Button
+                            size="sm"
                             variant="outline"
-                            onClick={() => handleStatusChange(recommendation.id, "in_progress")}
+                            onClick={() => handleStatusChange(recommendation.id, 'in_progress')}
                           >
                             <Clock className="h-4 w-4 mr-1" />
                             Start
                           </Button>
                         )}
-                        
-                        {recommendation.status === "in_progress" && (
+
+                        {recommendation.status === 'in_progress' && (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleStatusChange(recommendation.id, "completed")}
+                            onClick={() => handleStatusChange(recommendation.id, 'completed')}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Complete
                           </Button>
                         )}
-                        
-                        {(recommendation.status === "open" || recommendation.status === "in_progress") && (
+
+                        {(recommendation.status === 'open' || recommendation.status === 'in_progress') && (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleStatusChange(recommendation.id, "dismissed")}
+                            onClick={() => handleStatusChange(recommendation.id, 'dismissed')}
                           >
                             <XCircle className="h-4 w-4 mr-1" />
                             Dismiss
                           </Button>
                         )}
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditRecommendation(recommendation)}
-                        >
+
+                        <Button size="sm" variant="outline" onClick={() => handleEditRecommendation(recommendation)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        
+
                         <Button
                           size="sm"
                           variant="destructive"
@@ -611,8 +566,8 @@ export default function Recommendations() {
               <h3 className="text-lg font-medium mb-2">No Recommendations Found</h3>
               <p className="text-secondary-500 mb-4">
                 {recommendations?.length === 0
-                  ? "No recommendations have been created yet."
-                  : "No recommendations match your selected filters."}
+                  ? 'No recommendations have been created yet.'
+                  : 'No recommendations match your selected filters.'}
               </p>
               {recommendations?.length === 0 && (
                 <Button onClick={() => setIsCreateDialogOpen(true)}>
@@ -624,17 +579,15 @@ export default function Recommendations() {
           )}
         </CardContent>
       </Card>
-      
+
       {/* Edit recommendation dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Recommendation</DialogTitle>
-            <DialogDescription>
-              Update the security recommendation details.
-            </DialogDescription>
+            <DialogDescription>Update the security recommendation details.</DialogDescription>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleUpdateRecommendation)} className="space-y-4">
               <FormField
@@ -650,7 +603,7 @@ export default function Recommendations() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="description"
@@ -658,17 +611,13 @@ export default function Recommendations() {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        {...field} 
-                        placeholder="Detailed description of the recommendation..." 
-                        rows={5}
-                      />
+                      <Textarea {...field} placeholder="Detailed description of the recommendation..." rows={5} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -676,10 +625,7 @@ export default function Recommendations() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select category" />
@@ -697,17 +643,14 @@ export default function Recommendations() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Priority</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select priority" />
@@ -724,7 +667,7 @@ export default function Recommendations() {
                   )}
                 />
               </div>
-              
+
               {users && (
                 <FormField
                   control={form.control}
@@ -732,10 +675,7 @@ export default function Recommendations() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Assign To (Optional)</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value || ""}
-                      >
+                      <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select assignee" />
@@ -750,24 +690,26 @@ export default function Recommendations() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormDescription>
-                        The person responsible for implementing this recommendation.
-                      </FormDescription>
+                      <FormDescription>The person responsible for implementing this recommendation.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               )}
-              
+
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setIsEditDialogOpen(false);
-                  setEditingRecommendation(null);
-                }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setEditingRecommendation(null);
+                  }}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={updateRecommendationMutation.isPending}>
-                  {updateRecommendationMutation.isPending ? "Updating..." : "Update Recommendation"}
+                  {updateRecommendationMutation.isPending ? 'Updating...' : 'Update Recommendation'}
                 </Button>
               </DialogFooter>
             </form>

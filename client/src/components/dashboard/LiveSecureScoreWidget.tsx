@@ -1,12 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
-import { Check, AlertTriangle, XCircle, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
+import { Check, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 interface LiveSecureScoreWidgetProps {
   tenantId: number;
@@ -14,34 +14,39 @@ interface LiveSecureScoreWidgetProps {
 
 export default function LiveSecureScoreWidget({ tenantId }: LiveSecureScoreWidgetProps) {
   const { toast } = useToast();
-  
-  const { data: secureScore, isLoading, isError, refetch } = useQuery({
+
+  const {
+    data: secureScore,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: [`/api/tenants/${tenantId}/current-secure-score`],
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
   });
 
   const handleRefresh = async () => {
     try {
       await refetch();
       toast({
-        title: "Refreshed",
-        description: "Successfully refreshed secure score data",
+        title: 'Refreshed',
+        description: 'Successfully refreshed secure score data',
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to refresh secure score data",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to refresh secure score data',
+        variant: 'destructive',
       });
     }
   };
 
   // Calculate gradient colors based on score
   const getScoreColor = (percent: number) => {
-    if (percent >= 70) return "#22c55e"; // green
-    if (percent >= 40) return "#eab308"; // yellow
-    return "#ef4444"; // red
+    if (percent >= 70) return '#22c55e'; // green
+    if (percent >= 40) return '#eab308'; // yellow
+    return '#ef4444'; // red
   };
 
   // Get appropriate icon for the score
@@ -53,9 +58,9 @@ export default function LiveSecureScoreWidget({ tenantId }: LiveSecureScoreWidge
 
   // Get score description
   const getScoreDescription = (percent: number) => {
-    if (percent >= 70) return "Good";
-    if (percent >= 40) return "Needs Improvement";
-    return "Critical";
+    if (percent >= 70) return 'Good';
+    if (percent >= 40) return 'Needs Improvement';
+    return 'Critical';
   };
 
   if (isLoading) {
@@ -75,7 +80,7 @@ export default function LiveSecureScoreWidget({ tenantId }: LiveSecureScoreWidge
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Score Details</CardTitle>
@@ -96,20 +101,14 @@ export default function LiveSecureScoreWidget({ tenantId }: LiveSecureScoreWidge
       <Card className="border-red-200 bg-red-50">
         <CardHeader>
           <CardTitle className="text-lg text-red-700">Unable to Fetch Secure Score</CardTitle>
-          <CardDescription className="text-red-600">
-            Could not connect to Microsoft Graph API
-          </CardDescription>
+          <CardDescription className="text-red-600">Could not connect to Microsoft Graph API</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-red-700 mb-4">
-            We encountered an error while trying to fetch your current Microsoft Secure Score. 
-            This could be due to connectivity issues or missing permissions.
+            We encountered an error while trying to fetch your current Microsoft Secure Score. This could be due to
+            connectivity issues or missing permissions.
           </p>
-          <Button 
-            variant="outline" 
-            onClick={handleRefresh}
-            className="flex items-center"
-          >
+          <Button variant="outline" onClick={handleRefresh} className="flex items-center">
             <RefreshCw className="h-4 w-4 mr-2" />
             Try Again
           </Button>
@@ -127,12 +126,7 @@ export default function LiveSecureScoreWidget({ tenantId }: LiveSecureScoreWidge
         <CardHeader className="pb-2">
           <div className="flex justify-between items-center">
             <CardTitle className="text-lg">Current Secure Score</CardTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleRefresh}
-              className="p-1 h-8 w-8"
-            >
+            <Button variant="ghost" size="sm" onClick={handleRefresh} className="p-1 h-8 w-8">
               <RefreshCw className="h-4 w-4" />
               <span className="sr-only">Refresh data</span>
             </Button>
@@ -148,8 +142,8 @@ export default function LiveSecureScoreWidget({ tenantId }: LiveSecureScoreWidge
                 styles={buildStyles({
                   pathColor: scoreColor,
                   textColor: scoreColor,
-                  trailColor: "#e5e7eb",
-                  textSize: "22px",
+                  trailColor: '#e5e7eb',
+                  textSize: '22px',
                 })}
               />
             </div>
@@ -162,9 +156,9 @@ export default function LiveSecureScoreWidget({ tenantId }: LiveSecureScoreWidge
                 Score: {secureScore.currentScore.toFixed(1)} / {secureScore.maxScore}
               </p>
               <p className="text-sm text-gray-600">
-                {secureScore.currentPercent < 40 && "Urgent action required"}
-                {secureScore.currentPercent >= 40 && secureScore.currentPercent < 70 && "Improvement needed"}
-                {secureScore.currentPercent >= 70 && "Good security posture"}
+                {secureScore.currentPercent < 40 && 'Urgent action required'}
+                {secureScore.currentPercent >= 40 && secureScore.currentPercent < 70 && 'Improvement needed'}
+                {secureScore.currentPercent >= 70 && 'Good security posture'}
               </p>
             </div>
           </div>
@@ -179,22 +173,20 @@ export default function LiveSecureScoreWidget({ tenantId }: LiveSecureScoreWidge
         <CardContent className="space-y-2">
           <div>
             <span className="text-sm font-medium">Last updated:</span>
-            <span className="text-sm ml-2 text-gray-600">
-              {format(lastUpdated, "MMM d, yyyy 'at' h:mm a")}
-            </span>
+            <span className="text-sm ml-2 text-gray-600">{format(lastUpdated, "MMM d, yyyy 'at' h:mm a")}</span>
           </div>
-          
+
           <div>
             <span className="text-sm font-medium">Security gap:</span>
             <span className="text-sm ml-2 text-gray-600">
               {secureScore.maxScore - secureScore.currentScore} points ({100 - secureScore.currentPercent}%)
             </span>
           </div>
-          
+
           <div className="pt-2">
             <p className="text-sm text-gray-600">
-              Your Microsoft Secure Score represents your security posture across all Microsoft 365 services.
-              Higher scores indicate better protection against threats.
+              Your Microsoft Secure Score represents your security posture across all Microsoft 365 services. Higher
+              scores indicate better protection against threats.
             </p>
           </div>
         </CardContent>

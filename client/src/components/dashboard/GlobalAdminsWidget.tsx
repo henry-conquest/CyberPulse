@@ -1,12 +1,19 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Shield, UserCog, Mail, Briefcase, Building, AlertCircle, UserX } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Loader2, Shield, UserCog, Mail, Briefcase, Building, AlertCircle, UserX } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 type GlobalAdmin = {
   id: string;
@@ -21,9 +28,14 @@ type GlobalAdmin = {
 export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | number }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
-  
+
   // Query to fetch global admins count
-  const { data: admins = [], isLoading, isError, refetch } = useQuery<GlobalAdmin[]>({
+  const {
+    data: admins = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<GlobalAdmin[]>({
     queryKey: [`/api/tenants/${tenantId}/microsoft365/global-administrators`],
     // Only fetch when needed (when dialog is opened or for initial count)
     refetchOnWindowFocus: false,
@@ -31,15 +43,15 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
   });
 
   // Count active and disabled admins
-  const activeAdmins = admins.filter(admin => admin.accountEnabled).length;
-  const disabledAdmins = admins.filter(admin => !admin.accountEnabled).length;
-  
+  const activeAdmins = admins.filter((admin) => admin.accountEnabled).length;
+  const disabledAdmins = admins.filter((admin) => !admin.accountEnabled).length;
+
   // Handle refresh button click
   const handleRefresh = () => {
     refetch();
     toast({
-      title: "Refreshing administrators",
-      description: "Fetching the latest data from Microsoft 365..."
+      title: 'Refreshing administrators',
+      description: 'Fetching the latest data from Microsoft 365...',
     });
   };
 
@@ -53,7 +65,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
         </div>
       );
     }
-    
+
     if (isError) {
       return (
         <div className="p-6">
@@ -70,7 +82,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
         </div>
       );
     }
-    
+
     if (admins.length === 0) {
       return (
         <div className="text-center p-12">
@@ -85,7 +97,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
         </div>
       );
     }
-    
+
     return (
       <div className="py-2">
         <div className="flex justify-between items-center mb-4 px-6">
@@ -94,7 +106,10 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
               {admins.length} Administrator{admins.length !== 1 ? 's' : ''} Found
             </Badge>
             {activeAdmins > 0 && (
-              <Badge variant="outline" className="text-sm font-medium ml-2 bg-emerald-50 text-emerald-700 border-emerald-200">
+              <Badge
+                variant="outline"
+                className="text-sm font-medium ml-2 bg-emerald-50 text-emerald-700 border-emerald-200"
+              >
                 {activeAdmins} Active
               </Badge>
             )}
@@ -105,10 +120,14 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
             )}
           </div>
           <div className="flex space-x-2">
-            <Button onClick={() => {
-              // Log the admins array to the console for debugging
-              console.log("Global Admins Data:", JSON.stringify(admins, null, 2));
-            }} variant="outline" size="sm">
+            <Button
+              onClick={() => {
+                // Log the admins array to the console for debugging
+                console.log('Global Admins Data:', JSON.stringify(admins, null, 2));
+              }}
+              variant="outline"
+              size="sm"
+            >
               Debug
             </Button>
             <Button onClick={handleRefresh} variant="outline" size="sm">
@@ -116,7 +135,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
             </Button>
           </div>
         </div>
-        
+
         <div className="space-y-4 max-h-[60vh] overflow-y-auto px-6 pb-6">
           {admins.map((admin) => (
             <Card key={admin.id} className={`overflow-hidden ${!admin.accountEnabled ? 'bg-muted/30' : ''}`}>
@@ -136,7 +155,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
                   )}
                 </div>
               </CardHeader>
-              
+
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
                   <div className="flex items-center text-muted-foreground">
@@ -162,7 +181,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
       </div>
     );
   };
-  
+
   // Main widget card with dialog
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -192,7 +211,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
               </>
             )}
           </div>
-          
+
           <div className="mt-6 text-center">
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
@@ -209,9 +228,7 @@ export default function GlobalAdminsWidget({ tenantId }: { tenantId: string | nu
             <Shield className="mr-2 h-5 w-5" />
             Microsoft 365 Global Administrators
           </DialogTitle>
-          <DialogDescription>
-            View and manage Microsoft 365 global administrator accounts
-          </DialogDescription>
+          <DialogDescription>View and manage Microsoft 365 global administrator accounts</DialogDescription>
         </DialogHeader>
         {renderDialogContent()}
       </DialogContent>

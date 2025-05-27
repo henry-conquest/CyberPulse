@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Download, Send, Edit } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Download, Send, Edit } from 'lucide-react';
 
 interface AnalystCommentsProps {
   comments: string;
@@ -37,7 +37,7 @@ export default function AnalystComments({
 
   // Split the comments into paragraphs
   const paragraphs = comments.split(/\n\n|\r\n\r\n/);
-  
+
   // Function to identify and process bullet points
   const processBulletPoint = (text: string) => {
     // Match patterns like "• Item" or "* Item" or "- Item"
@@ -55,58 +55,49 @@ export default function AnalystComments({
         <div className="bg-secondary-50 p-4 rounded-md text-sm text-secondary-600 border-l-4 border-primary-600">
           {paragraphs.map((paragraph, index) => {
             // Check if this paragraph contains bullet points
-            if (paragraph.includes("•") || paragraph.includes("*") || paragraph.includes("-")) {
+            if (paragraph.includes('•') || paragraph.includes('*') || paragraph.includes('-')) {
               // Split into lines to process each bullet point
               const lines = paragraph.split(/\n|\r\n/);
-              const bulletItems = lines.map(line => processBulletPoint(line)).filter(Boolean);
-              
+              const bulletItems = lines.map((line) => processBulletPoint(line)).filter(Boolean);
+
               if (bulletItems.length > 0) {
                 return (
                   <div key={index} className="mb-3">
                     {index > 0 && lines[0].trim().match(/^[A-Za-z]/) && (
                       <p className="font-semibold mb-2">{lines[0]}</p>
                     )}
-                    <ul className="list-disc pl-5 space-y-1">
-                      {bulletItems}
-                    </ul>
+                    <ul className="list-disc pl-5 space-y-1">{bulletItems}</ul>
                   </div>
                 );
               }
             }
-            
+
             // Regular paragraph
-            return <p key={index} className="mb-3">{paragraph}</p>;
+            return (
+              <p key={index} className="mb-3">
+                {paragraph}
+              </p>
+            );
           })}
         </div>
 
         <div className="mt-4 text-right flex justify-end space-x-2">
           {onDownload && (
-            <Button
-              variant="outline"
-              onClick={onDownload}
-              className="inline-flex items-center"
-            >
+            <Button variant="outline" onClick={onDownload} className="inline-flex items-center">
               <Download className="h-4 w-4 mr-2" />
               Download Report
             </Button>
           )}
-          
+
           {isEditable && onEdit && (
-            <Button
-              variant="outline"
-              onClick={onEdit}
-              className="inline-flex items-center"
-            >
+            <Button variant="outline" onClick={onEdit} className="inline-flex items-center">
               <Edit className="h-4 w-4 mr-2" />
               Edit Comments
             </Button>
           )}
-          
+
           {onSend && (
-            <Button
-              onClick={onSend}
-              className="inline-flex items-center"
-            >
+            <Button onClick={onSend} className="inline-flex items-center">
               <Send className="h-4 w-4 mr-2" />
               Send Report
             </Button>

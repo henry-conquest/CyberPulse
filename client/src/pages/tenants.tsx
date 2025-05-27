@@ -1,29 +1,15 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { format } from "date-fns";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { format } from 'date-fns';
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -32,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,25 +26,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+} from '@/components/ui/dropdown-menu';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Building,
   PackagePlus,
@@ -72,17 +45,17 @@ import {
   Search,
   BarChart,
   FileText,
-} from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+} from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // Schema for tenant form
 const tenantSchema = z.object({
-  name: z.string().min(3, "Name must be at least 3 characters"),
+  name: z.string().min(3, 'Name must be at least 3 characters'),
 });
 
 // Schema for add user to tenant form
 const addUserSchema = z.object({
-  userId: z.string().min(1, "Please select a user"),
+  userId: z.string().min(1, 'Please select a user'),
 });
 
 // Tenant type
@@ -106,28 +79,28 @@ export default function Tenants() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<SelectedTenant | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [tabId, setTabId] = useState("all");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [tabId, setTabId] = useState('all');
 
   // Forms
   const tenantForm = useForm<z.infer<typeof tenantSchema>>({
     resolver: zodResolver(tenantSchema),
     defaultValues: {
-      name: "",
+      name: '',
     },
   });
 
   const editTenantForm = useForm<z.infer<typeof tenantSchema>>({
     resolver: zodResolver(tenantSchema),
     defaultValues: {
-      name: "",
+      name: '',
     },
   });
 
   const addUserForm = useForm<z.infer<typeof addUserSchema>>({
     resolver: zodResolver(addUserSchema),
     defaultValues: {
-      userId: "",
+      userId: '',
     },
   });
 
@@ -155,8 +128,8 @@ export default function Tenants() {
     },
     onSuccess: () => {
       toast({
-        title: "Tenant created",
-        description: "The organization has been created successfully",
+        title: 'Tenant created',
+        description: 'The organization has been created successfully',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
       setIsCreateDialogOpen(false);
@@ -164,9 +137,9 @@ export default function Tenants() {
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create organization",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create organization',
+        variant: 'destructive',
       });
     },
   });
@@ -174,13 +147,15 @@ export default function Tenants() {
   // Update tenant mutation
   const updateTenantMutation = useMutation({
     mutationFn: async (data: { id: number; name: string }) => {
-      const response = await apiRequest('PATCH', `/api/tenants/${data.id}`, { name: data.name });
+      const response = await apiRequest('PATCH', `/api/tenants/${data.id}`, {
+        name: data.name,
+      });
       return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Tenant updated",
-        description: "The organization has been updated successfully",
+        title: 'Tenant updated',
+        description: 'The organization has been updated successfully',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
       setIsEditDialogOpen(false);
@@ -188,9 +163,9 @@ export default function Tenants() {
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update organization",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update organization',
+        variant: 'destructive',
       });
     },
   });
@@ -202,17 +177,17 @@ export default function Tenants() {
     },
     onSuccess: () => {
       toast({
-        title: "Tenant deleted",
-        description: "The organization has been deleted successfully",
+        title: 'Tenant deleted',
+        description: 'The organization has been deleted successfully',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
       setSelectedTenant(null);
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete organization",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete organization',
+        variant: 'destructive',
       });
     },
   });
@@ -225,18 +200,20 @@ export default function Tenants() {
     },
     onSuccess: () => {
       toast({
-        title: "User added",
-        description: "User has been added to the organization successfully",
+        title: 'User added',
+        description: 'User has been added to the organization successfully',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/tenants', selectedTenant?.id, 'users'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/tenants', selectedTenant?.id, 'users'],
+      });
       setIsAddUserDialogOpen(false);
       addUserForm.reset();
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to add user to organization",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to add user to organization',
+        variant: 'destructive',
       });
     },
   });
@@ -248,16 +225,18 @@ export default function Tenants() {
     },
     onSuccess: () => {
       toast({
-        title: "User removed",
-        description: "User has been removed from the organization successfully",
+        title: 'User removed',
+        description: 'User has been removed from the organization successfully',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/tenants', selectedTenant?.id, 'users'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/tenants', selectedTenant?.id, 'users'],
+      });
     },
     onError: (error) => {
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to remove user from organization",
-        variant: "destructive",
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to remove user from organization',
+        variant: 'destructive',
       });
     },
   });
@@ -273,20 +252,30 @@ export default function Tenants() {
   };
 
   const handleDeleteTenant = (id: number) => {
-    if (confirm("Are you sure you want to delete this organization? This action cannot be undone and will remove all associated data.")) {
+    if (
+      confirm(
+        'Are you sure you want to delete this organization? This action cannot be undone and will remove all associated data.'
+      )
+    ) {
       deleteTenantMutation.mutate(id);
     }
   };
 
   const handleAddUserToTenant = (data: z.infer<typeof addUserSchema>) => {
     if (!selectedTenant) return;
-    addUserToTenantMutation.mutate({ tenantId: selectedTenant.id, userId: data.userId });
+    addUserToTenantMutation.mutate({
+      tenantId: selectedTenant.id,
+      userId: data.userId,
+    });
   };
 
   const handleRemoveUserFromTenant = (userId: string) => {
     if (!selectedTenant) return;
-    if (confirm("Are you sure you want to remove this user from the organization?")) {
-      removeUserFromTenantMutation.mutate({ tenantId: selectedTenant.id, userId });
+    if (confirm('Are you sure you want to remove this user from the organization?')) {
+      removeUserFromTenantMutation.mutate({
+        tenantId: selectedTenant.id,
+        userId,
+      });
     }
   };
 
@@ -300,27 +289,26 @@ export default function Tenants() {
 
   const openTenantDetails = async (tenant: Tenant) => {
     setSelectedTenant(tenant);
-    setTabId("detail");
-    
+    setTabId('detail');
+
     // Fetch tenant users
     try {
       const response = await fetch(`/api/tenants/${tenant.id}/users`, {
-        credentials: "include",
+        credentials: 'include',
       });
       if (response.ok) {
         const users = await response.json();
         setSelectedTenant({ ...tenant, users });
       }
     } catch (error) {
-      console.error("Error fetching tenant users:", error);
+      console.error('Error fetching tenant users:', error);
     }
   };
 
   // Filter tenants
   const filteredTenants = tenants
     ? tenants.filter((tenant: Tenant) => {
-        return searchQuery.trim() === "" || 
-          tenant.name.toLowerCase().includes(searchQuery.toLowerCase());
+        return searchQuery.trim() === '' || tenant.name.toLowerCase().includes(searchQuery.toLowerCase());
       })
     : [];
 
@@ -330,9 +318,7 @@ export default function Tenants() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold">Organizations</h1>
-            <p className="text-secondary-500">
-              Manage client organizations and user access
-            </p>
+            <p className="text-secondary-500">Manage client organizations and user access</p>
           </div>
           <div className="mt-4 md:mt-0 flex gap-3">
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -345,11 +331,9 @@ export default function Tenants() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create New Organization</DialogTitle>
-                  <DialogDescription>
-                    Add a new client organization to the platform.
-                  </DialogDescription>
+                  <DialogDescription>Add a new client organization to the platform.</DialogDescription>
                 </DialogHeader>
-                
+
                 <Form {...tenantForm}>
                   <form onSubmit={tenantForm.handleSubmit(handleCreateTenant)} className="space-y-4">
                     <FormField
@@ -361,40 +345,36 @@ export default function Tenants() {
                           <FormControl>
                             <Input {...field} placeholder="Acme Corporation" />
                           </FormControl>
-                          <FormDescription>
-                            This will be displayed across the platform.
-                          </FormDescription>
+                          <FormDescription>This will be displayed across the platform.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+
                     <DialogFooter>
                       <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                         Cancel
                       </Button>
                       <Button type="submit" disabled={createTenantMutation.isPending}>
-                        {createTenantMutation.isPending ? "Creating..." : "Create Organization"}
+                        {createTenantMutation.isPending ? 'Creating...' : 'Create Organization'}
                       </Button>
                     </DialogFooter>
                   </form>
                 </Form>
               </DialogContent>
             </Dialog>
-            
-            {tabId === "detail" && selectedTenant && (
-              <Button variant="outline" onClick={() => setTabId("all")}>
+
+            {tabId === 'detail' && selectedTenant && (
+              <Button variant="outline" onClick={() => setTabId('all')}>
                 Back to All Organizations
               </Button>
             )}
           </div>
         </div>
-        
+
         <TabsList className="mb-6">
           <TabsTrigger value="all">All Organizations</TabsTrigger>
-          {selectedTenant && (
-            <TabsTrigger value="detail">{selectedTenant.name}</TabsTrigger>
-          )}
+          {selectedTenant && <TabsTrigger value="detail">{selectedTenant.name}</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="all">
@@ -408,14 +388,12 @@ export default function Tenants() {
               prefix={<Search className="h-4 w-4 text-secondary-500" />}
             />
           </div>
-          
+
           {/* Tenants table */}
           <Card>
             <CardHeader>
               <CardTitle>Client Organizations</CardTitle>
-              <CardDescription>
-                List of all client organizations in the system
-              </CardDescription>
+              <CardDescription>List of all client organizations in the system</CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -446,9 +424,9 @@ export default function Tenants() {
                         </TableCell>
                         <TableCell>{tenant.id}</TableCell>
                         <TableCell>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="hover:bg-secondary-100"
                             onClick={() => openTenantDetails(tenant)}
                           >
@@ -456,8 +434,8 @@ export default function Tenants() {
                             View Users
                           </Button>
                         </TableCell>
-                        <TableCell>{format(new Date(tenant.createdAt), "MMM d, yyyy")}</TableCell>
-                        <TableCell>{format(new Date(tenant.updatedAt), "MMM d, yyyy")}</TableCell>
+                        <TableCell>{format(new Date(tenant.createdAt), 'MMM d, yyyy')}</TableCell>
+                        <TableCell>{format(new Date(tenant.updatedAt), 'MMM d, yyyy')}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -476,7 +454,7 @@ export default function Tenants() {
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
                                 onClick={() => handleDeleteTenant(tenant.id)}
                               >
@@ -495,9 +473,9 @@ export default function Tenants() {
                   <Building className="h-12 w-12 text-secondary-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">No Organizations Found</h3>
                   <p className="text-secondary-500 mb-4">
-                    {tenants?.length === 0 
-                      ? "No organizations have been created yet." 
-                      : "No organizations match your search criteria."}
+                    {tenants?.length === 0
+                      ? 'No organizations have been created yet.'
+                      : 'No organizations match your search criteria.'}
                   </p>
                   {tenants?.length === 0 && (
                     <Button onClick={() => setIsCreateDialogOpen(true)}>
@@ -522,7 +500,7 @@ export default function Tenants() {
                   <div className="ml-3">
                     <h2 className="text-xl font-bold">{selectedTenant.name}</h2>
                     <p className="text-sm text-secondary-500">
-                      ID: {selectedTenant.id} • Created: {format(new Date(selectedTenant.createdAt), "MMMM d, yyyy")}
+                      ID: {selectedTenant.id} • Created: {format(new Date(selectedTenant.createdAt), 'MMMM d, yyyy')}
                     </p>
                   </div>
                 </div>
@@ -543,9 +521,7 @@ export default function Tenants() {
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                       <CardTitle>Users</CardTitle>
-                      <CardDescription>
-                        Users with access to this organization
-                      </CardDescription>
+                      <CardDescription>Users with access to this organization</CardDescription>
                     </div>
                     <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
                       <DialogTrigger asChild>
@@ -557,11 +533,9 @@ export default function Tenants() {
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Add User to Organization</DialogTitle>
-                          <DialogDescription>
-                            Add an existing user to this organization.
-                          </DialogDescription>
+                          <DialogDescription>Add an existing user to this organization.</DialogDescription>
                         </DialogHeader>
-                        
+
                         <Form {...addUserForm}>
                           <form onSubmit={addUserForm.handleSubmit(handleAddUserToTenant)} className="space-y-4">
                             <FormField
@@ -576,13 +550,13 @@ export default function Tenants() {
                                     onChange={field.onChange}
                                   >
                                     <option value="">Select a user</option>
-                                    {allUsers?.filter((u: any) => 
-                                      !tenantUsers?.some((tu: any) => tu.id === u.id)
-                                    ).map((user: any) => (
-                                      <option key={user.id} value={user.id}>
-                                        {user.email} ({user.firstName} {user.lastName})
-                                      </option>
-                                    ))}
+                                    {allUsers
+                                      ?.filter((u: any) => !tenantUsers?.some((tu: any) => tu.id === u.id))
+                                      .map((user: any) => (
+                                        <option key={user.id} value={user.id}>
+                                          {user.email} ({user.firstName} {user.lastName})
+                                        </option>
+                                      ))}
                                   </select>
                                   <FormDescription>
                                     Only users not already part of this organization are shown.
@@ -591,13 +565,13 @@ export default function Tenants() {
                                 </FormItem>
                               )}
                             />
-                            
+
                             <DialogFooter>
                               <Button type="button" variant="outline" onClick={() => setIsAddUserDialogOpen(false)}>
                                 Cancel
                               </Button>
                               <Button type="submit" disabled={addUserToTenantMutation.isPending}>
-                                {addUserToTenantMutation.isPending ? "Adding..." : "Add User"}
+                                {addUserToTenantMutation.isPending ? 'Adding...' : 'Add User'}
                               </Button>
                             </DialogFooter>
                           </form>
@@ -627,33 +601,41 @@ export default function Tenants() {
                               <TableCell>
                                 <div className="flex items-center space-x-3">
                                   <Avatar>
-                                    <AvatarImage src={user.profileImageUrl} alt={`${user.firstName || 'User'}'s avatar`} />
+                                    <AvatarImage
+                                      src={user.profileImageUrl}
+                                      alt={`${user.firstName || 'User'}'s avatar`}
+                                    />
                                     <AvatarFallback className="bg-primary-600 text-white">
-                                      {user.firstName?.[0] || user.email?.[0]?.toUpperCase() || "U"}
+                                      {user.firstName?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
                                     </AvatarFallback>
                                   </Avatar>
                                   <div className="font-medium">
-                                    {user.firstName && user.lastName 
-                                      ? `${user.firstName} ${user.lastName}` 
-                                      : user.email.split("@")[0]}
+                                    {user.firstName && user.lastName
+                                      ? `${user.firstName} ${user.lastName}`
+                                      : user.email.split('@')[0]}
                                   </div>
                                 </div>
                               </TableCell>
                               <TableCell>{user.email}</TableCell>
                               <TableCell>
-                                <Badge variant={
-                                  user.role === "admin" ? "destructive" : 
-                                  user.role === "analyst" ? "default" : 
-                                  user.role === "account_manager" ? "secondary" : 
-                                  "outline"
-                                }>
+                                <Badge
+                                  variant={
+                                    user.role === 'admin'
+                                      ? 'destructive'
+                                      : user.role === 'analyst'
+                                        ? 'default'
+                                        : user.role === 'account_manager'
+                                          ? 'secondary'
+                                          : 'outline'
+                                  }
+                                >
                                   {user.role}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
                                   onClick={() => handleRemoveUserFromTenant(user.id)}
                                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                 >
@@ -667,12 +649,10 @@ export default function Tenants() {
                     ) : (
                       <div className="py-6 text-center">
                         <Users className="h-10 w-10 text-secondary-300 mx-auto mb-3" />
-                        <p className="text-secondary-500">
-                          No users have been added to this organization yet
-                        </p>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <p className="text-secondary-500">No users have been added to this organization yet</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setIsAddUserDialogOpen(true)}
                           className="mt-3"
                         >
@@ -687,9 +667,7 @@ export default function Tenants() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Organization Stats</CardTitle>
-                    <CardDescription>
-                      Overview of organization metrics
-                    </CardDescription>
+                    <CardDescription>Overview of organization metrics</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -705,13 +683,18 @@ export default function Tenants() {
                           <BarChart className="h-4 w-4 mr-2 text-secondary-500" />
                           <span className="text-sm text-secondary-500">Risk Score</span>
                         </div>
-                        <Badge variant={
-                          !selectedTenant ? "outline" :
-                          Math.random() > 0.6 ? "destructive" :
-                          Math.random() > 0.3 ? "warning" :
-                          "success"
-                        }>
-                          {!selectedTenant ? "N/A" : `${Math.floor(Math.random() * 100)}%`}
+                        <Badge
+                          variant={
+                            !selectedTenant
+                              ? 'outline'
+                              : Math.random() > 0.6
+                                ? 'destructive'
+                                : Math.random() > 0.3
+                                  ? 'warning'
+                                  : 'success'
+                          }
+                        >
+                          {!selectedTenant ? 'N/A' : `${Math.floor(Math.random() * 100)}%`}
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b">
@@ -748,11 +731,9 @@ export default function Tenants() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Organization</DialogTitle>
-            <DialogDescription>
-              Update the organization details.
-            </DialogDescription>
+            <DialogDescription>Update the organization details.</DialogDescription>
           </DialogHeader>
-          
+
           <Form {...editTenantForm}>
             <form onSubmit={editTenantForm.handleSubmit(handleUpdateTenant)} className="space-y-4">
               <FormField
@@ -768,13 +749,13 @@ export default function Tenants() {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={updateTenantMutation.isPending}>
-                  {updateTenantMutation.isPending ? "Updating..." : "Update Organization"}
+                  {updateTenantMutation.isPending ? 'Updating...' : 'Update Organization'}
                 </Button>
               </DialogFooter>
             </form>
