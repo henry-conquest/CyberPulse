@@ -23,7 +23,7 @@ export class EmailService {
   }
 
   async sendInviteEmail(email: string, token: string, tenantId: string) {
-    const inviteUrl = `http://localhost:5010/accept-invite?token=${token}`;
+    const inviteUrl = `https://cyber-pulse-charles250.replit.app/accept-invite?token=${token}`;
 
     const htmlBody = `
     <p>Hello,</p>

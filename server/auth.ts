@@ -15,7 +15,7 @@ const getOIDCConfig = memoize(
     userInfoURL: `https://graph.microsoft.com/oidc/userinfo`,
     clientID: process.env.CLIENT_ID!,
     clientSecret: process.env.CLIENT_SECRET!,
-    callbackURL: process.env.LOCAL_REDIRECT_URI!,
+    callbackURL: process.env.REPLIT_REDIRECT_URI!,
     scope: ['openid', 'profile', 'email', 'offline_access', 'User.Read'],
   }),
   { maxAge: 3600 * 1000 }
@@ -66,7 +66,7 @@ export async function setupAuth(app: Express) {
         tokenURL: `https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/token`,
         clientID: process.env.CLIENT_ID!,
         clientSecret: process.env.CLIENT_SECRET!,
-        callbackURL: process.env.LOCAL_REDIRECT_URI!,
+        callbackURL: process.env.REPLIT_REDIRECT_URI!,
         scope: ['openid', 'profile', 'email', 'offline_access', 'User.Read'].join(' '),
       },
       async (accessToken, refreshToken, params, profile, done) => {
