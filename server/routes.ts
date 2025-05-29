@@ -262,8 +262,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
-
-
   // Microsoft 365 OAuth callback
   app.get(
     '/api/auth/microsoft365/callback',

@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { User, Bell, Shield, Lock, Database, AlertTriangle, Link2, Cloud, ExternalLink } from 'lucide-react';
-import { useSettingsForm } from './useSettingsForm';
+import { useSettingsForm } from '../../hooks/useSettingsForm';
 import { ProfileTab } from './tabs//Profile/ProfileTab';
 import { NotificationsTab } from './tabs//Notifications/NotificationsTab';
 import Users from '../users';
@@ -75,12 +75,25 @@ export default function Settings() {
       });
     },
     onError: (error) => {
+      let message = 'Failed to disconnect Microsoft 365';
+
+      if (error instanceof Error) {
+        try {
+          // Remove status code if present (e.g., "500: {json}")
+          const cleanMessage = error.message.replace(/^\d{3}:\s*/, '');
+          const parsed = JSON.parse(cleanMessage);
+          message = parsed.message ?? error.message;
+        } catch (e) {
+          console.warn('Error parsing JSON:', e);
+          message = error.message;
+        }
+      }
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to disconnect Microsoft 365',
+        description: message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
   if (!user) {
@@ -164,7 +177,7 @@ export default function Settings() {
 
               <Separator />
 
-              <div>
+              {/* <div>
                 <h3 className="text-lg font-medium mb-4">Change Password</h3>
                 <Form {...securityForm}>
                   <form onSubmit={securityForm.handleSubmit(onSecuritySubmit)} className="space-y-4">
@@ -216,9 +229,9 @@ export default function Settings() {
                     </Button>
                   </form>
                 </Form>
-              </div>
+              </div> */}
 
-              <Separator />
+              {/* <Separator /> */}
 
               <div>
                 <h3 className="text-lg font-medium mb-2">Account Sessions</h3>

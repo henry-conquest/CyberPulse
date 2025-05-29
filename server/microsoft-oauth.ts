@@ -147,14 +147,14 @@ export function getAuthorizationUrl(state: string, clientId?: string, redirectUr
 }
 
 export const getMicrosoft365ConnectionForTenant = async (tenantId: string) => {
-    const connection = await storage.getMicrosoft365ConnectionByTenantId(+tenantId)
+  const connection = await storage.getMicrosoft365ConnectionByTenantId(+tenantId);
 
-    if(!connection) {
-      throw new Error(`No Microsoft 365 connection found for tenant ID: ${tenantId}`)
-    }
-
-    return connection
+  if (!connection) {
+    throw new Error(`No Microsoft 365 connection found for the requested organisation`);
   }
+
+  return connection;
+};
 
 /**
  * Exchange authorization code for access and refresh tokens

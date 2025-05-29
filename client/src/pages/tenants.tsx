@@ -136,12 +136,25 @@ export default function Tenants() {
       tenantForm.reset();
     },
     onError: (error) => {
+      let message = 'Failed to create organisation';
+
+      if (error instanceof Error) {
+        try {
+          // Remove status code if present (e.g., "500: {json}")
+          const cleanMessage = error.message.replace(/^\d{3}:\s*/, '');
+          const parsed = JSON.parse(cleanMessage);
+          message = parsed.message ?? error.message;
+        } catch (e) {
+          console.warn('Error parsing JSON:', e);
+          message = error.message;
+        }
+      }
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create organization',
+        description: message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
   // Update tenant mutation
@@ -162,12 +175,25 @@ export default function Tenants() {
       setSelectedTenant(null);
     },
     onError: (error) => {
+      let message = 'Failed to update organisation';
+
+      if (error instanceof Error) {
+        try {
+          // Remove status code if present (e.g., "500: {json}")
+          const cleanMessage = error.message.replace(/^\d{3}:\s*/, '');
+          const parsed = JSON.parse(cleanMessage);
+          message = parsed.message ?? error.message;
+        } catch (e) {
+          console.warn('Error parsing JSON:', e);
+          message = error.message;
+        }
+      }
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update organization',
+        description: message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
   // Delete tenant mutation
@@ -184,12 +210,25 @@ export default function Tenants() {
       setSelectedTenant(null);
     },
     onError: (error) => {
+      let message = 'Failed to delete organisation';
+
+      if (error instanceof Error) {
+        try {
+          // Remove status code if present (e.g., "500: {json}")
+          const cleanMessage = error.message.replace(/^\d{3}:\s*/, '');
+          const parsed = JSON.parse(cleanMessage);
+          message = parsed.message ?? error.message;
+        } catch (e) {
+          console.warn('Error parsing JSON:', e);
+          message = error.message;
+        }
+      }
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete organization',
+        description: message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
   // Add user to tenant mutation
@@ -210,12 +249,25 @@ export default function Tenants() {
       addUserForm.reset();
     },
     onError: (error) => {
+      let message = 'Failed to add user to organisation';
+
+      if (error instanceof Error) {
+        try {
+          // Remove status code if present (e.g., "500: {json}")
+          const cleanMessage = error.message.replace(/^\d{3}:\s*/, '');
+          const parsed = JSON.parse(cleanMessage);
+          message = parsed.message ?? error.message;
+        } catch (e) {
+          console.warn('Error parsing JSON:', e);
+          message = error.message;
+        }
+      }
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to add user to organization',
+        description: message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
   // Remove user from tenant mutation
@@ -233,12 +285,25 @@ export default function Tenants() {
       });
     },
     onError: (error) => {
+      let message = 'Failed to remove user from organisation';
+
+      if (error instanceof Error) {
+        try {
+          // Remove status code if present (e.g., "500: {json}")
+          const cleanMessage = error.message.replace(/^\d{3}:\s*/, '');
+          const parsed = JSON.parse(cleanMessage);
+          message = parsed.message ?? error.message;
+        } catch (e) {
+          console.warn('Error parsing JSON:', e);
+          message = error.message;
+        }
+      }
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to remove user from organization',
+        description: message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
   // Form handlers

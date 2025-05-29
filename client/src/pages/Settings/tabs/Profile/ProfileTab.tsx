@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
-import { useSettingsForm } from '@/pages/Settings/useSettingsForm';
+import { useSettingsForm } from '@/hooks/useSettingsForm';
 
 export const ProfileTab = ({
   user,

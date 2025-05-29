@@ -125,7 +125,7 @@ export class MicrosoftGraphService {
 
   async sendGraphEmail(to: string, subject: string, htmlBody: string): Promise<void> {
     if (!this.client) this.initializeClient();
-    if (!this.client) throw new Error("Graph client not initialized");
+    if (!this.client) throw new Error('Graph client not initialized');
 
     const message = {
       message: {
@@ -134,11 +134,9 @@ export class MicrosoftGraphService {
           contentType: 'HTML',
           content: htmlBody,
         },
-        toRecipients: [
-          { emailAddress: { address: to } }
-        ]
+        toRecipients: [{ emailAddress: { address: to } }],
       },
-      saveToSentItems: false
+      saveToSentItems: false,
     };
 
     await this.client.api(`/users/henry@conquestm365testing.onmicrosoft.com/sendMail`).post(message);

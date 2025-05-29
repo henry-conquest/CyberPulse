@@ -2,6 +2,7 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { useAuth } from '@/hooks/useAuth';
+import logoImg from '../../assets/logo.png';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,15 +24,13 @@ export default function Layout({ children }: LayoutProps) {
   if (!user) {
     return (
       <div className="flex h-screen flex-col items-center justify-center text-center">
-        <h1 className="mb-4 text-2xl font-bold">Welcome to CyberPulse</h1>
-        <p className="mb-6 max-w-md text-secondary-600">
-          Please log in to access your cyber risk dashboard and reports.
-        </p>
+        <img src={logoImg} className='w-[30rem] h-auto'/>
+        <h1 className="mb-5 mt-[-11px] text-3xl font-montserrat text-brand-green">Cyber Risk Management</h1>
         <a
           href="/api/login"
-          className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-white hover:bg-primary/90"
+          className="inline-flex items-center rounded-md bg-brand-teal px-4 py-2 text-white hover:bg-brand-teal/90 font-montserrat pt-[0.5%] pb-[0.5%] pl-[5%] pr-[5%]"
         >
-          Log In
+          Login
         </a>
       </div>
     );
