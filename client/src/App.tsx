@@ -4,7 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 
 import NotFound from '@/pages/not-found';
 import Dashboard from '@/pages/dashboard';
-import Companies from './pages/Companies/companies';
+import Companies from './pages/Companies/Companies';
 import Reports from '@/pages/reports';
 import ReportPeriods from '@/pages/report-periods';
 import ReportView from '@/pages/report-view';
