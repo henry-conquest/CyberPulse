@@ -47,7 +47,6 @@ export class EmailService {
     </p>
   `;
 
-
     const connection = await getMicrosoft365ConnectionForTenant(tenantId);
     const graph = new MicrosoftGraphService(connection);
 

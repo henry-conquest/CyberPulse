@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Mail, CheckCircle2, AlertTriangle, Calendar } from 'lucide-react';
 import { z } from 'zod';
-import { useSettingsForm } from '@/pages/Settings/useSettingsForm';
+import { useSettingsForm } from '@/hooks/useSettingsForm';
 
 const notificationOptions = [
   {

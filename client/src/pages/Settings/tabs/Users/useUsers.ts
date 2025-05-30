@@ -77,12 +77,25 @@ export const useUsers = () => {
       inviteForm.reset();
     },
     onError: (error) => {
+      let message = 'Failed to invite user';
+
+      if (error instanceof Error) {
+        try {
+          // Remove status code if present (e.g., "500: {json}")
+          const cleanMessage = error.message.replace(/^\d{3}:\s*/, '');
+          const parsed = JSON.parse(cleanMessage);
+          message = parsed.message ?? error.message;
+        } catch (e) {
+          console.warn('Error parsing JSON:', e);
+          message = error.message;
+        }
+      }
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to invite user',
+        description: message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
   // Update user role mutation
@@ -101,12 +114,25 @@ export const useUsers = () => {
       setSelectedUser(null);
     },
     onError: (error) => {
+      let message = 'Failed to update user role';
+
+      if (error instanceof Error) {
+        try {
+          // Remove status code if present (e.g., "500: {json}")
+          const cleanMessage = error.message.replace(/^\d{3}:\s*/, '');
+          const parsed = JSON.parse(cleanMessage);
+          message = parsed.message ?? error.message;
+        } catch (e) {
+          console.warn('Error parsing JSON:', e);
+          message = error.message;
+        }
+      }
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update user role',
+        description: message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
   // Delete user mutation
@@ -122,12 +148,25 @@ export const useUsers = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
     },
     onError: (error) => {
+      let message = 'Failed to delete user';
+
+      if (error instanceof Error) {
+        try {
+          // Remove status code if present (e.g., "500: {json}")
+          const cleanMessage = error.message.replace(/^\d{3}:\s*/, '');
+          const parsed = JSON.parse(cleanMessage);
+          message = parsed.message ?? error.message;
+        } catch (e) {
+          console.warn('Error parsing JSON:', e);
+          message = error.message;
+        }
+      }
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete user',
+        description: message,
         variant: 'destructive',
       });
-    },
+    }
   });
 
   // Form handlers
