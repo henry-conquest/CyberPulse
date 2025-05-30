@@ -36,6 +36,13 @@
       "when": 1748350965516,
       "tag": "0004_brave_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1748611766149,
+      "tag": "0005_lively_proudstar",
+      "breakpoints": true
     }
   ]
 }

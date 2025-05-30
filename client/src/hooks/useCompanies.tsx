@@ -91,7 +91,8 @@ export const useCompanies = () => {
     mutationFn: async (formData: CompanyFormValues) => {
       return await apiRequest('POST', '/api/tenants', formData);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      setLoading(true)
       toast({
         title: 'Success',
         description: 'Company created successfully',
@@ -104,7 +105,8 @@ export const useCompanies = () => {
       setCreateDialogOpen(false);
 
       // Invalidate the tenants query to refresh the data
-      queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
+      setLoading(false)
     },
     onError: (error: any) => {
       toast({
@@ -140,7 +142,6 @@ export const useCompanies = () => {
         title: 'Tenant deleted',
         description: 'The client was successfully removed.',
       });
-      setLoading(false)
     } else {
       const data = await res.json();
       toast({
@@ -174,6 +175,7 @@ export const useCompanies = () => {
         createCompanyMutation,
         setM365DialogOpen,
         deleteTenant,
-        loading
+        loading,
+        setLoading
     }
 } 

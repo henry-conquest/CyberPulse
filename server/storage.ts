@@ -43,7 +43,7 @@ import {
   invites,
 } from '@shared/schema';
 import { db } from './db';
-import { eq, and, inArray, desc, asc, sql, like, or } from 'drizzle-orm';
+import { eq, and, inArray, desc, asc, sql, like, or, isNull } from 'drizzle-orm';
 
 // Interface for storage operations
 export interface IStorage {
@@ -228,7 +228,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllTenants(): Promise<Tenant[]> {
-    return await db.select().from(tenants).orderBy(tenants.name);
+    return await db.select().from(tenants).where(isNull(tenants.deletedAt)).orderBy(tenants.name);
   }
 
   async updateTenant(id: number, tenant: Partial<InsertTenant>): Promise<Tenant> {
@@ -241,8 +241,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTenant(id: number): Promise<void> {
-    await db.delete(tenants).where(eq(tenants.id, id));
-  }
+    await db.update(tenants)
+      .set({ deletedAt: new Date() })
+      .where(eq(tenants.id, id));  }
 
   async getTenantsByUserId(userId: string): Promise<Tenant[]> {
     const userTenantRecords = await db
