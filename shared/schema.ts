@@ -51,7 +51,9 @@ export const tenants = pgTable('tenants', {
   name: varchar('name').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-  deletedAt: timestamp('deleted_at').default(sql`null`).$type<Date | null>()
+  deletedAt: timestamp('deleted_at')
+    .default(sql`null`)
+    .$type<Date | null>(),
 });
 
 // User-tenant relationship (for multi-tenant access)

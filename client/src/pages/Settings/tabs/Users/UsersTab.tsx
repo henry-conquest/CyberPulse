@@ -29,6 +29,8 @@ import { Search, MoreVertical, UserPlus, UserCog, Shield, Trash2, Mail, Filter }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUsers } from './useUsers';
 import InviteForm from './InviteForm/InviteForm';
+import ManageAccessDialog from './ManageAccess/ManageAccess';
+import { useState } from 'react';
 
 export default function Users() {
   const {
@@ -54,6 +56,13 @@ export default function Users() {
     roleFilter,
     updateRoleMutation,
     loggedInUser,
+    isManageAccessDialogOpen,
+    setIsManageAccessDialogOpen,
+    selectedUserForAccess,
+    setSelectedUserForAccess,
+    updateTenantAccessMutation,
+    loading,
+    setLoading
   } = useUsers();
 
   // Helper to get role badge
@@ -143,7 +152,7 @@ export default function Users() {
           <CardDescription>Manage accounts and access permissions for all users</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isLoading || loading ? (
             <div className="py-8 text-center">
               <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
               <p className="mt-4 text-secondary-500">Loading users...</p>
@@ -152,7 +161,7 @@ export default function Users() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User</TableHead>
+                  {/* <TableHead>User</TableHead> */}
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Organizations</TableHead>
@@ -164,8 +173,8 @@ export default function Users() {
                 {filteredUsers.map((user: UserModel) => {
                   return (
                     <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
+                      {/* <TableCell> */}
+                        {/* <div className="flex items-center space-x-3">
                           <Avatar>
                             <AvatarImage src={user.profileImageUrl} alt={`${user.firstName || 'User'}'s avatar`} />
                             <AvatarFallback className="bg-primary-600 text-white">
@@ -180,8 +189,8 @@ export default function Users() {
                             </div>
                             {loggedInUser.id === user?.id && <div className="text-xs text-secondary-500">You</div>}
                           </div>
-                        </div>
-                      </TableCell>
+                        </div> */}
+                      {/* </TableCell> */}
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
                       <TableCell>
@@ -211,7 +220,13 @@ export default function Users() {
                               <UserCog className="h-4 w-4 mr-2" />
                               Change Role
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              disabled={loggedInUser.id === user.id}
+                              onClick={() => {
+                                setSelectedUserForAccess(user);
+                                setIsManageAccessDialogOpen(true);
+                              }}
+                            >
                               <Shield className="h-4 w-4 mr-2" />
                               Manage Access
                             </DropdownMenuItem>
@@ -350,6 +365,18 @@ export default function Users() {
           </Form>
         </DialogContent>
       </Dialog>
+      {isManageAccessDialogOpen && (
+        <ManageAccessDialog
+        open={isManageAccessDialogOpen}
+        onOpenChange={setIsManageAccessDialogOpen}
+        user={selectedUserForAccess}
+        tenants={tenants}
+        onSave={async (userId: any, tenantIds: any) => {
+          setIsManageAccessDialogOpen(false);
+        await updateTenantAccessMutation.mutateAsync({ userId, tenantIds });
+      }}   
+        />
+      )}
     </div>
   );
 }

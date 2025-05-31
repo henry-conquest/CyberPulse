@@ -154,7 +154,7 @@ export default function Tenants() {
         description: message,
         variant: 'destructive',
       });
-    }
+    },
   });
 
   // Update tenant mutation
@@ -193,7 +193,7 @@ export default function Tenants() {
         description: message,
         variant: 'destructive',
       });
-    }
+    },
   });
 
   // Delete tenant mutation
@@ -228,7 +228,7 @@ export default function Tenants() {
         description: message,
         variant: 'destructive',
       });
-    }
+    },
   });
 
   // Add user to tenant mutation
@@ -267,7 +267,7 @@ export default function Tenants() {
         description: message,
         variant: 'destructive',
       });
-    }
+    },
   });
 
   // Remove user from tenant mutation
@@ -303,7 +303,7 @@ export default function Tenants() {
         description: message,
         variant: 'destructive',
       });
-    }
+    },
   });
 
   // Form handlers

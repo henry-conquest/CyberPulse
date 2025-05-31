@@ -9,6 +9,7 @@ const sessionInfoSlice = createSlice({
   initialState: initialSessionInfoSlice,
   reducers: {
     setUser(state, action) {
+      console.log('CALLED', action.payload)
       state.user = action.payload;
     },
   },

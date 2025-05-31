@@ -5,17 +5,41 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { ChevronRight, Shield, X } from 'lucide-react';
 import { UserRoles } from '@shared/schema';
 import { useCompanies } from '@/hooks/useCompanies';
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import CreateCompanyForm from './Forms/CreateCompanyForm';
 import ConnectToM365Form from './Forms/ConnectToM365Form';
 
 export default function Companies() {
-  const {connectToM365, m365DialogOpen, createDialogOpen, setSelectedTenantId, tenants, isTenantsLoading, user, isUserLoading, onSubmit, setCreateDialogOpen, form, createCompanyMutation, setM365DialogOpen, deleteTenant, loading, setLoading} = useCompanies()
+  const {
+    connectToM365,
+    m365DialogOpen,
+    createDialogOpen,
+    tenants,
+    isTenantsLoading,
+    user,
+    isUserLoading,
+    onSubmit,
+    setCreateDialogOpen,
+    form,
+    createCompanyMutation,
+    setM365DialogOpen,
+    deleteTenant,
+    loading,
+    setLoading,
+    createTenant,
+  } = useCompanies();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tenantToDelete, setTenantToDelete] = useState<any>(null);
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   // LOADING STATE
   if (isUserLoading || isTenantsLoading || loading) {
@@ -30,12 +54,18 @@ export default function Companies() {
   if (!tenants || tenants.length === 0) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold mb-6">{user?.role === UserRoles.ADMIN ? 'Clients' : 'Your Company'}</h1>
+        <h1 className="text-3xl font-bold font-montserrat text-brand-teal">{user?.role === UserRoles.ADMIN ? 'Clients' : `${user?.firstName} ${user?.lastName || ''}`}</h1>
         <div className="bg-secondary-50 border border-secondary-200 rounded-lg p-8 text-center">
           <h2 className="text-xl font-semibold text-secondary-800 mb-2">No Companies Found</h2>
           <p className="text-secondary-600 mb-6">There are no companies available in your account.</p>
           {user?.role === UserRoles.ADMIN && (
-            <CreateCompanyForm form={form} createDialogOpen={createDialogOpen} setCreateDialogOpen={setCreateDialogOpen} createCompanyMutation={createCompanyMutation} onSubmit={onSubmit}/>
+            <CreateCompanyForm
+              form={form}
+              createDialogOpen={createDialogOpen}
+              setCreateDialogOpen={setCreateDialogOpen}
+              createCompanyMutation={createCompanyMutation}
+              onSubmit={onSubmit}
+            />
           )}
         </div>
       </div>
@@ -43,17 +73,28 @@ export default function Companies() {
   }
 
   const today = new Date();
-  const currentQuarter = Math.floor(today.getMonth() / 3) + 1;
-  const currentYear = today.getFullYear();
+  // const currentQuarter = Math.floor(today.getMonth() / 3) + 1;
+  // const currentYear = today.getFullYear();
 
   // COMPANIES VIEW
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold font-montserrat text-brand-teal">{user?.role === UserRoles.ADMIN ? 'Clients' : 'Your Company'}</h1>
+      <div className="flex items-center justify-between mb-20">
+        <h1 className="text-3xl font-bold font-montserrat text-brand-teal">
+          {user?.role === UserRoles.ADMIN ? 'Clients' : `${user?.firstName} ${user?.lastName || ''}`}
+        </h1>
         {/* ADMINS ARE ALLOWED TO ADD NEW COMPANIES/CLIENTS */}
-        {user?.role === UserRoles.ADMIN && (
-          <CreateCompanyForm form={form} createDialogOpen={createDialogOpen} setCreateDialogOpen={setCreateDialogOpen} createCompanyMutation={createCompanyMutation} onSubmit={onSubmit}/>
+        {user?.role === UserRoles.ADMIN ? (
+          <CreateCompanyForm
+            setM365DialogOpen={setM365DialogOpen}
+            form={form}
+            createDialogOpen={createDialogOpen}
+            setCreateDialogOpen={setCreateDialogOpen}
+            createCompanyMutation={createCompanyMutation}
+            onSubmit={onSubmit}
+          />
+        ) : (
+          <Button className='w-100 pl-10 pr-10 text-base bg-brand-green hover:bg-brand-green/90 font-montserrat'>Suggest a Feature</Button>
         )}
       </div>
 
@@ -66,7 +107,9 @@ export default function Companies() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <Button variant="ghost" onClick={() => setDeleteModalOpen(false)}>Cancel</Button>
+            <Button variant="ghost" onClick={() => setDeleteModalOpen(false)}>
+              Cancel
+            </Button>
             <Button
               variant="destructive"
               onClick={async () => {
@@ -74,7 +117,7 @@ export default function Companies() {
                 await queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
                 setDeleteModalOpen(false);
                 setTenantToDelete(null);
-                setLoading(false)
+                setLoading(false);
               }}
             >
               Delete
@@ -83,12 +126,11 @@ export default function Companies() {
         </AlertDialogContent>
       </AlertDialog>
 
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {tenants.map((tenant: any) => (
           <Card
             key={tenant.id}
-            className="relative overflow-hidden transition-all duration-200 hover:shadow-md flex flex-col items-center"
+            className="relative overflow-hidden transition-all duration-200 hover:shadow-md flex flex-col items-center w-[16rem]"
           >
             {user?.role === UserRoles.ADMIN && (
               <Button
@@ -106,45 +148,35 @@ export default function Companies() {
 
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start w-full">
-                <CardTitle className="text-xl font-bold">{tenant.name}</CardTitle>
+                <CardTitle className="text-lg font-montserrat font-bold text-brand-green mb-2">{tenant.name}</CardTitle>
               </div>
             </CardHeader>
 
             <CardContent className="pb-3">
               <div>
-                <div className="text-sm text-brand-teal font-medium text-secondary-600">Current Risk Score</div>
-                <div className="text-lg font-bold text-amber-500 text-center">Medium</div>
+                <div className="text-sm font-montserrat text-brand-teal text-[16px] font-medium text-secondary-600">Current Risk Score</div>
+                <div className="text-lg font-montserrat text-amber-500 text-center">Medium</div>
               </div>
             </CardContent>
 
             <CardFooter className="px-4 pt-3 pb-4 flex flex-col gap-3 w-full">
-              <Button variant="default" className="w-full bg-brand-teal hover:bg-brand-teal/90" asChild>
+              <Button variant="default" className="w-full font-montserrat bg-brand-teal hover:bg-brand-teal/90" asChild>
                 <Link to={`/tenants/${tenant.id}/report-periods`}>
                   View Details
-                  <ChevronRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
-              {user?.role === UserRoles.ADMIN && (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    setSelectedTenantId(tenant.id);
-                    setM365DialogOpen(true);
-                  }}
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  Connect Microsoft 365
-                </Button>
-              )}
             </CardFooter>
           </Card>
         ))}
       </div>
 
-
       {/* Microsoft 365 Direct Connection Dialog */}
-      <ConnectToM365Form m365DialogOpen={m365DialogOpen} setM365DialogOpen={setM365DialogOpen} connectToM365={connectToM365} />
+      <ConnectToM365Form
+        m365DialogOpen={m365DialogOpen}
+        setM365DialogOpen={setM365DialogOpen}
+        connectToM365={connectToM365}
+        createTenant={createTenant}
+      />
     </div>
   );
 }

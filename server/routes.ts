@@ -515,6 +515,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
+  app.put(
+  '/api/admin/users/:userId/tenants',
+  isAuthenticated,
+  isAuthorized([UserRoles.ADMIN]),
+  asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const { tenantIds } = req.body;
+
+    if (!Array.isArray(tenantIds) || tenantIds.some(id => typeof id !== 'number')) {
+      return res.status(400).json({ message: 'tenantIds must be an array of numbers' });
+    }
+
+    // Replace user-tenant associations
+    await storage.setTenantsForUser(userId, tenantIds);
+
+    // Log the action
+    await storage.createAuditLog({
+      userId: (req.user as any).id,
+      action: 'update_user_tenants',
+      details: `Updated tenants for user ${userId}: [${tenantIds.join(', ')}]`,
+    });
+
+    res.status(200).json({ message: 'Tenant access updated successfully' });
+  })
+);
+
+
   app.patch(
     '/api/admin/users/:userId/role',
     isAuthenticated,
@@ -562,6 +589,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
       const validatedData = insertTenantSchema.parse(req.body);
+      // Check if tenant name already exists (case-insensitive recommended)
+      const existingTenant = await storage.getTenantByName(validatedData.name);
+      if (existingTenant) {
+        return res.status(400).json({ error: 'A tenant with this name already exists.' });
+      }
       const tenant = await storage.createTenant(validatedData);
 
       // Create audit log
