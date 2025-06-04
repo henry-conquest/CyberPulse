@@ -230,6 +230,15 @@ export const invites = pgTable('invites', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
+export const microsoftTokens = pgTable('microsoft_tokens', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  accessToken: text('access_token').notNull(),
+  refreshToken: text('refresh_token').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
 // Historical secure scores for trending
 export const secureScoreHistory = pgTable('secure_score_history', {
   id: serial('id').primaryKey(),
@@ -337,6 +346,8 @@ export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type Invite = typeof invites.$inferSelect;
 export type InsertInvite = typeof invites.$inferInsert;
+export type MicrosoftToken = typeof microsoftTokens.$inferSelect
+export type InsertMicrosoftToken = typeof microsoftTokens.$inferInsert
 
 // Enums
 export const UserRoles = {

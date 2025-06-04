@@ -223,6 +223,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
+app.get('/api/m365-admins/:id', isAuthenticated, async (req, res) => {
+  try {
+    const connection = await storage.getMicrosoft365ConnectionByTenantId(+req.params.id);
+    if (!connection) {
+      return res.status(404).json({ error: 'No Microsoft 365 connection found for this tenant' });
+    }
+
+    const { tenantDomain, clientId, clientSecret } = connection;
+
+    const tokenResponse = await fetch(`https://login.microsoftonline.com/${tenantDomain}/oauth2/v2.0/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: clientId,
+        scope: 'https://graph.microsoft.com/.default',
+        client_secret: clientSecret,
+        grant_type: 'client_credentials',
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const error = await tokenResponse.text();
+      console.error('Token request failed:', error);
+      return res.status(500).json({ error: 'Failed to get access token' });
+    }
+
+    const { access_token } = await tokenResponse.json();
+
+    const response = await fetch('https://graph.microsoft.com/v1.0/directoryRoles', {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Graph API error:', error);
+      return res.status(500).json({ error: 'Failed to fetch directory roles' });
+    }
+
+    const data = await response.json();
+    const adminRoles = data.value.filter((role: any) =>
+      role.displayName?.toLowerCase().includes('admin')
+    );
+
+    const adminMembers = [];
+    for (const role of adminRoles) {
+      const roleResponse = await fetch(
+        `https://graph.microsoft.com/v1.0/directoryRoles/${role.id}/members`,
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const members = await roleResponse.json();
+      adminMembers.push({ role: role.displayName, members: members.value });
+    }
+
+    return res.json(adminMembers);
+  } catch (err) {
+    console.error('Failed to fetch admins:', err);
+    return res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+
+
   app.post(
     '/api/auth/accept-invite',
     asyncHandler(async (req: Request, res: Response) => {
@@ -263,140 +335,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Microsoft 365 OAuth callback
-  app.get(
-    '/api/auth/microsoft365/callback',
-    asyncHandler(async (req: Request, res: Response) => {
-      const { code, state, error, error_description } = req.query;
+  // app.get(
+  //   '/api/auth/microsoft365/callback',
+  //   asyncHandler(async (req: Request, res: Response) => {
+  //     const { code, state, error, error_description } = req.query;
 
-      console.log('OAuth callback received');
-      console.log('- Code present:', !!code);
-      console.log('- State present:', !!state);
-      console.log('- Error present:', !!error);
+  //     console.log('OAuth callback received');
+  //     console.log('- Code present:', !!code);
+  //     console.log('- State present:', !!state);
+  //     console.log('- Error present:', !!error);
 
-      // Handle OAuth errors
-      if (error) {
-        console.error('OAuth error received from Microsoft:', error);
-        console.error('Error description:', error_description);
-        return res.redirect(
-          `/integrations?tab=microsoft365&error=${encodeURIComponent((error_description as string) || 'Authentication failed')}`
-        );
-      }
+  //     // Handle OAuth errors
+  //     if (error) {
+  //       console.error('OAuth error received from Microsoft:', error);
+  //       console.error('Error description:', error_description);
+  //       return res.redirect(
+  //         `/integrations?tab=microsoft365&error=${encodeURIComponent((error_description as string) || 'Authentication failed')}`
+  //       );
+  //     }
 
-      if (!code || !state) {
-        console.error('Missing required OAuth parameters');
-        console.error('- Code present:', !!code);
-        console.error('- State present:', !!state);
-        return res.redirect(
-          '/integrations?tab=microsoft365&error=Missing%20required%20OAuth%20parameters.%20Please%20try%20again.'
-        );
-      }
+  //     if (!code || !state) {
+  //       console.error('Missing required OAuth parameters');
+  //       console.error('- Code present:', !!code);
+  //       console.error('- State present:', !!state);
+  //       return res.redirect(
+  //         '/integrations?tab=microsoft365&error=Missing%20required%20OAuth%20parameters.%20Please%20try%20again.'
+  //       );
+  //     }
 
-      try {
-        // Validate state and get state data
-        console.log('Validating state parameter');
-        const stateData = validateState(state as string);
+  //     try {
+  //       // Validate state and get state data
+  //       console.log('Validating state parameter');
+  //       const stateData = validateState(state as string);
 
-        if (!stateData) {
-          console.error('Invalid or expired state parameter');
-          return res.redirect(
-            '/integrations?tab=microsoft365&error=Invalid%20or%20expired%20state.%20Please%20try%20connecting%20again.'
-          );
-        }
+  //       if (!stateData) {
+  //         console.error('Invalid or expired state parameter');
+  //         return res.redirect(
+  //           '/integrations?tab=microsoft365&error=Invalid%20or%20expired%20state.%20Please%20try%20connecting%20again.'
+  //         );
+  //       }
 
-        const { userId, clientId, clientSecret, redirectUri, companyId } = stateData;
+  //       const { userId, clientId, clientSecret, redirectUri, companyId } = stateData;
 
-        console.log('State validation successful');
-        console.log('- User ID:', userId);
-        console.log('- Client ID provided:', !!clientId);
-        console.log('- Client Secret provided:', !!clientSecret);
-        console.log('- Redirect URI:', redirectUri || 'using default');
-        console.log('- Company ID:', companyId || 'not provided');
+  //       console.log('State validation successful');
+  //       console.log('- User ID:', userId);
+  //       console.log('- Client ID provided:', !!clientId);
+  //       console.log('- Client Secret provided:', !!clientSecret);
+  //       console.log('- Redirect URI:', redirectUri || 'using default');
+  //       console.log('- Company ID:', companyId || 'not provided');
 
-        // Exchange code for token
-        console.log('Exchanging authorization code for access token');
-        const tokenResponse = await exchangeCodeForToken(code as string, clientId, clientSecret, redirectUri);
+  //       // Exchange code for token
+  //       console.log('Exchanging authorization code for access token');
+  //       const tokenResponse = await exchangeCodeForToken(code as string, clientId, clientSecret, redirectUri);
 
-        console.log('Token exchange successful');
+  //       console.log('Token exchange successful');
 
-        try {
-          // Get tenant information
-          console.log('Fetching tenant information using access token');
-          const tenantInfo = await getTenantInfo(tokenResponse.access_token);
+  //       try {
+  //         // Get tenant information
+  //         console.log('Fetching tenant information using access token');
+  //         const tenantInfo = await getTenantInfo(tokenResponse.access_token);
 
-          console.log('Tenant information retrieved successfully:');
-          console.log('- Tenant ID:', tenantInfo.id);
-          console.log('- Tenant Name:', tenantInfo.displayName);
-          console.log('- Primary Domain:', tenantInfo.domains[0] || 'unknown');
+  //         console.log('Tenant information retrieved successfully:');
+  //         console.log('- Tenant ID:', tenantInfo.id);
+  //         console.log('- Tenant Name:', tenantInfo.displayName);
+  //         console.log('- Primary Domain:', tenantInfo.domains[0] || 'unknown');
 
-          try {
-            // Store connection in database
-            console.log('Storing OAuth connection in database');
-            await storeOAuthConnection(
-              userId,
-              tenantInfo.id,
-              tenantInfo.displayName,
-              tenantInfo.domains[0] || 'unknown',
-              tokenResponse.access_token,
-              tokenResponse.refresh_token,
-              tokenResponse.expires_in,
-              clientId,
-              clientSecret,
-              companyId
-            );
+  //         try {
+  //           // Store connection in database
+  //           console.log('Storing OAuth connection in database');
+  //           await storeOAuthConnection(
+  //             userId,
+  //             tenantInfo.id,
+  //             tenantInfo.displayName,
+  //             tenantInfo.domains[0] || 'unknown',
+  //             tokenResponse.access_token,
+  //             tokenResponse.refresh_token,
+  //             tokenResponse.expires_in,
+  //             clientId,
+  //             clientSecret,
+  //             companyId
+  //           );
 
-            // Create audit log
-            await storage.createAuditLog({
-              userId,
-              action: 'create_microsoft365_oauth_connection',
-              details: `Connected to Microsoft 365 tenant via OAuth: ${tenantInfo.displayName || tenantInfo.id}`,
-            });
+  //           // Create audit log
+  //           await storage.createAuditLog({
+  //             userId,
+  //             action: 'create_microsoft365_oauth_connection',
+  //             details: `Connected to Microsoft 365 tenant via OAuth: ${tenantInfo.displayName || tenantInfo.id}`,
+  //           });
 
-            console.log('OAuth connection stored successfully');
-          } catch (dbError) {
-            console.error('Error storing OAuth connection:', dbError);
-            throw new Error(
-              `Successfully connected to Microsoft 365, but failed to store the connection: ${dbError instanceof Error ? dbError.message : 'Unknown database error'}`
-            );
-          }
-        } catch (tenantError) {
-          console.error('Error retrieving tenant information:', tenantError);
-          throw new Error(
-            `Connected to Microsoft 365 API, but failed to retrieve tenant information: ${tenantError instanceof Error ? tenantError.message : 'Unknown tenant info error'}`
-          );
-        }
+  //           console.log('OAuth connection stored successfully');
+  //         } catch (dbError) {
+  //           console.error('Error storing OAuth connection:', dbError);
+  //           throw new Error(
+  //             `Successfully connected to Microsoft 365, but failed to store the connection: ${dbError instanceof Error ? dbError.message : 'Unknown database error'}`
+  //           );
+  //         }
+  //       } catch (tenantError) {
+  //         console.error('Error retrieving tenant information:', tenantError);
+  //         throw new Error(
+  //           `Connected to Microsoft 365 API, but failed to retrieve tenant information: ${tenantError instanceof Error ? tenantError.message : 'Unknown tenant info error'}`
+  //         );
+  //       }
 
-        // Redirect to the integrations page with success message
-        res.redirect('/integrations?tab=microsoft365&success=true');
-      } catch (error) {
-        console.error('Error in Microsoft 365 OAuth callback:', error);
+  //       // Redirect to the integrations page with success message
+  //       res.redirect('/integrations?tab=microsoft365&success=true');
+  //     } catch (error) {
+  //       console.error('Error in Microsoft 365 OAuth callback:', error);
 
-        let errorMessage = 'Unknown error occurred';
-        if (error instanceof Error) {
-          errorMessage = error.message;
-          console.error('Error details:', error.stack);
-        }
+  //       let errorMessage = 'Unknown error occurred';
+  //       if (error instanceof Error) {
+  //         errorMessage = error.message;
+  //         console.error('Error details:', error.stack);
+  //       }
 
-        // Provide more user-friendly error messages
-        let userFriendlyError = errorMessage;
+  //       // Provide more user-friendly error messages
+  //       let userFriendlyError = errorMessage;
 
-        if (errorMessage.includes('invalid_client')) {
-          userFriendlyError = 'Invalid client credentials. Please check your Client ID and Client Secret.';
-        } else if (errorMessage.includes('invalid_grant')) {
-          userFriendlyError = 'Authorization code is invalid or expired. Please try again.';
-        } else if (errorMessage.includes('redirect_uri_mismatch')) {
-          userFriendlyError =
-            'Redirect URI mismatch. The redirect URI must exactly match what you configured in Azure.';
-        } else if (errorMessage.includes('Missing client_id')) {
-          userFriendlyError = 'Missing Client ID. Please ensure you entered a valid Client ID in the form.';
-        } else if (errorMessage.includes('Missing client_secret')) {
-          userFriendlyError = 'Missing Client Secret. Please ensure you entered a valid Client Secret in the form.';
-        }
+  //       if (errorMessage.includes('invalid_client')) {
+  //         userFriendlyError = 'Invalid client credentials. Please check your Client ID and Client Secret.';
+  //       } else if (errorMessage.includes('invalid_grant')) {
+  //         userFriendlyError = 'Authorization code is invalid or expired. Please try again.';
+  //       } else if (errorMessage.includes('redirect_uri_mismatch')) {
+  //         userFriendlyError =
+  //           'Redirect URI mismatch. The redirect URI must exactly match what you configured in Azure.';
+  //       } else if (errorMessage.includes('Missing client_id')) {
+  //         userFriendlyError = 'Missing Client ID. Please ensure you entered a valid Client ID in the form.';
+  //       } else if (errorMessage.includes('Missing client_secret')) {
+  //         userFriendlyError = 'Missing Client Secret. Please ensure you entered a valid Client Secret in the form.';
+  //       }
 
-        res.redirect(`/integrations?tab=microsoft365&error=${encodeURIComponent(userFriendlyError)}`);
-      }
-    })
-  );
-
+  //       res.redirect(`/integrations?tab=microsoft365&error=${encodeURIComponent(userFriendlyError)}`);
+  //     }
+  //   })
+  // );
+  
   // List Microsoft 365 connections for the authenticated user
   app.get(
     '/api/connections/microsoft365',

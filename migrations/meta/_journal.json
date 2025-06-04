@@ -43,6 +43,13 @@
       "when": 1748611766149,
       "tag": "0005_lively_proudstar",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1749477964151,
+      "tag": "0006_unique_living_lightning",
+      "breakpoints": true
     }
   ]
 }

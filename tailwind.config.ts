@@ -18,6 +18,7 @@ export default {
         brand: {
           green: '#6EB36F',
           teal: '#046E87',
+          orange: '#EF8817'
         },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',

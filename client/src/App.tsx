@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/layout/Layout';
 import { UserRoles } from '@shared/schema';
 import AcceptInvite from './pages/AcceptInvite/AcceptInvite';
+import CompanyDetails from './pages/CompanyDetails/CompanyDetails';
 
 function ProtectedRoute({
   component: Component,
@@ -89,6 +90,10 @@ function Router() {
       <Route
         path="/tenants/:tenantId/report-periods"
         component={({ params }) => <ProtectedRoute component={ReportPeriods} tenantId={params.tenantId} />}
+      />
+      <Route
+        path="/tenants/:tenantId/details"
+        component={({ params }) => <ProtectedRoute component={CompanyDetails} tenantId={params.tenantId} />}
       />
       <Route
         path="/tenants/:tenantId/reports/:id"

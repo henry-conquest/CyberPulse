@@ -17,6 +17,8 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import CreateCompanyForm from './Forms/CreateCompanyForm';
 import ConnectToM365Form from './Forms/ConnectToM365Form';
+import { useDispatch } from 'react-redux';
+import { sessionInfoActions } from '@/store/store';
 
 export default function Companies() {
   const {
@@ -40,6 +42,7 @@ export default function Companies() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tenantToDelete, setTenantToDelete] = useState<any>(null);
   const queryClient = useQueryClient();
+  const dispatch = useDispatch()
 
   // LOADING STATE
   if (isUserLoading || isTenantsLoading || loading) {
@@ -127,7 +130,8 @@ export default function Companies() {
       </AlertDialog>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tenants.map((tenant: any) => (
+        {tenants.map((tenant: any) => {
+          return (
           <Card
             key={tenant.id}
             className="relative overflow-hidden transition-all duration-200 hover:shadow-md flex flex-col items-center w-[16rem]"
@@ -160,14 +164,17 @@ export default function Companies() {
             </CardContent>
 
             <CardFooter className="px-4 pt-3 pb-4 flex flex-col gap-3 w-full">
-              <Button variant="default" className="w-full font-montserrat bg-brand-teal hover:bg-brand-teal/90" asChild>
-                <Link to={`/tenants/${tenant.id}/report-periods`}>
+              <Button onClick={() => {
+                dispatch(sessionInfoActions.setSelectedClient(tenant))
+              }} variant="default" className="w-full font-montserrat bg-brand-teal hover:bg-brand-teal/90" asChild>
+                <Link to={`/tenants/${tenant.id}/details`}>
                   View Details
                 </Link>
               </Button>
             </CardFooter>
           </Card>
-        ))}
+        )
+        })}
       </div>
 
       {/* Microsoft 365 Direct Connection Dialog */}
