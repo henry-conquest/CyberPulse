@@ -17,6 +17,9 @@ export const useUsers = () => {
   const [selectedUser, setSelectedUser] = useState<UserModel | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [isManageAccessDialogOpen, setIsManageAccessDialogOpen] = useState(false);
+  const [selectedUserForAccess, setSelectedUserForAccess] = useState<UserModel | null>(null);
+  const [loading, setLoading] = useState(false)
 
   // Schema for invite user form
   const inviteUserSchema = z.object({
@@ -95,7 +98,7 @@ export const useUsers = () => {
         description: message,
         variant: 'destructive',
       });
-    }
+    },
   });
 
   // Update user role mutation
@@ -132,7 +135,7 @@ export const useUsers = () => {
         description: message,
         variant: 'destructive',
       });
-    }
+    },
   });
 
   // Delete user mutation
@@ -166,7 +169,7 @@ export const useUsers = () => {
         description: message,
         variant: 'destructive',
       });
-    }
+    },
   });
 
   // Form handlers
@@ -216,6 +219,60 @@ export const useUsers = () => {
         return matchesRole && matchesSearch;
       })
     : [];
+  const updateTenantAccessMutation = useMutation({
+    mutationFn: async ({ userId, tenantIds }: { userId: string; tenantIds: number[] }) => {
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/admin/users/${userId}/tenants`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ tenantIds }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`${response.status}: ${JSON.stringify(errorData)}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Access updated',
+        description: 'Tenant access has been updated successfully',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setSelectedUser(null);
+      setIsEditRoleDialogOpen(false);
+    },
+    onError: (error) => {
+      let message = 'Failed to update tenant access';
+      if (error instanceof Error) {
+        try {
+          const cleanMessage = error.message.replace(/^\d{3}:\s*/, '');
+          const parsed = JSON.parse(cleanMessage);
+          message = parsed.message ?? error.message;
+        } catch (e) {
+          console.warn('Error parsing JSON:', e);
+          message = error.message;
+        }
+      }
+
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive',
+      });
+    },
+     onSettled: () => {
+      setLoading(false);
+    },
+  });
 
   return {
     filteredUsers,
@@ -241,5 +298,12 @@ export const useUsers = () => {
     roleFilter,
     updateRoleMutation,
     loggedInUser,
+    isManageAccessDialogOpen,
+    setIsManageAccessDialogOpen,
+    selectedUserForAccess,
+    setSelectedUserForAccess,
+    updateTenantAccessMutation,
+    loading,
+    setLoading
   };
 };

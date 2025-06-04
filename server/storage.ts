@@ -43,7 +43,7 @@ import {
   invites,
 } from '@shared/schema';
 import { db } from './db';
-import { eq, and, inArray, desc, asc, sql, like, or } from 'drizzle-orm';
+import { eq, and, inArray, desc, asc, sql, like, or, isNull } from 'drizzle-orm';
 
 // Interface for storage operations
 export interface IStorage {
@@ -228,7 +228,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllTenants(): Promise<Tenant[]> {
-    return await db.select().from(tenants).orderBy(tenants.name);
+    return await db.select().from(tenants).where(isNull(tenants.deletedAt)).orderBy(tenants.name);
+  }
+
+  async getTenantByName(name: string): Promise<Tenant | undefined> {
+    const [tenant] = await db
+      .select()
+      .from(tenants)
+      .where(and(sql`LOWER(${tenants.name}) = LOWER(${name})`, isNull(tenants.deletedAt)));
+    return tenant;
   }
 
   async updateTenant(id: number, tenant: Partial<InsertTenant>): Promise<Tenant> {
@@ -240,8 +248,25 @@ export class DatabaseStorage implements IStorage {
     return updatedTenant;
   }
 
+
+async setTenantsForUser(userId: string, tenantIds: number[]): Promise<void> {
+  // 1. Remove existing assignments
+  await db.delete(userTenants).where(eq(userTenants.userId, userId));
+
+  // 2. Insert new assignments (if any)
+  if (tenantIds.length > 0) {
+    await db.insert(userTenants).values(
+      tenantIds.map((tenantId) => ({
+        userId,
+        tenantId,
+        createdAt: new Date(),
+      }))
+    );
+  }
+}
+
   async deleteTenant(id: number): Promise<void> {
-    await db.delete(tenants).where(eq(tenants.id, id));
+    await db.update(tenants).set({ deletedAt: new Date() }).where(eq(tenants.id, id));
   }
 
   async getTenantsByUserId(userId: string): Promise<Tenant[]> {

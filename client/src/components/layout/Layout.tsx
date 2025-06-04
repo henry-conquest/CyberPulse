@@ -24,7 +24,7 @@ export default function Layout({ children }: LayoutProps) {
   if (!user) {
     return (
       <div className="flex h-screen flex-col items-center justify-center text-center">
-        <img src={logoImg} className='w-[30rem] h-auto'/>
+        <img src={logoImg} className="w-[30rem] h-auto" />
         <h1 className="mb-5 mt-[-11px] text-3xl font-montserrat text-brand-green">Cyber Risk Management</h1>
         <a
           href="/api/login"

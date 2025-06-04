@@ -12,6 +12,9 @@ import {
   Grid,
   ListChecks,
   UserCog,
+  Home,
+  BriefcaseBusiness,
+  ListCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logoImg from '../../assets/logo.png';
@@ -64,28 +67,28 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
           <NavItem
             href="/companies"
-            icon={<Grid className="h-5 w-5" />}
+            icon={isAdmin ? <BriefcaseBusiness className="h-5 w-5" /> : <Home className="h-5 w-5" />}
             isActive={location === '/' || location === '/companies'}
           >
-            Companies
+            {isAdmin ? 'Clients' : 'Home'}
           </NavItem>
 
-          <NavItem
+          {/* <NavItem
             href="/global-recommendations"
             icon={<ListChecks className="h-5 w-5" />}
             isActive={location === '/global-recommendations'}
           >
             Recommendations
-          </NavItem>
+          </NavItem> */}
 
-          {currentTenantId && (
+          {!isAdmin && (
             <>
               <NavItem
-                href={`/tenants/${currentTenantId}/report-periods`}
-                icon={<CalendarDays className="h-5 w-5" />}
-                isActive={location.endsWith('/report-periods')}
+                href={`/tenants/${currentTenantId}/cyber-risk-review`}
+                icon={<ListCheck className="h-5 w-5" />}
+                isActive={location.endsWith('/cyber-risk-review')}
               >
-                Report Periods
+                Cyber Risk Overview
               </NavItem>
             </>
           )}
@@ -94,7 +97,9 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         {isAdmin && (
           <div className="mt-8">
             <div className="text-white/80 text-xs uppercase font-semibold mb-2">Admin</div>
-
+            <NavItem href="/settings" icon={<Settings className="h-5 w-5" />} isActive={location === '/settings'}>
+              Settings
+            </NavItem>
             {/* <NavItem 
               href="/users" 
               icon={<Users className="h-5 w-5" />}
@@ -118,10 +123,6 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             >
               Integrations
             </NavItem> */}
-
-            <NavItem href="/settings" icon={<Settings className="h-5 w-5" />} isActive={location === '/settings'}>
-              Settings
-            </NavItem>
           </div>
         )}
       </div>

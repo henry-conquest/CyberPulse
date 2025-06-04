@@ -93,7 +93,7 @@ export default function Settings() {
         description: message,
         variant: 'destructive',
       });
-    }
+    },
   });
 
   if (!user) {
