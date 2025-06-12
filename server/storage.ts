@@ -41,6 +41,9 @@ import {
   InsertInvite,
   Invite,
   invites,
+  microsoftTokens,
+  type MicrosoftToken,
+  type InsertMicrosoftToken
 } from '@shared/schema';
 import { db } from './db';
 import { eq, and, inArray, desc, asc, sql, like, or, isNull } from 'drizzle-orm';
@@ -214,6 +217,31 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
+  }
+
+  // Token operations
+  // Create or update token
+  async upsertMicrosoftToken(token: InsertMicrosoftToken): Promise<void> {
+    await db
+      .insert(microsoftTokens)
+      .values(token)
+      .onConflictDoUpdate({
+        target: [microsoftTokens.id],
+        set: {
+          accessToken: token.accessToken,
+          refreshToken: token.refreshToken,
+          expiresAt: token.expiresAt,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  async getMicrosoftTokenByUserId(userId: string): Promise<MicrosoftToken | undefined> {
+    const [result] = await db
+      .select()
+      .from(microsoftTokens)
+      .where(eq(microsoftTokens.id, userId));
+    return result;
   }
 
   // Tenant operations

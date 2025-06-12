@@ -2,6 +2,8 @@ import { createSlice } from '@reduxjs/toolkit';
 
 export const initialSessionInfoSlice = {
   user: null,
+  selectedClient: null,
+  tenants: []
 };
 
 const sessionInfoSlice = createSlice({
@@ -9,8 +11,13 @@ const sessionInfoSlice = createSlice({
   initialState: initialSessionInfoSlice,
   reducers: {
     setUser(state, action) {
-      console.log('CALLED', action.payload)
       state.user = action.payload;
+    },
+    setSelectedClient(state, action) {
+      state.selectedClient = action.payload;
+    },
+    setTenants(state, action) {
+      state.tenants = action.payload;
     },
   },
 });

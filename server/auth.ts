@@ -104,6 +104,13 @@ export async function setupAuth(app: Express) {
             profileImageUrl: null,
           });
 
+          await storage.upsertMicrosoftToken({
+          id: user.id,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          expiresAt: new Date(Date.now() + (params.expires_in ?? 3599) * 1000),
+        });
+
           done(null, user);
         } catch (err) {
           done(err as Error);
