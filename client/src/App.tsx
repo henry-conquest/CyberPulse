@@ -24,6 +24,7 @@ import Layout from '@/components/layout/Layout';
 import { UserRoles } from '@shared/schema';
 import AcceptInvite from './pages/AcceptInvite/AcceptInvite';
 import CompanyDetails from './pages/CompanyDetails/CompanyDetails';
+import KnownLocations from './pages/Widgets/KnownLocations';
 
 function ProtectedRoute({
   component: Component,
@@ -131,6 +132,9 @@ function Router() {
 
       {/* Accept Invite */}
       <Route path="/accept-invite" component={() => <ProtectedRoute component={AcceptInvite} />} />
+
+      {/* Widget Routes */}
+      <Route path="/known-locations/:tenantId" component={() => <ProtectedRoute component={KnownLocations} />} />
 
       {/* Fallback to 404 */}
       <Route component={NotFound} />

@@ -13,3 +13,50 @@ export const get365Admins = async (tenantId: string) => {
         console.log(err)
     }
 }
+
+export const getRiskySignInPolicies = async (userId: string) => {
+    try {
+        const res = await fetch(`/api/sign-in-policies/${userId}`, {
+        credentials: 'include',
+        });
+        if(!res.ok) {
+            throw new Error('Failed to get admins')
+        }
+        const data = await res.json()
+        const policies = data.value || [];
+
+        // Define accepted risk levels
+        const allowedRiskLevels = ['high', 'medium', 'low'];
+
+        // Check if any policy meets the requirements
+        const matchingPolicy = policies.find((policy: any) => {
+            const state = policy.state === 'enabled';
+            const signInRiskLevels = policy?.conditions?.signInRiskLevels || [];
+
+            const hasRiskLevel = signInRiskLevels.some((risk: any) => allowedRiskLevels.includes(risk.toLowerCase()));
+            
+            return state && hasRiskLevel;
+        });
+
+        const exists = Boolean(matchingPolicy);
+        return exists
+
+    } catch(err) {
+        console.log(err)
+    }
+}
+export const getKnownLocations = async (userId: string) => {
+    try {
+        const res = await fetch(`/api/known-locations/${userId}`, {
+        credentials: 'include',
+        });
+        if(!res.ok) {
+            throw new Error('Failed to get known locations')
+        }
+        const data = await res.json()
+        return data
+
+    } catch(err) {
+        console.log(err)
+    }
+}

@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from 'express';
 import { createServer, type Server } from 'http';
 import { storage } from './storage';
 import { setupAuth, isAuthenticated, isAuthorized } from './auth';
+import { getValidMicrosoftAccessToken } from './helper';
 import { z } from 'zod';
 import {
   insertTenantSchema,
@@ -292,6 +293,53 @@ app.get('/api/m365-admins/:id', isAuthenticated, async (req, res) => {
     return res.status(500).json({ error: 'Internal error' });
   }
 });
+
+app.get('/api/sign-in-policies/:userId', isAuthenticated, async (req, res) => {
+  try {
+  const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
+  if (!accessToken) {
+    return res.status(401).json({ error: 'Access token is missing' });
+  }
+  
+  const response = await fetch('https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies', {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  const data = await response.json()
+  res.status(200).json(data)
+  } catch(error) {
+    res.status(500).json({
+      error: 'Failed to fetch conditional access policies',
+    });
+  }
+})
+app.get('/api/known-locations/:userId', isAuthenticated, async (req, res) => {
+  try {
+  const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
+
+  if (!accessToken) {
+    return res.status(401).json({ error: 'Access token is missing' });
+  }
+  
+  const response = await fetch('https://graph.microsoft.com/v1.0/identity/conditionalAccess/namedLocations', {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  const data = await response.json();
+
+  res.status(200).json(data);
+  } catch(error) {
+    res.status(500).json({
+      error: 'Failed to fetch named locations',
+    });
+  }
+})
 
 
 
