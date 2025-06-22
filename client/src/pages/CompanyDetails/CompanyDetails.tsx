@@ -45,7 +45,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             {/* Secure Score */}
             <CompanySecureScore />
             {/* Identities & People Widgets */}
-            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl">Identities and People</p>
+            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">Identities and People</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {identitiesAndPeopleWidgets.map(((widget, index) => {
                 let apiParam;
@@ -89,7 +89,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             {/* 🧩 Line Break */}
             <div className="w-full h-px bg-brand-teal my-20" />
             {/* End User Devices Widgets */}
-            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl">End User Devices</p>
+            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">End User Devices</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {endUserDevicesWidgets.map(((widget: WidgetModel, index) => {
                 let apiParam;
@@ -119,7 +119,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             {/* 🧩 Line Break */}
             <div className="w-full h-px bg-brand-teal my-20" />
             {/* Cloud and Infrastructure Widgets */}
-            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl">Cloud and Infrastructure</p>
+            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">Cloud and Infrastructure</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {cloudAndInfrastructureWidgets.map(((widget: WidgetModel, index) => {
                 let apiParam;
@@ -149,7 +149,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             {/* 🧩 Line Break */}
             <div className="w-full h-px bg-brand-teal my-20" />
             {/* Data Widgets */}
-            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl">Data</p>
+            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">Data</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {dataWidgets.map(((widget: WidgetModel, index) => {
                 let apiParam;

@@ -3,7 +3,7 @@ import { getTenants } from "@/service/TenantService"
 import { identitiesAndPeopleActions, sessionInfoActions } from "@/store/store"
 import { useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { useParams } from "wouter"
+import { Link, useParams } from "wouter"
 
 const KnownLocations = () => {
     const knownLocationData = useSelector((state: any) => state?.identitiesAndPeople?.knownLocations)
@@ -44,6 +44,12 @@ const KnownLocations = () => {
     return (
         <>
         <h1 className="text-brand-teal text-2xl text-center font-bold mt-6">{selectedClient?.name} Known Location Logins</h1>
+        <Link
+        to={`/tenants/${tenantId}/details`}
+        className="ml-6 mt-4 inline-flex items-center text-sm text-brand-teal hover:underline"
+      >
+        ← Back
+      </Link>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
         {knownLocationData?.value?.map((location: any) => (
           <div
