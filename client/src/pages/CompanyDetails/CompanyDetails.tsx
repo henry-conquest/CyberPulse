@@ -15,6 +15,7 @@ interface CompanyDetailsProps {
 const CompanyDetails = (props: CompanyDetailsProps) => {
     const { tenantId } = props
     const tenant = useSelector((state: any) => state.sessionInfo.selectedClient)
+    const user = useSelector((state: any) => state.sessionInfo.user)
     const dispatch = useDispatch()
 
     useEffect(() => {
@@ -44,14 +45,22 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             {/* Secure Score */}
             <CompanySecureScore />
             {/* Identities & People Widgets */}
-            <p className="font-montserrat text-brand-green m-auto flex justify-center mb-6">Identities and People</p>
+            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl">Identities and People</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {identitiesAndPeopleWidgets.map(((widget, index) => {
                 let apiParam;
+                let onClickParam;
                 switch (widget.id) {
                     case 'microsoft365Admins':
                     apiParam = tenantId;
                     break;
+                    case 'riskySignInPolicies':
+                    apiParam = user.id
+                    break
+                    case 'knownLocationLogins':
+                    apiParam = user.id
+                    onClickParam = tenantId
+                    break
                     // future cases:
                     // case 'someOtherWidget':
                     //   apiParam = { tenantId, region: 'US' };
@@ -62,12 +71,15 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                 return (
                     <Widget
                     key={`${widget.id}-${index}`}
+                    id={widget.id}
                     title={widget.title}
                     hideButton={widget.hideButton}
                     buttonText={widget.buttonText}
                     apiCall={widget.apiCall}
                     apiParam={apiParam}
                     render={widget.render}
+                    onButtonClick={widget.onButtonClick}
+                    onClickParam={onClickParam}
                     >
                     {widget.content}
                     </Widget>
@@ -77,7 +89,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             {/* 🧩 Line Break */}
             <div className="w-full h-px bg-brand-teal my-20" />
             {/* End User Devices Widgets */}
-            <p className="font-montserrat text-brand-green m-auto flex justify-center mb-6">End User Devices</p>
+            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl">End User Devices</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {endUserDevicesWidgets.map(((widget: WidgetModel, index) => {
                 let apiParam;
@@ -91,6 +103,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                 return (
                     <Widget
                     key={`${widget.id}-${index}`}
+                    id={widget.id}
                     title={widget.title}
                     hideButton={widget.hideButton}
                     buttonText={widget.buttonText}
@@ -106,7 +119,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             {/* 🧩 Line Break */}
             <div className="w-full h-px bg-brand-teal my-20" />
             {/* Cloud and Infrastructure Widgets */}
-            <p className="font-montserrat text-brand-green m-auto flex justify-center mb-6">Cloud and Infrastructure</p>
+            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl">Cloud and Infrastructure</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {cloudAndInfrastructureWidgets.map(((widget: WidgetModel, index) => {
                 let apiParam;
@@ -120,6 +133,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                 return (
                     <Widget
                     key={`${widget.id}-${index}`}
+                    id={widget.id}
                     title={widget.title}
                     hideButton={widget.hideButton}
                     buttonText={widget.buttonText}
@@ -135,7 +149,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             {/* 🧩 Line Break */}
             <div className="w-full h-px bg-brand-teal my-20" />
             {/* Data Widgets */}
-            <p className="font-montserrat text-brand-green m-auto flex justify-center mb-6">Data</p>
+            <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl">Data</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {dataWidgets.map(((widget: WidgetModel, index) => {
                 let apiParam;
@@ -149,6 +163,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                 return (
                     <Widget
                     key={`${widget.id}-${index}`}
+                    id={widget.id}
                     title={widget.title}
                     hideButton={widget.hideButton}
                     buttonText={widget.buttonText}

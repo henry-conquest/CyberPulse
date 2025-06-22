@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { identitiesAndPeopleActions } from '@/store/store';
+import { useDispatch } from 'react-redux';
 
 interface WidgetProps {
+  id: string
   title: string;
   buttonText?: string;
-  onButtonClick?: () => void;
+  onButtonClick?: (param?: any) => void;
+  onClickParam?: string;
   hideButton?: boolean;
   apiCall?: (param?: any) => Promise<any>;
   apiParam?: any
@@ -13,10 +17,11 @@ interface WidgetProps {
 }
 
 const Widget = (props: WidgetProps) => {
-  const { title, buttonText = 'View Details', onButtonClick, hideButton = false, apiCall, render, children, apiParam } = props;
+  const { title, buttonText = 'View Details', onButtonClick, hideButton = false, apiCall, render, children, apiParam, id, onClickParam } = props;
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(!!apiCall);
+  const dispatch = useDispatch()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,6 +29,7 @@ const Widget = (props: WidgetProps) => {
       try {
         const result = await apiCall(apiParam);
         setData(result);
+        if(id === 'knownLocationLogins') dispatch(identitiesAndPeopleActions.setKnownLocations(result))
       } catch (err) {
         console.error('Widget API call failed:', err);
       } finally {
@@ -34,8 +40,11 @@ const Widget = (props: WidgetProps) => {
   }, [apiCall]);
 
   const handleClick = async () => {
-    if (onButtonClick) {
-      const result = await onButtonClick();
+    if (onButtonClick && onClickParam) {
+      onButtonClick(onClickParam)
+    }
+    if (onButtonClick && !onClickParam) {
+      onButtonClick()
     }
   };
 

@@ -1,7 +1,8 @@
 import ProgressCircle from "@/components/ui/ProgressCircle";
 import RiskScoreChart from "@/pages/CompanyDetails/RiskScoreChart/RiskScoreChart";
-import { get365Admins } from "@/service/IdentitiesAndPeopleService";
+import { get365Admins, getKnownLocations, getRiskySignInPolicies } from "@/service/IdentitiesAndPeopleService";
 import { Check, BadgeAlert } from "lucide-react";
+import { navigate } from "wouter/use-browser-location";
 
 export const identitiesAndPeopleWidgets = [
     {
@@ -41,13 +42,33 @@ export const identitiesAndPeopleWidgets = [
         id: 'knownLocationLogins',
         title: 'Known Location Logins',
         hideButton: false,
-        content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
+        render: (data: any) => {
+        const trustedExists = data?.value?.some(
+            (loc: any) =>
+            loc["@odata.type"] === "#microsoft.graph.ipNamedLocation" && loc.isTrusted === true
+        );
+
+        return trustedExists ? (
+            <div className="bg-brand-green rounded-full p-4">
+            <Check className="text-white w-6 h-6" />
+            </div>
+        ) : (
+            <div className="bg-red-500 rounded-full p-4">
+            <BadgeAlert className="text-white w-6 h-6" />
+            </div>
+        );
+        },
+        apiCall: getKnownLocations,
+        onButtonClick: (tenantId: string) => navigate(`/known-locations/${tenantId}`)
     },
     {
         id: 'riskySignInPolicies',
         title: 'Risky Sign In Policies',
         hideButton: false,
-        content: <div className="bg-brand-green rounded-full p-4"><Check className="text-white w-6 h-6" /></div>
+        render: (riskySignInPoliciesExist: any) => {
+            return riskySignInPoliciesExist ? <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div> : <div className="bg-brand-green rounded-full p-4"><Check className="text-white w-6 h-6" /></div>
+        },
+        apiCall: getRiskySignInPolicies
     },
 ]
 export const endUserDevicesWidgets = [

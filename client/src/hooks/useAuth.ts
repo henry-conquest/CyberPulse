@@ -31,7 +31,7 @@ export function useAuth() {
 
   useEffect(() => {
     dispatch(sessionInfoActions.setUser(user));
-  }, [user]);
+  }, []);
 
   return {
     user,
