@@ -199,6 +199,15 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async deleteUser(id: string): Promise<User | undefined> {
+    const [user] = await db
+      .delete(users)
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+
   // Invite operations
   async createUserInvite(invite: InsertInvite): Promise<Invite> {
     const [result] = await db.insert(invites).values(invite).returning();
