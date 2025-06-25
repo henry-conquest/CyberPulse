@@ -660,6 +660,21 @@ app.get('/api/known-locations/:userId', isAuthenticated, async (req, res) => {
     res.status(200).json({ message: 'Tenant access updated successfully' });
   })
 );
+  app.delete(
+  '/api/admin/users/:userId',
+  isAuthenticated,
+  isAuthorized([UserRoles.ADMIN]),
+  asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    // Replace user-tenant associations
+    const deletedUser = await storage.deleteUser(userId);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+      }
+    res.status(200).json({ message: 'User deleted successfully', user: deletedUser });  })
+);
 
 
   app.patch(
