@@ -545,34 +545,6 @@ app.get('/api/known-locations/:userId', isAuthenticated, async (req, res) => {
     })
   );
 
-  // List Microsoft 365 OAuth connections for the authenticated user
-  app.get(
-    '/api/connections/microsoft365/oauth',
-    isAuthenticated,
-    asyncHandler(async (req: any, res) => {
-      const userId = req.user.id;
-
-      try {
-        const connections = await storage.getMicrosoft365OAuthConnectionsByUserId(userId);
-
-        // Don't return sensitive information
-        const safeConnections = connections.map((conn) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { clientSecret, accessToken, refreshToken, ...safeConn } = conn;
-          return safeConn;
-        });
-
-        res.json(safeConnections);
-      } catch (error) {
-        console.error('Error fetching Microsoft 365 OAuth connections:', error);
-        res.status(500).json({
-          message: 'Failed to fetch Microsoft 365 OAuth connections',
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    })
-  );
-
   // Delete a Microsoft 365 connection
   app.delete(
     '/api/connections/microsoft365/:id',
@@ -587,12 +559,6 @@ app.get('/api/known-locations/:userId', isAuthenticated, async (req, res) => {
 
         if (!connection) {
           return res.status(404).json({ message: 'Microsoft 365 connection not found' });
-        }
-
-        if (connection.userId !== userId) {
-          return res.status(403).json({
-            message: 'You do not have permission to delete this connection',
-          });
         }
 
         // Delete the connection
