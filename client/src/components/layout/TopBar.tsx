@@ -26,7 +26,6 @@ export default function TopBar({ toggleSidebar }: TopBarProps) {
             <h2 className="text-xl font-semibold">Cyber Risk Dashboard</h2>
             <div className="ml-4 flex items-center bg-secondary-50 rounded-full px-3 py-1 text-sm">
               <span className="w-2 h-2 rounded-full bg-primary-500 mr-2"></span>
-              <span className="text-secondary-600">Last updated: {format(now, "MMMM d, yyyy 'at' h:mm a")}</span>
             </div>
           </div>
         </div>

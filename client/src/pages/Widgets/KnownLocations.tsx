@@ -1,6 +1,7 @@
 import { getKnownLocations } from "@/service/IdentitiesAndPeopleService"
 import { getTenants } from "@/service/TenantService"
 import { identitiesAndPeopleActions, sessionInfoActions } from "@/store/store"
+import { format } from "date-fns"
 import { useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Link, useParams } from "wouter"
@@ -44,12 +45,12 @@ const KnownLocations = () => {
     return (
         <>
         <h1 className="text-brand-teal text-2xl text-center font-bold mt-6">{selectedClient?.name} Known Location Logins</h1>
-        <Link
-        to={`/tenants/${tenantId}/details`}
-        className="ml-6 mt-4 inline-flex items-center text-sm text-brand-teal hover:underline"
-      >
-        ← Back
-      </Link>
+        <div className="flex justify-between align-center ml-6 mr-6 mt-4">
+        <Link to={`/tenants/${tenantId}/details`} className="inline-flex items-center text-sm text-brand-teal hover:underline">
+          ← Back
+        </Link>
+        <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
         {knownLocationData?.value?.map((location: any) => (
           <div
