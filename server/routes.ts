@@ -210,7 +210,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: new Date(),
       });
 
-      // TODO: Send branded email via emailService here
       await emailService.sendInviteEmail(email, token, tenantId);
 
       // Audit log
@@ -223,6 +222,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json({ message: 'User invited successfully' });
     })
   );
+
+  app.delete('/api/invites', isAuthenticated, async (req, res) => {
+    try {
+      const { email } = req.body
+      await storage.deleteInvitesByEmail(email)
+
+      res.status(200).json({message: "Invite successfully deleted"})
+    } catch (err) {
+      res.status(500).json({message: "Failed to delete invite"})
+      throw err
+    }
+  })
+
+  app.get('/api/invites', isAuthenticated, async (req, res) => {
+    try{
+      const invites = await storage.getInvites()
+
+      res.status(200).json({invites})
+    }catch (error) {
+      res.status(500).json({
+        error: 'Failed to get invites'
+      })
+    }
+  })
 
 app.get('/api/m365-admins/:id', isAuthenticated, async (req, res) => {
   try {
@@ -627,13 +650,14 @@ app.get('/api/known-locations/:userId', isAuthenticated, async (req, res) => {
   })
 );
   app.delete(
-  '/api/admin/users/:userId',
+  '/api/admin/users/:userId/:userEmail',
   isAuthenticated,
   isAuthorized([UserRoles.ADMIN]),
   asyncHandler(async (req, res) => {
-    const { userId } = req.params;
-
-    // Replace user-tenant associations
+    const { userId, userEmail } = req.params;
+    // Delete all invites to this user and delete it from user_tenants and users tables
+    await storage.deleteInvitesByEmail(userEmail)
+    await storage.deleteUserFromUserTenants(userId);
     const deletedUser = await storage.deleteUser(userId);
 
     if (!deletedUser) {
