@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { UserModel } from '@/models/UserModel';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,7 +30,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUsers } from './useUsers';
 import InviteForm from './InviteForm/InviteForm';
 import ManageAccessDialog from './ManageAccess/ManageAccess';
-import { useState } from 'react';
+import { deleteInvites } from '@/service/Settings';
 
 export default function Users() {
   const {
@@ -43,7 +43,7 @@ export default function Users() {
     inviteUserMutation,
     tenants,
     isLoading,
-    users,
+    allUsers,
     updateRoleForm,
     setRoleFilter,
     setIsEditRoleDialogOpen,
@@ -62,7 +62,13 @@ export default function Users() {
     setSelectedUserForAccess,
     updateTenantAccessMutation,
     loading,
-    setLoading
+    invites,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    userToDelete,
+    deleteUserMutation,
+    setUserToDelete,
+    fetchInvites
   } = useUsers();
 
   // Helper to get role badge
@@ -158,6 +164,7 @@ export default function Users() {
               <p className="mt-4 text-secondary-500">Loading users...</p>
             </div>
           ) : filteredUsers.length > 0 ? (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -173,24 +180,6 @@ export default function Users() {
                 {filteredUsers.map((user: UserModel) => {
                   return (
                     <TableRow key={user.id}>
-                      {/* <TableCell> */}
-                        {/* <div className="flex items-center space-x-3">
-                          <Avatar>
-                            <AvatarImage src={user.profileImageUrl} alt={`${user.firstName || 'User'}'s avatar`} />
-                            <AvatarFallback className="bg-primary-600 text-white">
-                              {user.firstName?.[0] || user.email?.[0]?.toUpperCase() || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">
-                              {user.firstName && user.lastName
-                                ? `${user.firstName} ${user.lastName}`
-                                : user.email.split('@')[0]}
-                            </div>
-                            {loggedInUser.id === user?.id && <div className="text-xs text-secondary-500">You</div>}
-                          </div>
-                        </div> */}
-                      {/* </TableCell> */}
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
                       <TableCell>
@@ -237,7 +226,7 @@ export default function Users() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
-                              onClick={() => handleDeleteUser(user.id)}
+                              onClick={() => handleDeleteUser(user.id, user.email)}
                               disabled={loggedInUser.id === user?.id}
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
@@ -251,12 +240,66 @@ export default function Users() {
                 })}
               </TableBody>
             </Table>
+            <CardTitle className='mt-6'>Invites</CardTitle>
+              <Table>
+              <TableHeader>
+                <TableRow>
+                  {/* <TableHead>User</TableHead> */}
+                  <TableHead></TableHead>
+                  <TableHead></TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Invited</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invites.length > 0 && invites.map((invite: any) => {
+                  const hasAcceptedInvite = allUsers.find((user: UserModel) => {
+                    return user.email === invite.email
+                  })
+                  if(hasAcceptedInvite) return
+                  return (
+                    <TableRow key={invite.id}>
+                      <TableCell>{invite.email}</TableCell>
+                      <TableCell></TableCell>
+                      <TableCell><Badge variant={'outline'}>PENDING</Badge></TableCell>
+                      <TableCell>
+                        {isValid(new Date(invite?.created_at)) ? format(new Date(invite.created_at), 'MMM d, yyyy') : '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={async () => {
+                                await deleteInvites(invite.email)
+                                fetchInvites()
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Cancel Invite
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            </>
           ) : (
             <div className="py-8 text-center">
               <UserCog className="h-12 w-12 text-secondary-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">No Users Found</h3>
               <p className="text-secondary-500 mb-4">
-                {users?.length === 0 ? 'No users have been added yet.' : 'No users match your search criteria.'}
+                {allUsers?.length === 0 ? 'No users have been added yet.' : 'No users match your search criteria.'}
               </p>
             </div>
           )}
@@ -365,6 +408,34 @@ export default function Users() {
           </Form>
         </DialogContent>
       </Dialog>
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{userToDelete?.email}</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (userToDelete) {
+                  deleteUserMutation.mutate({ userId: userToDelete.id, userEmail: userToDelete.email });
+                }
+                setIsDeleteDialogOpen(false);
+                setUserToDelete(null);
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {isManageAccessDialogOpen && (
         <ManageAccessDialog
         open={isManageAccessDialogOpen}

@@ -209,6 +209,16 @@ export class DatabaseStorage implements IStorage {
 
 
   // Invite operations
+  async getInvites(): Promise<Invite[]> {
+    const result = await db.execute(sql`
+      SELECT DISTINCT ON (email) *
+      FROM invites
+      ORDER BY email, created_at DESC
+    `);
+
+    return result.rows as Invite[];
+  }
+
   async createUserInvite(invite: InsertInvite): Promise<Invite> {
     const [result] = await db.insert(invites).values(invite).returning();
     return result;
@@ -227,6 +237,11 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
+
+  async deleteInvitesByEmail(email: string): Promise<void> {
+  await db.delete(invites).where(eq(invites.email, email));
+}
+
 
   // Token operations
   // Create or update token
@@ -327,6 +342,14 @@ async setTenantsForUser(userId: string, tenantIds: number[]): Promise<void> {
   async removeUserFromTenant(userId: string, tenantId: number): Promise<void> {
     await db.delete(userTenants).where(and(eq(userTenants.userId, userId), eq(userTenants.tenantId, tenantId)));
   }
+
+  async deleteUserFromUserTenants(userId: string): Promise<any> {
+  const [user] = await db
+        .delete(userTenants)
+        .where(eq(userTenants.userId, userId))
+        .returning();
+  return user;
+}
 
   async getUsersForTenant(tenantId: number): Promise<User[]> {
     const userRecords = await db

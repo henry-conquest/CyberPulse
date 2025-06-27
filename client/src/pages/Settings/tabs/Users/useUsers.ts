@@ -2,11 +2,20 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useSelector } from 'react-redux';
 import { UserModel } from '@/models/UserModel';
+import { getInvites, getUsers } from '@/service/Settings';
+
+type Invite = {
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: 'admin' | 'analyst' | 'account_manager' | 'user';
+  tenantId: string;
+};
 
 export const useUsers = () => {
   const loggedInUser = useSelector((state: any) => state.sessionInfo.user);
@@ -20,6 +29,22 @@ export const useUsers = () => {
   const [isManageAccessDialogOpen, setIsManageAccessDialogOpen] = useState(false);
   const [selectedUserForAccess, setSelectedUserForAccess] = useState<UserModel | null>(null);
   const [loading, setLoading] = useState(false)
+  const [invites, setInvites] = useState<Invite[]>([])
+  const [allUsers, setAllUsers] = useState([])
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{ id: string; email: string } | null>(null);
+
+  const fetchInvites = async () => {
+    const data = await getInvites()
+    const userData = await getUsers(setLoading)
+    setInvites(data.invites)
+    console.log('user data', userData)
+    setAllUsers(userData)
+    setLoading(false)
+  }
+  useEffect(() => {
+    fetchInvites()
+  }, [])
 
   // Schema for invite user form
   const inviteUserSchema = z.object({
@@ -67,10 +92,16 @@ export const useUsers = () => {
   // Invite user mutation
   const inviteUserMutation = useMutation({
     mutationFn: async (data: z.infer<typeof inviteUserSchema>) => {
-      const response = await apiRequest('POST', '/api/admin/users/invite', data);
-      return response.json();
+      try {
+        const response = await apiRequest('POST', '/api/admin/users/invite', data);
+        return response.json();
+      } catch(error) {
+        console.log(error)
+        throw error
+      }
     },
     onSuccess: () => {
+      fetchInvites()
       toast({
         title: 'Invitation sent',
         description: 'User has been invited successfully',
@@ -99,6 +130,9 @@ export const useUsers = () => {
         variant: 'destructive',
       });
     },
+    onSettled: () => {
+      setLoading(false)
+    }
   });
 
   // Update user role mutation
@@ -108,6 +142,7 @@ export const useUsers = () => {
       return response.json();
     },
     onSuccess: () => {
+      fetchInvites()
       toast({
         title: 'Role updated',
         description: 'User role has been updated successfully',
@@ -137,13 +172,14 @@ export const useUsers = () => {
       });
     },
   });
-
+  type DeleteUserPayload = { userId: string; userEmail: string };
   // Delete user mutation
   const deleteUserMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      await apiRequest('DELETE', `/api/admin/users/${userId}`);
+    mutationFn: async ({userId, userEmail} : DeleteUserPayload) => {
+      await apiRequest('DELETE', `/api/admin/users/${userId}/${userEmail}`);
     },
     onSuccess: () => {
+      fetchInvites()
       toast({
         title: 'User deleted',
         description: 'User has been deleted successfully',
@@ -174,7 +210,6 @@ export const useUsers = () => {
 
   // Form handlers
   const handleInviteUser = (data: z.infer<typeof inviteUserSchema>) => {
-    console.log('data', data);
     inviteUserMutation.mutate(data);
   };
 
@@ -183,7 +218,7 @@ export const useUsers = () => {
     updateRoleMutation.mutate({ userId: selectedUser.id, role: data.role });
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = (userId: string, userEmail: string) => {
     if (userId === loggedInUser?.id) {
       toast({
         title: 'Cannot delete yourself',
@@ -193,10 +228,10 @@ export const useUsers = () => {
       return;
     }
 
-    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      deleteUserMutation.mutate(userId);
-    }
+    setUserToDelete({ id: userId, email: userEmail });
+    setIsDeleteDialogOpen(true);
   };
+
 
   const openEditRoleDialog = (user: UserModel) => {
     setSelectedUser(user);
@@ -208,7 +243,7 @@ export const useUsers = () => {
 
   // Filter and search users
   const filteredUsers = users
-    ? users.filter((user: UserModel) => {
+    ? allUsers.filter((user: UserModel) => {
         const matchesRole = roleFilter === 'all' || user.role === roleFilter;
         const matchesSearch =
           searchQuery.trim() === '' ||
@@ -285,7 +320,6 @@ export const useUsers = () => {
     inviteUserSchema,
     tenants,
     isLoading,
-    users,
     updateRoleForm,
     setRoleFilter,
     setIsEditRoleDialogOpen,
@@ -304,6 +338,14 @@ export const useUsers = () => {
     setSelectedUserForAccess,
     updateTenantAccessMutation,
     loading,
-    setLoading
+    setLoading,
+    invites,
+    allUsers,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    userToDelete,
+    setUserToDelete,
+    deleteUserMutation,
+    fetchInvites
   };
 };
