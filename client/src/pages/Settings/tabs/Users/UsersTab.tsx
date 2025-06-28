@@ -168,7 +168,6 @@ export default function Users() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {/* <TableHead>User</TableHead> */}
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Organizations</TableHead>

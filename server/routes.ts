@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from 'express';
 import { createServer, type Server } from 'http';
 import { storage } from './storage';
 import { setupAuth, isAuthenticated, isAuthorized } from './auth';
-import { getValidMicrosoftAccessToken } from './helper';
+import { evaluatePhishMethods, getValidMicrosoftAccessToken } from './helper';
 import { z } from 'zod';
 import {
   insertTenantSchema,
@@ -360,6 +360,32 @@ app.get('/api/known-locations/:userId', isAuthenticated, async (req, res) => {
   } catch(error) {
     res.status(500).json({
       error: 'Failed to fetch named locations',
+    });
+  }
+})
+
+app.get('/api/phish-resistant-mfa/:userId', isAuthenticated, async (req, res) => {
+  try {
+  const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
+
+  if (!accessToken) {
+    return res.status(401).json({ error: 'Access token is missing' });
+  }
+  
+  const response = await fetch('https://graph.microsoft.com/v1.0/policies/authenticationMethodsPolicy', {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  const data = await response.json();
+  const transformedData = evaluatePhishMethods(data)
+
+  res.status(200).json(transformedData); 
+  } catch(error) {
+    res.status(500).json({
+      error: 'Failed to fetch named phish resistant MFA',
     });
   }
 })

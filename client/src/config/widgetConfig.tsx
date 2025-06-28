@@ -1,6 +1,7 @@
 import ProgressCircle from "@/components/ui/ProgressCircle";
+import { Policy } from "@/models/PolicyModel";
 import RiskScoreChart from "@/pages/CompanyDetails/RiskScoreChart/RiskScoreChart";
-import { get365Admins, getKnownLocations, getRiskySignInPolicies } from "@/service/IdentitiesAndPeopleService";
+import { get365Admins, getKnownLocations, getPhishResistantMFA, getRiskySignInPolicies } from "@/service/IdentitiesAndPeopleService";
 import { Check, BadgeAlert } from "lucide-react";
 import { navigate } from "wouter/use-browser-location";
 
@@ -36,7 +37,19 @@ export const identitiesAndPeopleWidgets = [
         id: 'phishResistantMFA',
         title: 'Phish Resistant MFA',
         hideButton: false,
-        content: <div className="text-brand-orange">2 Risky Methods Enabled</div>
+        render: (data: any) => {
+            let count = 0
+            data?.map((policy: Policy) => {
+                if(policy.state === "enabled" && !policy.isPhishResistant) {
+                    count++
+                } else {
+                    return
+                }
+            })
+            return data ? <div className="text-brand-orange">{count} Risky Methods Enabled</div> : <div className="text-red-500">Failed to get data</div>
+        },
+        apiCall: getPhishResistantMFA,
+        onButtonClick: (tenantId: string) => navigate(`/phish-resistant-mfa/${tenantId}`)
     },
     {
         id: 'knownLocationLogins',
@@ -47,6 +60,8 @@ export const identitiesAndPeopleWidgets = [
             (loc: any) =>
             loc["@odata.type"] === "#microsoft.graph.ipNamedLocation" && loc.isTrusted === true
         );
+
+        if(!data) return <div className="text-red-500">Failed to get data</div>
 
         return trustedExists ? (
             <div className="bg-brand-green rounded-full p-4">

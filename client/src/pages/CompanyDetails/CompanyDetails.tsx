@@ -61,6 +61,10 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     apiParam = user.id
                     onClickParam = tenantId
                     break
+                    case 'phishResistantMFA':
+                    apiParam = user.id
+                    onClickParam = tenantId
+                    break
                     // future cases:
                     // case 'someOtherWidget':
                     //   apiParam = { tenantId, region: 'US' };
