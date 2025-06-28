@@ -25,6 +25,7 @@ import { UserRoles } from '@shared/schema';
 import AcceptInvite from './pages/AcceptInvite/AcceptInvite';
 import CompanyDetails from './pages/CompanyDetails/CompanyDetails';
 import KnownLocations from './pages/Widgets/KnownLocations';
+import PhishResistantMFA from './pages/Widgets/PhishResistantMFA';
 
 function ProtectedRoute({
   component: Component,
@@ -135,6 +136,7 @@ function Router() {
 
       {/* Widget Routes */}
       <Route path="/known-locations/:tenantId" component={() => <ProtectedRoute component={KnownLocations} />} />
+      <Route path="/phish-resistant-mfa/:tenantId" component={() => <ProtectedRoute component={PhishResistantMFA} />} />
 
       {/* Fallback to 404 */}
       <Route component={NotFound} />

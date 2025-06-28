@@ -55,3 +55,67 @@ export async function getValidMicrosoftAccessToken(userId: string): Promise<stri
 
   return tokens.accessToken;
 }
+
+type PhishResistanceLevel = true | false | "partial";
+
+interface AuthMethodMeta {
+  displayName: string;
+  isPhishResistant: PhishResistanceLevel;
+}
+
+interface AuthMethod {
+  id: string;
+  state: "enabled" | "disabled";
+  [key: string]: any;
+}
+
+interface EvaluatedMethod {
+  id: string;
+  displayName: string;
+  state: "enabled" | "disabled";
+  isPhishResistant: PhishResistanceLevel;
+  recommendation: string;
+}
+
+interface GraphResponse {
+  authenticationMethodConfigurations: AuthMethod[];
+}
+
+const methodMeta: Record<string, AuthMethodMeta> = {
+  Fido2: { displayName: "FIDO2 Security Key", isPhishResistant: true },
+  MicrosoftAuthenticator: { displayName: "Microsoft Authenticator", isPhishResistant: "partial" },
+  TemporaryAccessPass: { displayName: "Temporary Access Pass", isPhishResistant: true },
+  X509Certificate: { displayName: "X.509 Certificate", isPhishResistant: true },
+  SoftwareOath: { displayName: "Software OATH (TOTP)", isPhishResistant: false },
+  Sms: { displayName: "SMS", isPhishResistant: false },
+  Voice: { displayName: "Voice", isPhishResistant: false },
+  Email: { displayName: "Email OTP", isPhishResistant: false }
+};
+
+export const evaluatePhishMethods = (data: GraphResponse): EvaluatedMethod[] => {
+  return data.authenticationMethodConfigurations.map((method) => {
+    const meta = methodMeta[method.id] || {
+      displayName: method.id,
+      isPhishResistant: false
+    };
+
+    const { id, state } = method;
+
+    let recommendation = "OK";
+    if (!meta.isPhishResistant && state === "enabled") {
+      recommendation = "Disable this method";
+    } else if (meta.isPhishResistant === true && state === "disabled") {
+      recommendation = "Enable this method";
+    } else if (meta.isPhishResistant === "partial") {
+      recommendation = "Enhance with number matching";
+    }
+
+    return {
+      id,
+      displayName: meta.displayName,
+      state,
+      isPhishResistant: meta.isPhishResistant,
+      recommendation
+    };
+  });
+};

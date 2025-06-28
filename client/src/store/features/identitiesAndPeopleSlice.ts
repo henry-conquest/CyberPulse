@@ -1,7 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 export const initialIdentitiesAndPeopleState = {
-  knownLocations: null
+  knownLocations: null,
+  phishResistantMFA: null
 };
 
 const identitiesAndPeopleSlice = createSlice({
@@ -11,8 +12,12 @@ const identitiesAndPeopleSlice = createSlice({
     setKnownLocations(state, action) {
       state.knownLocations = action.payload;
     },
-    reset(state, action) {
+    setPhishResistantMFA(state, action) {
+      state.phishResistantMFA = action.payload;
+    },
+    reset(state) {
       state.knownLocations = null
+      state.phishResistantMFA = null
     }
   },
 });

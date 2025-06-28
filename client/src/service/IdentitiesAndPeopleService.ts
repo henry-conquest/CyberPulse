@@ -60,3 +60,19 @@ export const getKnownLocations = async (userId: string) => {
         console.log(err)
     }
 }
+
+export const getPhishResistantMFA = async (userId: string) => {
+    try {
+        const res = await fetch(`/api/phish-resistant-mfa/${userId}`, {
+        credentials: 'include',
+        });
+        if(!res.ok) {
+            throw new Error('Failed to get phish resistant MFA data')
+        }
+        const data = await res.json()
+        return data
+
+    } catch(err) {
+        console.log(err)
+    }
+}

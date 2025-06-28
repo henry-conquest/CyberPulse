@@ -1,3 +1,4 @@
+import LoadingSpinner from "@/components/ui/LoadingSpinner"
 import { getKnownLocations } from "@/service/IdentitiesAndPeopleService"
 import { getTenants } from "@/service/TenantService"
 import { identitiesAndPeopleActions, sessionInfoActions } from "@/store/store"
@@ -14,31 +15,27 @@ const KnownLocations = () => {
     const dispatch = useDispatch()
 
     useEffect(() => {
-        if (!tenantId) return;
-        const getTenantData = async () => {
-          const tenants = await getTenants()
-          const selectedTenant = tenants.find((t: any) => t.id === +tenantId )
-          dispatch(sessionInfoActions.setTenants(tenants))
-          dispatch(sessionInfoActions.setSelectedClient(selectedTenant))
-        }
-        getTenantData()
-    }, [])
+    const initialiseData = async () => {
+      if (tenantId) {
+        const tenants = await getTenants();
+        const selectedTenant = tenants.find((t: any) => t.id === +tenantId);
+        dispatch(sessionInfoActions.setTenants(tenants));
+        dispatch(sessionInfoActions.setSelectedClient(selectedTenant));
+      }
 
-    useEffect(() => {
-      const fetchLocationData = async () => {
-        const data = await getKnownLocations(userId)
-        dispatch(identitiesAndPeopleActions.setKnownLocations(data))
+      if (!knownLocationData && userId) {
+        const data = await getKnownLocations(userId);
+        dispatch(identitiesAndPeopleActions.setKnownLocations(data));
       }
-      if(!knownLocationData) {
-        fetchLocationData()
-      }
-    }, [knownLocationData])
+    };
+
+    initialiseData();
+  }, [tenantId, knownLocationData, userId, dispatch]);
+
 
     if(!knownLocationData) {
       return (
-        <div className="flex items-center justify-center h-[calc(100vh-80px)]">
-          <div className="w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-        </div>
+        <LoadingSpinner />
       )
     }
 

@@ -30,6 +30,7 @@ const Widget = (props: WidgetProps) => {
         const result = await apiCall(apiParam);
         setData(result);
         if(id === 'knownLocationLogins') dispatch(identitiesAndPeopleActions.setKnownLocations(result))
+        if(id === 'phishResistantMFA') dispatch(identitiesAndPeopleActions.setPhishResistantMFA(result))
       } catch (err) {
         console.error('Widget API call failed:', err);
       } finally {
