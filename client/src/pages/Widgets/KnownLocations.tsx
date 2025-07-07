@@ -41,13 +41,13 @@ const KnownLocations = () => {
 
     return (
         <>
-        <h1 className="text-brand-teal text-2xl text-center font-bold mt-6">{selectedClient?.name} Known Location Logins</h1>
         <div className="flex justify-between align-center ml-6 mr-6 mt-4">
         <Link to={`/tenants/${tenantId}/details`} className="inline-flex items-center text-sm text-brand-teal hover:underline">
           ← Back
         </Link>
         <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
         </div>
+        <h1 className="text-brand-teal text-2xl font-bold mt-6 ml-6">{selectedClient?.name} Known Location Logins</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
         {knownLocationData?.value?.map((location: any) => (
           <div

@@ -92,8 +92,22 @@ const methodMeta: Record<string, AuthMethodMeta> = {
   Email: { displayName: "Email OTP", isPhishResistant: false }
 };
 
-export const evaluatePhishMethods = (data: GraphResponse): EvaluatedMethod[] => {
-  return data.authenticationMethodConfigurations.map((method) => {
+export interface GroupedEvaluation {
+  toEnable: EvaluatedMethod[];
+  toDisable: EvaluatedMethod[];
+  enhance: EvaluatedMethod[];
+  correct: EvaluatedMethod[];
+}
+
+export const evaluatePhishMethodsGrouped = (data: GraphResponse): GroupedEvaluation => {
+  const grouped: GroupedEvaluation = {
+    toEnable: [],
+    toDisable: [],
+    enhance: [],
+    correct: [],
+  };
+
+  data.authenticationMethodConfigurations.forEach((method) => {
     const meta = methodMeta[method.id] || {
       displayName: method.id,
       isPhishResistant: false
@@ -104,18 +118,17 @@ export const evaluatePhishMethods = (data: GraphResponse): EvaluatedMethod[] => 
     let recommendation = "OK";
     if (!meta.isPhishResistant && state === "enabled") {
       recommendation = "Disable this method";
+      grouped.toDisable.push({ id, displayName: meta.displayName, state, isPhishResistant: meta.isPhishResistant, recommendation });
     } else if (meta.isPhishResistant === true && state === "disabled") {
       recommendation = "Enable this method";
+      grouped.toEnable.push({ id, displayName: meta.displayName, state, isPhishResistant: meta.isPhishResistant, recommendation });
     } else if (meta.isPhishResistant === "partial") {
       recommendation = "Enhance with number matching";
+      grouped.enhance.push({ id, displayName: meta.displayName, state, isPhishResistant: meta.isPhishResistant, recommendation });
+    } else {
+      grouped.correct.push({ id, displayName: meta.displayName, state, isPhishResistant: meta.isPhishResistant, recommendation });
     }
-
-    return {
-      id,
-      displayName: meta.displayName,
-      state,
-      isPhishResistant: meta.isPhishResistant,
-      recommendation
-    };
   });
+
+  return grouped;
 };
