@@ -1,6 +1,7 @@
 import ProgressCircle from "@/components/ui/ProgressCircle";
 import RiskScoreChart from "@/pages/CompanyDetails/RiskScoreChart/RiskScoreChart";
-import PhishResistantMFAChart from "@/pages/Widgets/PhishResistantMFAChart";
+import PhishResistantMFAChart from "@/pages/Widgets/PhishResistant/PhishResistantMFAChart";
+import { getEncryptedDeviceInfo } from "@/service/EndUserDevicesService";
 import { get365Admins, getKnownLocations, getPhishResistantMFA, getRiskySignInPolicies } from "@/service/IdentitiesAndPeopleService";
 import { Check, BadgeAlert } from "lucide-react";
 import { navigate } from "wouter/use-browser-location";
@@ -99,8 +100,16 @@ export const endUserDevicesWidgets = [
     {
         id: 'noEncryption',
         title: 'No Encryption',
-        hideButton: true,
-        content: <ProgressCircle number={7} />
+        hideButton: false,
+        render: (data: any) => {
+        if (!data) {
+        return <div className="text-red-500">Failed to get data</div>;
+        }
+
+        return <ProgressCircle number={data.count} />;
+    },
+        apiCall: getEncryptedDeviceInfo,
+        onButtonClick: (tenantId: string) => navigate(`/no-encryption/${tenantId}`)
     },
     {
         id: 'compliancePolicies',

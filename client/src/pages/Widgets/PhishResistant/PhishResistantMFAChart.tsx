@@ -66,7 +66,7 @@ const PhishResistantMFAChart = ({ data }: MFARecommendationsChartProps) => {
       <Doughnut data={chartData} options={options} />
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-sm">
         <span className="font-bold text-gray-700 text-2xl">{recommendationsCount}</span>
-        <span className="text-gray-700 text-xs font-bold">Recommendations</span>
+        <span className="text-gray-700 text-[8px] font-bold">Recommendations</span>
       </div>
     </div>
   );

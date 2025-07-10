@@ -7,4 +7,5 @@ interface WidgetModel {
     apiParam?: any
     buttonText?: string
     content: any
+    onButtonClick?: any
 }
