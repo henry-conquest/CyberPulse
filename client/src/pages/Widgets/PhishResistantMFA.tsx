@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import LoadingSpinner from "@/components/ui/LoadingSpinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Policy } from "@/models/PolicyModel"
+import { GroupedMFAData } from "@/models/IdentitiesAndPeopleModel"
 import { getPhishResistantMFA } from "@/service/IdentitiesAndPeopleService"
 import { getTenants } from "@/service/TenantService"
 import { identitiesAndPeopleActions, sessionInfoActions } from "@/store/store"
@@ -11,7 +11,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { Link, useParams } from "wouter"
 
 const PhishResistantMFA = () => {
-    const phishData = useSelector((state: any) => state?.identitiesAndPeople?.phishResistantMFA)
+    const groupedData: GroupedMFAData = useSelector((state: any) => state?.identitiesAndPeople?.phishResistantMFA)
     const selectedClient = useSelector((state: any) => state?.sessionInfo?.selectedClient)
     const userId = useSelector((state: any) => state?.sessionInfo?.user?.id)
     const [loading, setLoading] = useState(true)
@@ -19,7 +19,27 @@ const PhishResistantMFA = () => {
     const dispatch = useDispatch()
     const { tenantId } = useParams()
 
+    const getStateClass = (state: string) => {
+      switch (state) {
+        case 'enabled':
+          return 'text-green-600';
+        case 'disabled':
+          return 'text-gray-500';
+        case 'partial':
+          return 'text-orange-500';
+        default:
+          return '';
+      }
+    };
+    const getPhishResistantStatus = (value: string | boolean) => {
+      if (value === true || value === 'true') return { text: 'Yes', className: 'text-green-600' };
+      if (value === false || value === 'false') return { text: 'No', className: 'text-red-600' };
+      if (value === 'partial') return { text: 'Partially Resistant', className: 'text-orange-500' };
+      return { text: 'Unknown', className: '' };
+    };
+
     useEffect(() => {
+      const isGroupedDataEmpty = groupedData && Object.values(groupedData).every((arr) => Array.isArray(arr) && arr.length === 0);
       const initialiseData = async () => {
         try {
           setLoading(true);
@@ -31,10 +51,10 @@ const PhishResistantMFA = () => {
             dispatch(sessionInfoActions.setSelectedClient(selectedTenant));
           }
 
-          if (!phishData && userId) {
-            const data = await getPhishResistantMFA(userId);
-            dispatch(identitiesAndPeopleActions.setPhishResistantMFA(data));
-          }
+          if ((!groupedData || isGroupedDataEmpty) && userId) {
+          const data = await getPhishResistantMFA(userId);
+          dispatch(identitiesAndPeopleActions.setPhishResistantMFA(data));
+        }
         } catch (error) {
           console.error("Failed to load data", error);
           setError(true)
@@ -48,17 +68,17 @@ const PhishResistantMFA = () => {
     }, [tenantId, userId]);
 
     if (loading) return <LoadingSpinner />;
-    if (!Array.isArray(phishData)) return (
-      <>
-        <div className="flex justify-between align-center ml-6 mr-6 mt-4 mb-12">
-          <Link to={`/tenants/${tenantId}/details`} className="inline-flex items-center text-sm text-brand-teal hover:underline">
-              ← Back
-            </Link>
-            <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
-        </div>
-        <div className="text-center text-red-600 mt-8">Failed to load data. Please try again.</div>
-      </>
-    )
+    // if (!Array.isArray(groupedData)) return (
+    //   <>
+    //     <div className="flex justify-between align-center ml-6 mr-6 mt-4 mb-12">
+    //       <Link to={`/tenants/${tenantId}/details`} className="inline-flex items-center text-sm text-brand-teal hover:underline">
+    //           ← Back
+    //         </Link>
+    //         <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
+    //     </div>
+    //     <div className="text-center text-red-600 mt-8">Failed to load data. Please try again.</div>
+    //   </>
+    // )
 
     return (
       <>
@@ -68,50 +88,70 @@ const PhishResistantMFA = () => {
           </Link>
           <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
         </div>
-        <Card className="ml-6 mr-6">
-          <CardHeader>
-            <CardTitle>{selectedClient?.name} Phish Resistant MFA</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Authentication Method</TableHead>
-                  <TableHead>Enabled</TableHead>
-                  <TableHead>Phish Resistant</TableHead>
-                  <TableHead>Notes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {phishData && [...phishData]?.sort((a, b) => (a.state === "enabled" ? -1 : 1))?.map((policy: Policy) => {
-                  return (
-                    <TableRow key={policy.id}>
-                      <TableCell>{policy.displayName}</TableCell>
-                      <TableCell>
-                        <span className={policy.state === "enabled" ? "text-green-700 font-medium" : "text-gray-500"}>
-                          {policy.state.charAt(0).toUpperCase() + policy.state.slice(1)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {policy.isPhishResistant === true && (
-                          <span className="text-green-600 font-medium">Yes</span>
-                        )}
-                        {policy.isPhishResistant === false && (
-                          <span className="text-red-600 font-medium">No</span>
-                        )}
-                        {policy.isPhishResistant === "partial" && (
-                          <span className="text-yellow-600 font-medium">Partially Resistant</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{policy.recommendation}</TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-          
-        </Card>
+      <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">{selectedClient?.name} Phish Resistant MFA</h1>
+      <Card className="ml-auto mr-auto mb-12 flex-col w-[80%]">
+        <CardHeader>
+          <CardTitle>Recommendations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+               <TableRow>
+                <TableHead className="w-1/4">Authentication Method</TableHead>
+                <TableHead className="w-1/4">Status</TableHead>
+                <TableHead className="w-1/4">Phish Resistant</TableHead>
+                <TableHead className="w-1/4">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...groupedData.toEnable, ...groupedData.toDisable, ...groupedData.enhance].map((method) => {
+                const { text, className } = getPhishResistantStatus(method.isPhishResistant);
+                return (
+                <TableRow key={method.id}>
+                <TableCell className="w-1/4">{method.displayName}</TableCell>
+                <TableCell className={`w-1/4 ${getStateClass(method.state)}`}>{method.state}</TableCell>
+                <TableCell className={`w-1/4 ${className}`}>{text}</TableCell>
+                <TableCell className="w-1/4">{method.recommendation || '-'}</TableCell>
+              </TableRow>
+
+              )
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card className="ml-auto mr-auto mb-6 flex-col w-[80%]">
+        <CardHeader>
+          <CardTitle>Correctly Configured</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+               <TableRow>
+                <TableHead className="w-1/4">Authentication Method</TableHead>
+                <TableHead className="w-1/4">Status</TableHead>
+                <TableHead className="w-1/4">Phish Resistant</TableHead>
+                <TableHead className="w-1/4">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {groupedData.correct.map((method) => {
+                const { text, className } = getPhishResistantStatus(method.isPhishResistant);
+                return (
+                  <TableRow key={method.id}>
+                    <TableCell className="w-1/4">{method.displayName}</TableCell>
+                    <TableCell className={`w-1/4 ${getStateClass(method.state)}`}>{method.state}</TableCell>
+                    <TableCell className={`w-1/4 ${className}`}>{text}</TableCell>
+                    <TableCell className="w-1/4"></TableCell>
+                  </TableRow>
+              )
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       </>
     )
 }

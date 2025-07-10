@@ -36,7 +36,7 @@ const RiskScoreChart = ({ score, marginLeft }: RiskScoreChartProps) => {
   return (
     <div className={`relative w-32 h-32 ${marginLeft ? `ml-${marginLeft}` : ''} `}>
       <Doughnut data={data} options={options} />
-      <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-${score-color}">
+      <div className="absolute inset-0 flex items-center justify-center text-xl font-bold mt-3" style={{color: scoreColor}}>
         {score}%
       </div>
     </div>

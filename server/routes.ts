@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from 'express';
 import { createServer, type Server } from 'http';
 import { storage } from './storage';
 import { setupAuth, isAuthenticated, isAuthorized } from './auth';
-import { evaluatePhishMethods, getValidMicrosoftAccessToken } from './helper';
+import { evaluatePhishMethodsGrouped, getValidMicrosoftAccessToken } from './helper';
 import { z } from 'zod';
 import {
   insertTenantSchema,
@@ -380,7 +380,7 @@ app.get('/api/phish-resistant-mfa/:userId', isAuthenticated, async (req, res) =>
   })
 
   const data = await response.json();
-  const transformedData = evaluatePhishMethods(data)
+  const transformedData = evaluatePhishMethodsGrouped(data)
 
   res.status(200).json(transformedData); 
   } catch(error) {

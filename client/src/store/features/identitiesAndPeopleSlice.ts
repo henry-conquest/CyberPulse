@@ -1,8 +1,14 @@
+import { IdentitiesAndPeopleSliceModel } from '@/models/IdentitiesAndPeopleModel';
 import { createSlice } from '@reduxjs/toolkit';
 
-export const initialIdentitiesAndPeopleState = {
+export const initialIdentitiesAndPeopleState: IdentitiesAndPeopleSliceModel = {
   knownLocations: null,
-  phishResistantMFA: null
+  phishResistantMFA: {
+    toEnable: [],
+    toDisable: [],
+    enhance: [],
+    correct: []
+  }
 };
 
 const identitiesAndPeopleSlice = createSlice({
@@ -17,7 +23,12 @@ const identitiesAndPeopleSlice = createSlice({
     },
     reset(state) {
       state.knownLocations = null
-      state.phishResistantMFA = null
+      state.phishResistantMFA = {
+        toEnable: [],
+        toDisable: [],
+        enhance: [],
+        correct: []
+  }
     }
   },
 });
