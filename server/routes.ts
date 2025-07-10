@@ -390,6 +390,56 @@ app.get('/api/phish-resistant-mfa/:userId', isAuthenticated, async (req, res) =>
   }
 })
 
+app.get('/api/encrypted-devices/:userId', isAuthenticated, async (req, res) => {
+  try {
+    const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
+
+    if (!accessToken) {
+      return res.status(401).json({ error: 'Access token is missing' });
+    }
+
+    const response = await fetch('https://graph.microsoft.com/v1.0/deviceManagement/managedDevices', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Graph API error: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    const unencryptedDevices = result.value.filter(
+      (device: any) => device.isEncrypted === false
+    );
+
+    const responseData = {
+      count: unencryptedDevices.length,
+      devices: unencryptedDevices.map((device: any) => ({
+        deviceName: device.deviceName,
+        user: device.userPrincipalName,
+        os: device.operatingSystem,
+        osVersion: device.osVersion,
+        complianceState: device.complianceState,
+        enrollmentType: device.enrollmentType,
+        jailBroken: device.jailBroken,
+        lastSyncDateTime: device.lastSyncDateTime
+      }))
+    };
+
+
+    res.status(200).json(responseData);
+  } catch (error) {
+    console.error('Error fetching unencrypted devices:', error);
+    res.status(500).json({
+      error: 'Failed to fetch unencrypted devices',
+    });
+  }
+});
+
+
 
 
   app.post(

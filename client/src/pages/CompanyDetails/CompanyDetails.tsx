@@ -97,9 +97,11 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {endUserDevicesWidgets.map(((widget: WidgetModel, index) => {
                 let apiParam;
+                let onClickParam;
                 switch (widget.id) {
-                    case 'microsoft365Admins':
-                    apiParam = tenantId;
+                    case 'noEncryption':
+                    apiParam = user.id;
+                    onClickParam = tenantId
                     break;
                     default:
                     apiParam = undefined;
@@ -114,6 +116,8 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     apiCall={widget.apiCall}
                     apiParam={apiParam}
                     render={widget.render}
+                    onButtonClick={widget.onButtonClick}
+                    onClickParam={onClickParam}
                     >
                     {widget.content}
                     </Widget>
