@@ -1,7 +1,7 @@
 import ProgressCircle from "@/components/ui/ProgressCircle";
 import RiskScoreChart from "@/pages/CompanyDetails/RiskScoreChart/RiskScoreChart";
 import PhishResistantMFAChart from "@/pages/Widgets/PhishResistant/PhishResistantMFAChart";
-import { getEncryptedDeviceInfo } from "@/service/EndUserDevicesService";
+import { getCompliancePolicies, getEncryptedDeviceInfo } from "@/service/EndUserDevicesService";
 import { get365Admins, getKnownLocations, getPhishResistantMFA, getRiskySignInPolicies } from "@/service/IdentitiesAndPeopleService";
 import { Check, BadgeAlert } from "lucide-react";
 import { navigate } from "wouter/use-browser-location";
@@ -115,7 +115,20 @@ export const endUserDevicesWidgets = [
         id: 'compliancePolicies',
         title: 'Compliance Policies',
         hideButton: false,
-        content: <div className="bg-brand-green rounded-full p-4"><Check className="text-white" size={32}/></div>,
+        render: (data: any) => {
+            if (!data) {
+            return <div className="text-red-500">Failed to get data</div>;
+            }
+
+            let hi = null
+
+            return data.value.length ?
+                <div className="bg-brand-green rounded-full p-4"><Check className="text-white" size={32}/></div>
+                :
+                <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
+        },
+        apiCall: getCompliancePolicies,
+        onButtonClick: (tenantId: string) => navigate(`/compliance-policies/${tenantId}`)
     },
     {
         id: 'vulnerabilityManagement',
