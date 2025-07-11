@@ -2,22 +2,21 @@ import { Switch, Route } from 'wouter';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-import NotFound from '@/pages/not-found';
-import Dashboard from '@/pages/dashboard';
+import NotFound from '@/pages/NotFound/NotFound';
 import Companies from './pages/Companies/Companies';
-import Reports from '@/pages/reports';
-import ReportPeriods from '@/pages/report-periods';
-import ReportView from '@/pages/report-view';
-import EditReport from '@/pages/edit-report';
-import RiskStats from '@/pages/risk-stats';
-import Recommendations from '@/pages/recommendations';
-import GlobalRecommendations from '@/pages/global-recommendations';
-import GlobalAdmins from '@/pages/global-admins';
+// import Reports from '@/pages/reports';
+// import ReportPeriods from '@/pages/report-periods';
+// import ReportView from '@/pages/report-view';
+// import EditReport from '@/pages/edit-report';
+// import RiskStats from '@/pages/risk-stats';
+// import Recommendations from '@/pages/recommendations';
+// import GlobalRecommendations from '@/pages/global-recommendations';
+// import GlobalAdmins from '@/pages/global-admins';
 import Settings from '@/pages/Settings/Settings';
 import UsersTab from './pages/Settings/tabs/Users/UsersTab';
-import Tenants from '@/pages/tenants';
-import Integrations from './pages/integrations';
-import SecureScorePage from '@/pages/secure-score';
+// import Tenants from '@/pages/Tenants/Tenants';
+// import Integrations from './pages/integrations';
+// import SecureScorePage from '@/pages/secure-score';
 
 import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/layout/Layout';
@@ -66,7 +65,7 @@ function Router() {
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
 
       {/* Integration routes - expanded to handle query parameters */}
-      <Route
+      {/* <Route
         path="/integrations"
         component={() => {
           // Extract query parameters directly
@@ -75,10 +74,10 @@ function Router() {
           const action = searchParams.get('action') || undefined;
           return <ProtectedRoute component={Integrations} roles={[UserRoles.ADMIN]} tab={tab} action={action} />;
         }}
-      />
+      /> */}
 
       {/* Tenant-specific routes */}
-      <Route
+      {/* <Route
         path="/tenants/:tenantId/dashboard"
         component={({ params }) => <ProtectedRoute component={Dashboard} tenantId={params.tenantId} />}
       />
@@ -95,18 +94,14 @@ function Router() {
         component={({ params }) => <ProtectedRoute component={ReportPeriods} tenantId={params.tenantId} />}
       />
       <Route
-        path="/tenants/:tenantId/details"
-        component={({ params }) => <ProtectedRoute component={CompanyDetails} tenantId={params.tenantId} />}
-      />
-      <Route
         path="/tenants/:tenantId/reports/:id"
         component={({ params }) => <ProtectedRoute component={ReportView} tenantId={params.tenantId} id={params.id} />}
       />
       <Route
         path="/tenants/:tenantId/reports/:id/risk-stats"
         component={({ params }) => <ProtectedRoute component={RiskStats} tenantId={params.tenantId} id={params.id} />}
-      />
-      <Route
+      /> */}
+      {/* <Route
         path="/tenants/:tenantId/reports/:reportId/edit"
         component={({ params }) => (
           <ProtectedRoute
@@ -123,13 +118,17 @@ function Router() {
       />
 
       {/* Admin routes */}
-      <Route path="/users" component={() => <ProtectedRoute component={UsersTab} roles={[UserRoles.ADMIN]} />} />
-      <Route path="/tenants" component={() => <ProtectedRoute component={Tenants} roles={[UserRoles.ADMIN]} />} />
-      <Route
+      {/* <Route path="/tenants" component={() => <ProtectedRoute component={Tenants} roles={[UserRoles.ADMIN]} />} /> */}
+      {/* <Route
         path="/global-recommendations"
         component={() => (
           <ProtectedRoute component={GlobalRecommendations} roles={[UserRoles.ADMIN, UserRoles.ANALYST]} />
         )}
+      /> */}
+
+      <Route
+        path="/tenants/:tenantId/details"
+        component={({ params }) => <ProtectedRoute component={CompanyDetails} tenantId={params.tenantId} />}
       />
 
       {/* Accept Invite */}
