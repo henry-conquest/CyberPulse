@@ -6,6 +6,7 @@ export const initialEndUserDevicesState: EndUserDevicesSliceModel = {
       count: 0,
       devices: [],
   },
+  compliancePolicies: null
 };
 
 const endUserDevicesSlice = createSlice({
@@ -14,6 +15,9 @@ const endUserDevicesSlice = createSlice({
   reducers: {
     setNoEncryption(state, action) {
       state.noEncryption = action.payload;
+    },
+    setCompliancePolicies(state, action) {
+      state.compliancePolicies = action.payload;
     },
     reset(state) {
       state.noEncryption = {

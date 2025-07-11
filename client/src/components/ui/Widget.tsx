@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { identitiesAndPeopleActions } from '@/store/store';
+import { identitiesAndPeopleActions, endUserDevicesActions } from '@/store/store';
 import { useDispatch } from 'react-redux';
 
 interface WidgetProps {
@@ -31,6 +31,8 @@ const Widget = (props: WidgetProps) => {
         setData(result);
         if(id === 'knownLocationLogins') dispatch(identitiesAndPeopleActions.setKnownLocations(result))
         if(id === 'phishResistantMFA') dispatch(identitiesAndPeopleActions.setPhishResistantMFA(result))
+        if(id === 'noEncryption') dispatch(endUserDevicesActions.setNoEncryption(result))
+        if(id === 'compliancePolicies') dispatch(endUserDevicesActions.setCompliancePolicies(result))
       } catch (err) {
         console.error('Widget API call failed:', err);
       } finally {

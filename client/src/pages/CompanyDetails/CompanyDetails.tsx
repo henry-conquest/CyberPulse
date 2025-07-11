@@ -96,10 +96,15 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">End User Devices</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {endUserDevicesWidgets.map(((widget: WidgetModel, index) => {
+                if(widget.id === 'compliancePolicies') console.log(user.id)
                 let apiParam;
                 let onClickParam;
                 switch (widget.id) {
                     case 'noEncryption':
+                    apiParam = user.id;
+                    onClickParam = tenantId
+                    break;
+                    case 'compliancePolicies':
                     apiParam = user.id;
                     onClickParam = tenantId
                     break;

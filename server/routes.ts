@@ -413,6 +413,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/device-compliance-policies/:userId', isAuthenticated, async (req, res) => {
+    try {
+      const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
+
+      if (!accessToken) {
+        return res.status(401).json({ error: 'Access token is missing' });
+      }
+
+      const response = await fetch('https://graph.microsoft.com/v1.0/deviceManagement/deviceCompliancePolicies', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Graph API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      res.status(200).json(data);
+    } catch (error) {
+      console.error('Error fetching device compliance policies:', error);
+      res.status(500).json({ error: 'Failed to fetch device compliance policies' });
+    }
+  });
+
   app.post(
     '/api/auth/accept-invite',
     asyncHandler(async (req: Request, res: Response) => {
