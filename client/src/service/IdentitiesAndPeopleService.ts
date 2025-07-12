@@ -47,11 +47,11 @@ export const getRiskySignInPolicies = async (userId: string) => {
 }
 export const getKnownLocations = async (userId: string) => {
     try {
-        const res = await fetch(`/api/known-locations/${userId}`, {
+        const res = await fetch(`/api/trusted-locations/${userId}`, {
         credentials: 'include',
         });
         if(!res.ok) {
-            throw new Error('Failed to get known locations')
+            throw new Error('Failed to get trusted locations')
         }
         const data = await res.json()
         return data

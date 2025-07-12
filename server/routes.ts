@@ -313,7 +313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   })
-  app.get('/api/known-locations/:userId', isAuthenticated, async (req, res) => {
+  app.get('/api/trusted-locations/:userId', isAuthenticated, async (req, res) => {
     try {
     const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
 

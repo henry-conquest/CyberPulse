@@ -56,7 +56,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     case 'riskySignInPolicies':
                     apiParam = user.id
                     break
-                    case 'knownLocationLogins':
+                    case 'trustedLocations':
                     apiParam = user.id
                     onClickParam = tenantId
                     break

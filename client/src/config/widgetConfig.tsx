@@ -50,8 +50,8 @@ export const identitiesAndPeopleWidgets = [
     onButtonClick: (tenantId: string) => navigate(`/phish-resistant-mfa/${tenantId}`),
     },
     {
-        id: 'knownLocationLogins',
-        title: 'Known Location Logins',
+        id: 'trustedLocations',
+        title: 'Trusted Locations',
         hideButton: false,
         render: (data: any) => {
         const trustedExists = data?.value?.some(
@@ -72,7 +72,7 @@ export const identitiesAndPeopleWidgets = [
         );
         },
         apiCall: getKnownLocations,
-        onButtonClick: (tenantId: string) => navigate(`/known-locations/${tenantId}`)
+        onButtonClick: (tenantId: string) => navigate(`/trusted-locations/${tenantId}`)
     },
     {
         id: 'riskySignInPolicies',
@@ -100,7 +100,7 @@ export const endUserDevicesWidgets = [
     },
     {
         id: 'noEncryption',
-        title: 'No Encryption',
+        title: 'Missing Device Encryption',
         hideButton: false,
         render: (data: any) => {
         if (!data) {
@@ -155,12 +155,12 @@ export const endUserDevicesWidgets = [
         hideButton: false,
         content: <RiskScoreChart score={5}/>
     },
-    {
-        id: 'applicationWhitelisting',
-        title: 'Application Whitelisting',
-        hideButton: false,
-        content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
-    },
+    // {
+    //     id: 'applicationWhitelisting',
+    //     title: 'Application Whitelisting',
+    //     hideButton: false,
+    //     content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
+    // },
 ]
 
 export const cloudAndInfrastructureWidgets = [
@@ -189,24 +189,24 @@ export const cloudAndInfrastructureWidgets = [
         content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
         
     },
-    {
-        id: 'gdapAccess',
-        title: 'GDAP Access',
-        hideButton: false,
-        content: <h1 className="text-brand-teal font-bold font-montserrat text-5xl">3</h1>
-    },
+    // {
+    //     id: 'gdapAccess',
+    //     title: 'GDAP Access',
+    //     hideButton: false,
+    //     content: <h1 className="text-brand-teal font-bold font-montserrat text-5xl">3</h1>
+    // },
     {
         id: 'serversHardened',
         title: 'Servers Hardened',
         hideButton: false,
         content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
     },
-     {
-        id: 'applicationWhitelisting',
-        title: 'Application Whitelisting',
-        hideButton: false,
-        content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
-    }
+    //  {
+    //     id: 'applicationWhitelisting',
+    //     title: 'Application Whitelisting',
+    //     hideButton: false,
+    //     content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
+    // }
 ]
 export const dataWidgets = [
     {

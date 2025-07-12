@@ -1,15 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getCompliancePolicies, getEncryptedDeviceInfo } from "@/service/EndUserDevicesService";
-import { getTenants } from "@/service/TenantService";
-import { endUserDevicesActions, sessionInfoActions } from "@/store/store";
+import { getCompliancePolicies } from "@/service/EndUserDevicesService";
+import { endUserDevicesActions } from "@/store/store";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useParams } from "wouter";
 
 const CompliancePoliciesDetails = () => {
-  const selectedClient = useSelector((state: any) => state?.sessionInfo?.selectedClient);
   const complianceData = useSelector((state: any) => state.endUserDevices.compliancePolicies);
   const userId = useSelector((state: any) => state?.sessionInfo?.user?.id);
   const { tenantId } = useParams();
@@ -21,17 +19,8 @@ const CompliancePoliciesDetails = () => {
     const initialiseData = async () => {
       try {
         setLoading(true);
-
-        if (tenantId && !selectedClient) {
-          const tenants = await getTenants();
-          const selectedTenant = tenants.find((t: any) => t.id === +tenantId);
-          dispatch(sessionInfoActions.setTenants(tenants));
-          dispatch(sessionInfoActions.setSelectedClient(selectedTenant));
-        }
-
         if (userId) {
           const data = await getCompliancePolicies(userId);
-          console.log('testing', data)
           dispatch(endUserDevicesActions.setCompliancePolicies(data));
         }
       } catch (err) {
@@ -59,7 +48,7 @@ const CompliancePoliciesDetails = () => {
       </div>
 
       <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">
-        {selectedClient?.name} Compliance Policies
+        Compliance Policies
       </h1>
 
       <Card className="ml-auto mr-auto mb-12 flex-col w-[90%]">

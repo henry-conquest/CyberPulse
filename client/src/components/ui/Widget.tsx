@@ -29,7 +29,7 @@ const Widget = (props: WidgetProps) => {
       try {
         const result = await apiCall(apiParam);
         setData(result);
-        if(id === 'knownLocationLogins') dispatch(identitiesAndPeopleActions.setKnownLocations(result))
+        if(id === 'trustedLocations') dispatch(identitiesAndPeopleActions.setKnownLocations(result))
         if(id === 'phishResistantMFA') dispatch(identitiesAndPeopleActions.setPhishResistantMFA(result))
         if(id === 'noEncryption') dispatch(endUserDevicesActions.setNoEncryption(result))
         if(id === 'compliancePolicies') dispatch(endUserDevicesActions.setCompliancePolicies(result))

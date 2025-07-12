@@ -34,7 +34,6 @@ ChartJS.register(
 
 
 const SecureScores = () => {
-  const selectedClient = useSelector((state: any) => state?.sessionInfo?.selectedClient);
   const secureScores = useSelector((state: any) => state.cloudAndInfrastructure.secureScores);
   const userId = useSelector((state: any) => state?.sessionInfo?.user?.id);
   const { tenantId } = useParams();
@@ -46,14 +45,6 @@ const SecureScores = () => {
     const initialiseData = async () => {
       try {
         setLoading(true);
-
-        if (tenantId && !selectedClient) {
-          const tenants = await getTenants();
-          const selectedTenant = tenants.find((t: any) => t.id === +tenantId);
-          dispatch(sessionInfoActions.setTenants(tenants));
-          dispatch(sessionInfoActions.setSelectedClient(selectedTenant));
-        }
-
         if (userId) {
           const data = await getSecureScores(userId);
           dispatch(cloudAndInfrastructureActions.setSecureScores(data));
@@ -88,7 +79,7 @@ const SecureScores = () => {
         tension: 0.3,
       },
       {
-        label: "Comparative Score (%)",
+        label: "Organisations of similar size (%)",
         data: allComparativeScores,
         borderColor: "rgba(255, 99, 132, 1)",
         backgroundColor: "rgba(255, 99, 132, 0.2)",
@@ -141,7 +132,7 @@ const SecureScores = () => {
       </div>
 
       <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">
-        {selectedClient?.name} Secure Score Trend
+        Microsoft 365 Secure Score
       </h1>
 
       <div className="ml-6 mr-6">
