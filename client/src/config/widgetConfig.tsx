@@ -1,6 +1,7 @@
 import ProgressCircle from "@/components/ui/ProgressCircle";
 import RiskScoreChart from "@/pages/CompanyDetails/RiskScoreChart/RiskScoreChart";
 import PhishResistantMFAChart from "@/pages/Widgets/PhishResistant/PhishResistantMFAChart";
+import { getSecureScores } from "@/service/CloudAndInfrastructureService";
 import { getCompliancePolicies, getEncryptedDeviceInfo } from "@/service/EndUserDevicesService";
 import { get365Admins, getKnownLocations, getPhishResistantMFA, getRiskySignInPolicies } from "@/service/IdentitiesAndPeopleService";
 import { Check, BadgeAlert } from "lucide-react";
@@ -167,7 +168,19 @@ export const cloudAndInfrastructureWidgets = [
         id: 'microsoftSecureScore',
         title: 'Microsoft Secure Score',
         hideButton: false,
-        content: <RiskScoreChart score={75}/>
+        render: (data: any) => {
+        // Sort ascending by date just to be sure
+        const sortedData = [...data].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        // Take the last entry
+        const latestEntry = sortedData[sortedData.length - 1];
+
+        // Extract the percentage
+        const latestPercentage = latestEntry.percentage;
+        return <RiskScoreChart score={latestPercentage}/>
+        },
+        apiCall: getSecureScores,
+        onButtonClick: (tenantId: string) => navigate(`/secure-scores/${tenantId}`)
     },
     {
         id: 'firewallConfigured',
