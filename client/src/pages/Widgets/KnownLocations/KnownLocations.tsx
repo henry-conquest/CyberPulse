@@ -9,26 +9,17 @@ import { Link, useParams } from "wouter"
 
 const KnownLocations = () => {
     const knownLocationData = useSelector((state: any) => state?.identitiesAndPeople?.knownLocations)
-    const selectedClient = useSelector((state: any) => state?.sessionInfo?.selectedClient)
     const userId = useSelector((state: any) => state?.sessionInfo?.user?.id)
     const { tenantId } = useParams()
     const dispatch = useDispatch()
 
     useEffect(() => {
     const initialiseData = async () => {
-      if (tenantId) {
-        const tenants = await getTenants();
-        const selectedTenant = tenants.find((t: any) => t.id === +tenantId);
-        dispatch(sessionInfoActions.setTenants(tenants));
-        dispatch(sessionInfoActions.setSelectedClient(selectedTenant));
-      }
-
       if (!knownLocationData && userId) {
         const data = await getKnownLocations(userId);
         dispatch(identitiesAndPeopleActions.setKnownLocations(data));
       }
     };
-
     initialiseData();
   }, [tenantId, knownLocationData, userId, dispatch]);
 
@@ -47,7 +38,7 @@ const KnownLocations = () => {
         </Link>
         <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
         </div>
-        <h1 className="text-brand-teal text-2xl font-bold mt-6 ml-6">{selectedClient?.name} Known Location Logins</h1>
+        <h1 className="text-brand-teal text-2xl font-bold mt-6 ml-6">Microsoft 365 Trusted Locations</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
         {knownLocationData?.value?.map((location: any) => (
           <div

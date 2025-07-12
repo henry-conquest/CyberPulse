@@ -12,7 +12,6 @@ import { Link, useParams } from "wouter"
 
 const PhishResistantMFA = () => {
     const groupedData: GroupedMFAData = useSelector((state: any) => state?.identitiesAndPeople?.phishResistantMFA)
-    const selectedClient = useSelector((state: any) => state?.sessionInfo?.selectedClient)
     const userId = useSelector((state: any) => state?.sessionInfo?.user?.id)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(false);
@@ -44,13 +43,6 @@ const PhishResistantMFA = () => {
         try {
           setLoading(true);
           setError(false);
-          if (tenantId) {
-            const tenants = await getTenants();
-            const selectedTenant = tenants.find((t: any) => t.id === +tenantId);
-            dispatch(sessionInfoActions.setTenants(tenants));
-            dispatch(sessionInfoActions.setSelectedClient(selectedTenant));
-          }
-
           if ((!groupedData || isGroupedDataEmpty) && userId) {
           const data = await getPhishResistantMFA(userId);
           dispatch(identitiesAndPeopleActions.setPhishResistantMFA(data));
@@ -88,7 +80,7 @@ const PhishResistantMFA = () => {
           </Link>
           <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
         </div>
-      <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">{selectedClient?.name} Phish Resistant MFA</h1>
+      <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">Microsoft MFA Recommendations</h1>
       <Card className="ml-auto mr-auto mb-12 flex-col w-[80%]">
         <CardHeader>
           <CardTitle>Recommendations</CardTitle>

@@ -9,7 +9,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useParams } from "wouter";
 
 const NoEncryptionDetails = () => {
-  const selectedClient = useSelector((state: any) => state?.sessionInfo?.selectedClient);
   const noEncryptionData = useSelector((state: any) => state.endUserDevices.noEncryption);
   const userId = useSelector((state: any) => state?.sessionInfo?.user?.id);
   const { tenantId } = useParams();
@@ -21,14 +20,6 @@ const NoEncryptionDetails = () => {
     const initialiseData = async () => {
       try {
         setLoading(true);
-
-        if (tenantId && !selectedClient) {
-          const tenants = await getTenants();
-          const selectedTenant = tenants.find((t: any) => t.id === +tenantId);
-          dispatch(sessionInfoActions.setTenants(tenants));
-          dispatch(sessionInfoActions.setSelectedClient(selectedTenant));
-        }
-
         if (userId) {
           const data = await getEncryptedDeviceInfo(userId);
           dispatch(endUserDevicesActions.setNoEncryption(data));
@@ -60,7 +51,7 @@ const NoEncryptionDetails = () => {
       </div>
 
       <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">
-        {selectedClient?.name} No Encryption
+        Microsoft 365 Missing Device Encryption
       </h1>
 
       <Card className="ml-auto mr-auto mb-12 flex-col w-[90%]">

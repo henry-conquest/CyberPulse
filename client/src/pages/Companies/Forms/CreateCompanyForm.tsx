@@ -43,36 +43,6 @@ const CreateCompanyForm = (props: any) => {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="industry"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Industry</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Technology" {...field} />
-                  </FormControl>
-                  <FormDescription>The industry sector this company operates in</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="website"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Website</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com" {...field} />
-                  </FormControl>
-                  <FormDescription>The company's website URL (optional)</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <DialogFooter>
               <Button variant="outline" className="w-full" onClick={() => setM365DialogOpen(true)}>
                 <Shield className="h-4 w-4 mr-2" />

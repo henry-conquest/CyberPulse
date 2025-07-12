@@ -62,7 +62,7 @@ function Router() {
       <Route path="/accept-invite" component={() => <ProtectedRoute component={AcceptInvite} />} />
 
       {/* Widget Routes */}
-      <Route path="/known-locations/:tenantId" component={() => <ProtectedRoute component={KnownLocations} />} />
+      <Route path="/trusted-locations/:tenantId" component={() => <ProtectedRoute component={KnownLocations} />} />
       <Route path="/phish-resistant-mfa/:tenantId" component={() => <ProtectedRoute component={PhishResistantMFA} />} />
       <Route path="/no-encryption/:tenantId" component={() => <ProtectedRoute component={NoEncryptionDetails} />} />
       <Route path="/compliance-policies/:tenantId" component={() => <ProtectedRoute component={CompliancePoliciesDetails} />} />

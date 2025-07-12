@@ -18,8 +18,6 @@ export const useCompanies = () => {
   // Form validation schema
   const companyFormSchema = z.object({
     name: z.string().min(2, 'Company name must be at least 2 characters'),
-    industry: z.string().min(2, 'Industry must be at least 2 characters').optional(),
-    website: z.string().url('Must be a valid URL').optional().or(z.literal('')),
   });
 
   type CompanyFormValues = z.infer<typeof companyFormSchema>;
@@ -102,8 +100,6 @@ export const useCompanies = () => {
     resolver: zodResolver(companyFormSchema),
     defaultValues: {
       name: '',
-      industry: '',
-      website: '',
     },
   });
 
