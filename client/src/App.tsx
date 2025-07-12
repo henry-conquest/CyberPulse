@@ -14,6 +14,7 @@ import KnownLocations from './pages/Widgets/KnownLocations/KnownLocations';
 import PhishResistantMFA from './pages/Widgets/PhishResistant/PhishResistantMFA';
 import NoEncryptionDetails from './pages/Widgets/NoEncrption/NoEncryption';
 import CompliancePoliciesDetails from './pages/Widgets/CompliancePolicies';
+import SecureScores from './pages/Widgets/SecureScores';
 
 function ProtectedRoute({
   component: Component,
@@ -65,6 +66,7 @@ function Router() {
       <Route path="/phish-resistant-mfa/:tenantId" component={() => <ProtectedRoute component={PhishResistantMFA} />} />
       <Route path="/no-encryption/:tenantId" component={() => <ProtectedRoute component={NoEncryptionDetails} />} />
       <Route path="/compliance-policies/:tenantId" component={() => <ProtectedRoute component={CompliancePoliciesDetails} />} />
+      <Route path="/secure-scores/:tenantId" component={() => <ProtectedRoute component={SecureScores} />} />
 
       {/* Fallback to 404 */}
       <Route component={NotFound} />

@@ -5,7 +5,6 @@ import { getTenants } from "@/service/TenantService"
 import { sessionInfoActions } from "@/store/store"
 import { cloudAndInfrastructureWidgets, dataWidgets, endUserDevicesWidgets, identitiesAndPeopleWidgets } from "@/config/widgetConfig"
 import Widget from "@/components/ui/Widget"
-import { Check } from "lucide-react"
 import AnalystComments from "./AnalystComments"
 
 interface CompanyDetailsProps {
@@ -136,9 +135,11 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {cloudAndInfrastructureWidgets.map(((widget: WidgetModel, index) => {
                 let apiParam;
+                let onClickParam;
                 switch (widget.id) {
-                    case 'microsoft365Admins':
-                    apiParam = tenantId;
+                    case 'microsoftSecureScore':
+                    apiParam = user.id;
+                    onClickParam = tenantId
                     break;
                     default:
                     apiParam = undefined;
@@ -153,6 +154,8 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     apiCall={widget.apiCall}
                     apiParam={apiParam}
                     render={widget.render}
+                    onButtonClick={widget.onButtonClick}
+                    onClickParam={onClickParam}
                     >
                     {widget.content}
                     </Widget>
