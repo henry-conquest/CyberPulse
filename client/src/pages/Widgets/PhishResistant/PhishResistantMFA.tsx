@@ -38,11 +38,10 @@ const PhishResistantMFA = () => {
     };
 
     useEffect(() => {
-      const isGroupedDataEmpty = groupedData && Object.values(groupedData).every((arr) => Array.isArray(arr) && arr.length === 0);
       const initialiseData = async () => {
         try {
           setLoading(true);
-          if ((!groupedData || isGroupedDataEmpty) && userId && tenantId) {
+          if (userId && tenantId) {
             const params = {
               userId, 
               tenantId
