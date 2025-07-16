@@ -121,17 +121,22 @@ export const invites = pgTable('invites', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
-export const microsoftTokens = pgTable('microsoft_tokens', {
-  userId: uuid('user_id').notNull(),
-  tenantId: varchar('tenant_id').notNull(),
-  accessToken: text('access_token').notNull(),
-  refreshToken: text('refresh_token').notNull(),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-}, (tokens) => ({
-  pk: primaryKey({ columns: [tokens.userId, tokens.tenantId] }),
-}));
+export const microsoftTokens = pgTable(
+  'microsoft_tokens',
+  {
+    id: uuid('id'),
+    userId: uuid('user_id').notNull(),
+    tenantId: varchar('tenant_id').notNull(),
+    accessToken: text('access_token').notNull(),
+    refreshToken: text('refresh_token').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (tokens) => ({
+    pk: primaryKey({ columns: [tokens.userId, tokens.tenantId] }),
+  })
+);
 
 // Audit logs
 export const auditLogs = pgTable('audit_logs', {
@@ -181,8 +186,8 @@ export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type Invite = typeof invites.$inferSelect;
 export type InsertInvite = typeof invites.$inferInsert;
-export type MicrosoftToken = typeof microsoftTokens.$inferSelect
-export type InsertMicrosoftToken = typeof microsoftTokens.$inferInsert
+export type MicrosoftToken = typeof microsoftTokens.$inferSelect;
+export type InsertMicrosoftToken = typeof microsoftTokens.$inferInsert;
 
 // Enums
 export const UserRoles = {
