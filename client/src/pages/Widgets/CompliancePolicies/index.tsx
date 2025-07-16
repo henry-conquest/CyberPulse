@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ErrorResponseMessage from "@/components/ui/ErrorResponseMessage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCompliancePolicies } from "@/service/EndUserDevicesService";
 import { endUserDevicesActions } from "@/store/store";
@@ -12,6 +13,7 @@ const CompliancePoliciesDetails = () => {
   const userId = useSelector((state: any) => state?.sessionInfo?.user?.id);
   const { tenantId } = useParams();
   const dispatch = useDispatch();
+  const [error, setError] = useState(false)
 
   const [loading, setLoading] = useState(true);
 
@@ -19,12 +21,18 @@ const CompliancePoliciesDetails = () => {
     const initialiseData = async () => {
       try {
         setLoading(true);
-        if (userId) {
-          const data = await getCompliancePolicies(userId);
+        setError(false)
+        if (userId && tenantId) {
+          const params = {
+            userId, 
+            tenantId
+          }
+          const data = await getCompliancePolicies(params);
           dispatch(endUserDevicesActions.setCompliancePolicies(data));
         }
       } catch (err) {
         console.error("Failed to fetch device data", err);
+        setError(true)
       } finally {
         setLoading(false);
       }
@@ -32,6 +40,10 @@ const CompliancePoliciesDetails = () => {
 
     initialiseData();
   }, [tenantId, userId]);
+
+  if(error && tenantId) {
+    return <ErrorResponseMessage tenantId={tenantId} text="Compliance Policies"/>
+  }
 
   return (
     <div>

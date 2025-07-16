@@ -1,9 +1,10 @@
+import ErrorResponseMessage from "@/components/ui/ErrorResponseMessage"
 import LoadingSpinner from "@/components/ui/LoadingSpinner"
 import { getKnownLocations } from "@/service/IdentitiesAndPeopleService"
 import { getTenants } from "@/service/TenantService"
 import { identitiesAndPeopleActions, sessionInfoActions } from "@/store/store"
 import { format } from "date-fns"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { Link, useParams } from "wouter"
 
@@ -12,17 +13,30 @@ const KnownLocations = () => {
     const userId = useSelector((state: any) => state?.sessionInfo?.user?.id)
     const { tenantId } = useParams()
     const dispatch = useDispatch()
+    const [hasError, setHasError] = useState(false);
 
     useEffect(() => {
-    const initialiseData = async () => {
-      if (!knownLocationData && userId) {
-        const data = await getKnownLocations(userId);
-        dispatch(identitiesAndPeopleActions.setKnownLocations(data));
-      }
-    };
-    initialiseData();
-  }, [tenantId, knownLocationData, userId, dispatch]);
+      const initialiseData = async () => {
+        if (!knownLocationData && userId && tenantId) {
+          try {
+            const data = await getKnownLocations({ userId, tenantId });
+            if (!data) throw new Error("No data returned");
+            dispatch(identitiesAndPeopleActions.setKnownLocations(data));
+            setHasError(false);
+          } catch (error) {
+            console.error("Failed to fetch known locations", error);
+            setHasError(true);
+          }
+        }
+      };
+      initialiseData();
+    }, [tenantId, knownLocationData, userId, dispatch]);
 
+    if (hasError && tenantId) {
+      return (
+        <ErrorResponseMessage tenantId={tenantId} text="Trusted Locations"/>
+      );
+    }
 
     if(!knownLocationData) {
       return (

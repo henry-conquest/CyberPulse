@@ -4,40 +4,19 @@ import {
   userTenants,
   microsoft365Connections,
   microsoft365OAuthConnections,
-  ninjaOneConnections,
-  reports,
-  reportRecipients,
-  recommendations,
-  globalRecommendations,
-  tenantWidgetRecommendations,
   auditLogs,
-  secureScoreHistory,
   type User,
   type UpsertUser,
   type Tenant,
   type InsertTenant,
   type UserTenant,
   type InsertUserTenant,
-  type TenantWidgetRecommendation,
-  type InsertTenantWidgetRecommendation,
   type Microsoft365Connection,
   type InsertMicrosoft365Connection,
   type Microsoft365OAuthConnection,
   type InsertMicrosoft365OAuthConnection,
-  type NinjaOneConnection,
-  type InsertNinjaOneConnection,
-  type Report,
-  type InsertReport,
-  type ReportRecipient,
-  type InsertReportRecipient,
-  type Recommendation,
-  type InsertRecommendation,
-  type GlobalRecommendation,
-  type InsertGlobalRecommendation,
   type AuditLog,
   type InsertAuditLog,
-  type SecureScoreHistory,
-  type InsertSecureScoreHistory,
   InsertInvite,
   Invite,
   invites,
@@ -59,16 +38,16 @@ export interface IStorage {
 
   // Tenant operations
   createTenant(tenant: InsertTenant): Promise<Tenant>;
-  getTenant(id: number): Promise<Tenant | undefined>;
+  getTenant(id: string): Promise<Tenant | undefined>;
   getAllTenants(): Promise<Tenant[]>;
-  updateTenant(id: number, tenant: Partial<InsertTenant>): Promise<Tenant>;
-  deleteTenant(id: number): Promise<void>;
+  updateTenant(id: string, tenant: Partial<InsertTenant>): Promise<Tenant>;
+  deleteTenant(id: string): Promise<void>;
   getTenantsByUserId(userId: string): Promise<Tenant[]>;
 
   // User-tenant operations
   addUserToTenant(userTenant: InsertUserTenant): Promise<UserTenant>;
-  removeUserFromTenant(userId: string, tenantId: number): Promise<void>;
-  getUsersForTenant(tenantId: number): Promise<User[]>;
+  removeUserFromTenant(userId: string, tenantId: string): Promise<void>;
+  getUsersForTenant(tenantId: string): Promise<User[]>;
 
   // Microsoft 365 connections
   createMicrosoft365Connection(connection: InsertMicrosoft365Connection): Promise<Microsoft365Connection>;
@@ -77,7 +56,7 @@ export interface IStorage {
   getMicrosoft365Connections(): Promise<Microsoft365Connection[]>;
   getMicrosoft365ConnectionsByUserId(userId: string): Promise<Microsoft365Connection[]>;
   updateMicrosoft365Connection(
-    id: number,
+    id: string,
     connection: Partial<InsertMicrosoft365Connection>
   ): Promise<Microsoft365Connection>;
   deleteMicrosoft365Connection(id: number): Promise<void>;
@@ -96,72 +75,15 @@ export interface IStorage {
   ): Promise<Microsoft365OAuthConnection>;
   deleteMicrosoft365OAuthConnection(id: number): Promise<void>;
 
-  // NinjaOne connections
-  createNinjaOneConnection(connection: InsertNinjaOneConnection): Promise<NinjaOneConnection>;
-  getNinjaOneConnection(id: number): Promise<NinjaOneConnection | undefined>;
-  getNinjaOneConnectionByTenantId(tenantId: number): Promise<NinjaOneConnection | undefined>;
-  updateNinjaOneConnection(id: number, connection: Partial<InsertNinjaOneConnection>): Promise<NinjaOneConnection>;
-  deleteNinjaOneConnection(id: number): Promise<void>;
-
-  // Reports
-  createReport(report: InsertReport): Promise<Report>;
-  getReport(id: number): Promise<Report | undefined>;
-  getReportsByTenantId(tenantId: number): Promise<Report[]>;
-  updateReport(id: number, report: Partial<InsertReport>): Promise<Report>;
-  deleteReport(id: number): Promise<void>;
-
-  // Report recipients
-  addReportRecipient(recipient: InsertReportRecipient): Promise<ReportRecipient>;
-  getReportRecipients(reportId: number): Promise<ReportRecipient[]>;
-  deleteReportRecipient(id: number): Promise<void>;
-
-  // Recommendations
-  createRecommendation(recommendation: InsertRecommendation): Promise<Recommendation>;
-  getRecommendation(id: number): Promise<Recommendation | undefined>;
-  getRecommendationsByTenantId(tenantId: number): Promise<Recommendation[]>;
-  updateRecommendation(id: number, recommendation: Partial<InsertRecommendation>): Promise<Recommendation>;
-  deleteRecommendation(id: number): Promise<void>;
-
-  // Global Recommendations
-  getGlobalRecommendations(): Promise<GlobalRecommendation[]>;
-  getGlobalRecommendationsByCategory(category: string): Promise<GlobalRecommendation[]>;
-  createGlobalRecommendation(recommendation: InsertGlobalRecommendation): Promise<GlobalRecommendation>;
-  updateGlobalRecommendation(id: number, data: Partial<InsertGlobalRecommendation>): Promise<GlobalRecommendation>;
-  deleteGlobalRecommendation(id: number): Promise<boolean>;
-
   // Audit logs
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getAuditLogsByTenantId(tenantId: number): Promise<AuditLog[]>;
   getAuditLogsByUserId(userId: string): Promise<AuditLog[]>;
 
-  // Secure Score History
-  createSecureScoreHistory(data: InsertSecureScoreHistory): Promise<SecureScoreHistory>;
-  getSecureScoreHistoryByTenantId(tenantId: number, limit?: number): Promise<SecureScoreHistory[]>;
-  getSecureScoreHistoryForPeriod(tenantId: number, startDate: Date, endDate: Date): Promise<SecureScoreHistory[]>;
-  getLatestSecureScoreForTenant(tenantId: number): Promise<SecureScoreHistory | undefined>;
-  deleteSecureScoreHistoryByTenantId(tenantId: number): Promise<void>;
-
   // Invites
   createUserInvite(invite: InsertInvite): Promise<Invite>;
   getInviteByToken(token: string): Promise<Invite | undefined>;
   markInviteAccepted(token: string): Promise<void>;
-
-  // Tenant Widget Recommendations
-  createTenantWidgetRecommendation(
-    recommendation: InsertTenantWidgetRecommendation
-  ): Promise<TenantWidgetRecommendation>;
-  getTenantWidgetRecommendationsByTenantId(tenantId: number): Promise<TenantWidgetRecommendation[]>;
-  getTenantWidgetRecommendationsByWidgetType(
-    tenantId: number,
-    widgetType: string
-  ): Promise<TenantWidgetRecommendation[]>;
-  getTenantWidgetRecommendationsByGlobalId(globalRecommendationId: number): Promise<TenantWidgetRecommendation[]>;
-  getTenantWidgetRecommendation(id: number): Promise<TenantWidgetRecommendation | undefined>;
-  updateTenantWidgetRecommendation(
-    id: number,
-    recommendation: Partial<InsertTenantWidgetRecommendation>
-  ): Promise<TenantWidgetRecommendation>;
-  deleteTenantWidgetRecommendation(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -245,26 +167,37 @@ export class DatabaseStorage implements IStorage {
 
   // Token operations
   // Create or update token
-  async upsertMicrosoftToken(token: InsertMicrosoftToken): Promise<void> {
+  async upsertMicrosoftToken(token: {
+    userId: string;
+    tenantId: string;
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: Date;
+  }) {
     await db
       .insert(microsoftTokens)
       .values(token)
       .onConflictDoUpdate({
-        target: [microsoftTokens.id],
+        target: [microsoftTokens.userId, microsoftTokens.tenantId],
         set: {
           accessToken: token.accessToken,
           refreshToken: token.refreshToken,
           expiresAt: token.expiresAt,
-          updatedAt: new Date(),
         },
       });
   }
 
-  async getMicrosoftTokenByUserId(userId: string): Promise<MicrosoftToken | undefined> {
+
+  async getMicrosoftTokenByUserIdAndTenantId(userId: string, tenantId: string): Promise<MicrosoftToken | undefined> {
     const [result] = await db
       .select()
       .from(microsoftTokens)
-      .where(eq(microsoftTokens.id, userId));
+      .where(
+        and(
+          eq(microsoftTokens.userId, userId),
+          eq(microsoftTokens.tenantId, tenantId)
+        )
+      );
     return result;
   }
 
@@ -274,7 +207,8 @@ export class DatabaseStorage implements IStorage {
     return newTenant;
   }
 
-  async getTenant(id: number): Promise<Tenant | undefined> {
+  async getTenant(id: string): Promise<Tenant | undefined> {
+    console.log('BOLLOCKS', id)
     const [tenant] = await db.select().from(tenants).where(eq(tenants.id, id));
     return tenant;
   }
@@ -291,7 +225,7 @@ export class DatabaseStorage implements IStorage {
     return tenant;
   }
 
-  async updateTenant(id: number, tenant: Partial<InsertTenant>): Promise<Tenant> {
+  async updateTenant(id: string, tenant: Partial<InsertTenant>): Promise<Tenant> {
     const [updatedTenant] = await db
       .update(tenants)
       .set({ ...tenant, updatedAt: new Date() })
@@ -317,7 +251,7 @@ async setTenantsForUser(userId: string, tenantIds: number[]): Promise<void> {
   }
 }
 
-  async deleteTenant(id: number): Promise<void> {
+  async deleteTenant(id: string): Promise<void> {
     await db.update(tenants).set({ deletedAt: new Date() }).where(eq(tenants.id, id));
   }
 
@@ -339,7 +273,7 @@ async setTenantsForUser(userId: string, tenantIds: number[]): Promise<void> {
     return newUserTenant;
   }
 
-  async removeUserFromTenant(userId: string, tenantId: number): Promise<void> {
+  async removeUserFromTenant(userId: string, tenantId: string): Promise<void> {
     await db.delete(userTenants).where(and(eq(userTenants.userId, userId), eq(userTenants.tenantId, tenantId)));
   }
 
@@ -351,7 +285,7 @@ async setTenantsForUser(userId: string, tenantIds: number[]): Promise<void> {
   return user;
 }
 
-  async getUsersForTenant(tenantId: number): Promise<User[]> {
+  async getUsersForTenant(tenantId: string): Promise<User[]> {
     const userRecords = await db
       .select({
         user: users,
@@ -374,7 +308,7 @@ async setTenantsForUser(userId: string, tenantIds: number[]): Promise<void> {
     return connection;
   }
 
-  async getMicrosoft365ConnectionByTenantId(tenantId: number): Promise<Microsoft365Connection | undefined> {
+  async getMicrosoft365ConnectionByTenantId(tenantId: any): Promise<Microsoft365Connection | undefined> {
     // Using string comparison as the database column is integer but our schema defined it as varchar
     const [connection] = await db
       .select()
@@ -394,7 +328,7 @@ async setTenantsForUser(userId: string, tenantIds: number[]): Promise<void> {
   }
 
   async updateMicrosoft365Connection(
-    id: number,
+    id: string,
     connection: Partial<InsertMicrosoft365Connection>
   ): Promise<Microsoft365Connection> {
     const [updatedConnection] = await db
@@ -523,241 +457,6 @@ async setTenantsForUser(userId: string, tenantIds: number[]): Promise<void> {
     await db.delete(microsoft365OAuthConnections).where(eq(microsoft365OAuthConnections.id, id));
   }
 
-  // NinjaOne connections
-  async createNinjaOneConnection(connection: InsertNinjaOneConnection): Promise<NinjaOneConnection> {
-    const [newConnection] = await db.insert(ninjaOneConnections).values(connection).returning();
-    return newConnection;
-  }
-
-  async getNinjaOneConnection(id: number): Promise<NinjaOneConnection | undefined> {
-    const [connection] = await db.select().from(ninjaOneConnections).where(eq(ninjaOneConnections.id, id));
-    return connection;
-  }
-
-  async getNinjaOneConnectionByTenantId(tenantId: number): Promise<NinjaOneConnection | undefined> {
-    const [connection] = await db.select().from(ninjaOneConnections).where(eq(ninjaOneConnections.tenantId, tenantId));
-    return connection;
-  }
-
-  async updateNinjaOneConnection(
-    id: number,
-    connection: Partial<InsertNinjaOneConnection>
-  ): Promise<NinjaOneConnection> {
-    const [updatedConnection] = await db
-      .update(ninjaOneConnections)
-      .set({ ...connection, updatedAt: new Date() })
-      .where(eq(ninjaOneConnections.id, id))
-      .returning();
-    return updatedConnection;
-  }
-
-  async deleteNinjaOneConnection(id: number): Promise<void> {
-    await db.delete(ninjaOneConnections).where(eq(ninjaOneConnections.id, id));
-  }
-
-  // Helper function to normalize security data structure
-  private normalizeSecurityData(reportData: any): any {
-    if (!reportData) return reportData;
-
-    // Clone to avoid mutating original
-    const data = { ...reportData };
-
-    // If securityData is provided and it's an object with nested securityData
-    if (data.securityData && typeof data.securityData === 'object') {
-      // If we have double nesting of securityData, unwrap it
-      if (data.securityData.securityData && typeof data.securityData.securityData === 'object') {
-        console.log('Unwrapping doubly nested securityData');
-        data.securityData = data.securityData.securityData;
-      }
-
-      // Make sure secureScore and secureScorePercent are at the top level of securityData
-      if (data.securityData.secureScore === undefined && data.securityData.securityData?.secureScore !== undefined) {
-        data.securityData.secureScore = data.securityData.securityData.secureScore;
-      }
-
-      if (
-        data.securityData.secureScorePercent === undefined &&
-        data.securityData.securityData?.secureScorePercent !== undefined
-      ) {
-        data.securityData.secureScorePercent = data.securityData.securityData.secureScorePercent;
-      }
-    }
-
-    return data;
-  }
-
-  // Reports
-  async createReport(report: InsertReport): Promise<Report> {
-    // Normalize security data before storing
-    const normalizedReport = this.normalizeSecurityData(report);
-    console.log('Creating report with normalized security data');
-
-    const [newReport] = await db.insert(reports).values(normalizedReport).returning();
-    return newReport;
-  }
-
-  async getReport(id: number): Promise<Report | undefined> {
-    const [report] = await db.select().from(reports).where(eq(reports.id, id));
-
-    if (report) {
-      // Normalize security data when retrieving
-      return this.normalizeSecurityData(report);
-    }
-
-    return report;
-  }
-
-  async getReportsByTenantId(tenantId: number): Promise<Report[]> {
-    const reportData = await db
-      .select()
-      .from(reports)
-      .where(eq(reports.tenantId, tenantId))
-      .orderBy(desc(reports.year));
-
-    // Process reports to ensure all have quarter data
-    return reportData
-      .map((report) => {
-        // If report doesn't have quarter but has month, convert month to quarter
-        if (!report.quarter && report.month) {
-          const monthNames = {
-            January: 1,
-            February: 1,
-            March: 1,
-            April: 2,
-            May: 2,
-            June: 2,
-            July: 3,
-            August: 3,
-            September: 3,
-            October: 4,
-            November: 4,
-            December: 4,
-          };
-
-          report.quarter = monthNames[report.month as keyof typeof monthNames] || 1;
-        } else if (!report.quarter) {
-          // Default to Q1 if neither quarter nor month exists
-          report.quarter = 1;
-        }
-
-        return report;
-      })
-      .sort((a, b) => {
-        // Sort by year descending, then by quarter descending
-        if (a.year !== b.year) return b.year - a.year;
-        return (b.quarter || 1) - (a.quarter || 1);
-      });
-  }
-
-  async updateReport(id: number, report: Partial<InsertReport>): Promise<Report> {
-    // Normalize security data before updating
-    const normalizedReport = this.normalizeSecurityData(report);
-    console.log('Updating report with normalized security data');
-
-    const [updatedReport] = await db
-      .update(reports)
-      .set({ ...normalizedReport, updatedAt: new Date() })
-      .where(eq(reports.id, id))
-      .returning();
-
-    // Also normalize the returned data
-    return this.normalizeSecurityData(updatedReport);
-  }
-
-  async deleteReport(id: number): Promise<void> {
-    await db.delete(reports).where(eq(reports.id, id));
-  }
-
-  // Report recipients
-  async addReportRecipient(recipient: InsertReportRecipient): Promise<ReportRecipient> {
-    const [newRecipient] = await db.insert(reportRecipients).values(recipient).returning();
-    return newRecipient;
-  }
-
-  async getReportRecipients(reportId: number): Promise<ReportRecipient[]> {
-    return await db.select().from(reportRecipients).where(eq(reportRecipients.reportId, reportId));
-  }
-
-  async deleteReportRecipient(id: number): Promise<void> {
-    await db.delete(reportRecipients).where(eq(reportRecipients.id, id));
-  }
-
-  // Recommendations
-  async createRecommendation(recommendation: InsertRecommendation): Promise<Recommendation> {
-    const [newRecommendation] = await db.insert(recommendations).values(recommendation).returning();
-    return newRecommendation;
-  }
-
-  async getRecommendation(id: number): Promise<Recommendation | undefined> {
-    const [recommendation] = await db.select().from(recommendations).where(eq(recommendations.id, id));
-    return recommendation;
-  }
-
-  async getRecommendationsByTenantId(tenantId: number): Promise<Recommendation[]> {
-    return await db
-      .select()
-      .from(recommendations)
-      .where(eq(recommendations.tenantId, tenantId))
-      .orderBy(desc(recommendations.createdAt));
-  }
-
-  async updateRecommendation(id: number, recommendation: Partial<InsertRecommendation>): Promise<Recommendation> {
-    const [updatedRecommendation] = await db
-      .update(recommendations)
-      .set({ ...recommendation, updatedAt: new Date() })
-      .where(eq(recommendations.id, id))
-      .returning();
-    return updatedRecommendation;
-  }
-
-  async deleteRecommendation(id: number): Promise<void> {
-    await db.delete(recommendations).where(eq(recommendations.id, id));
-  }
-
-  // Global Recommendations
-  async getGlobalRecommendations(): Promise<GlobalRecommendation[]> {
-    return await db
-      .select()
-      .from(globalRecommendations)
-      .where(eq(globalRecommendations.active, true))
-      .orderBy(asc(globalRecommendations.priority), asc(globalRecommendations.title));
-  }
-
-  async getGlobalRecommendationsByCategory(category: string): Promise<GlobalRecommendation[]> {
-    return await db
-      .select()
-      .from(globalRecommendations)
-      .where(and(eq(globalRecommendations.category, category), eq(globalRecommendations.active, true)))
-      .orderBy(asc(globalRecommendations.priority), asc(globalRecommendations.title));
-  }
-
-  async createGlobalRecommendation(recommendation: InsertGlobalRecommendation): Promise<GlobalRecommendation> {
-    const [newRecommendation] = await db.insert(globalRecommendations).values(recommendation).returning();
-    return newRecommendation;
-  }
-
-  async updateGlobalRecommendation(
-    id: number,
-    data: Partial<InsertGlobalRecommendation>
-  ): Promise<GlobalRecommendation> {
-    const [updatedRecommendation] = await db
-      .update(globalRecommendations)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(globalRecommendations.id, id))
-      .returning();
-    return updatedRecommendation;
-  }
-
-  async deleteGlobalRecommendation(id: number): Promise<boolean> {
-    try {
-      await db.delete(globalRecommendations).where(eq(globalRecommendations.id, id));
-      return true;
-    } catch (error) {
-      console.error('Error deleting global recommendation:', error);
-      return false;
-    }
-  }
-
   // Audit logs
   async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
     const [newLog] = await db.insert(auditLogs).values(log).returning();
@@ -770,156 +469,6 @@ async setTenantsForUser(userId: string, tenantIds: number[]): Promise<void> {
 
   async getAuditLogsByUserId(userId: string): Promise<AuditLog[]> {
     return await db.select().from(auditLogs).where(eq(auditLogs.userId, userId)).orderBy(desc(auditLogs.timestamp));
-  }
-
-  // Secure Score History implementations
-  async createSecureScoreHistory(data: InsertSecureScoreHistory): Promise<SecureScoreHistory> {
-    const [entry] = await db.insert(secureScoreHistory).values(data).returning();
-    return entry;
-  }
-
-  async getSecureScoreHistoryByTenantId(tenantId: number, limit: number = 90): Promise<SecureScoreHistory[]> {
-    return await db
-      .select()
-      .from(secureScoreHistory)
-      .where(eq(secureScoreHistory.tenantId, tenantId))
-      .orderBy(desc(secureScoreHistory.recordedAt))
-      .limit(limit);
-  }
-
-  async getSecureScoreHistoryForPeriod(
-    tenantId: number,
-    startDate: Date,
-    endDate: Date
-  ): Promise<SecureScoreHistory[]> {
-    return await db
-      .select()
-      .from(secureScoreHistory)
-      .where(
-        and(
-          eq(secureScoreHistory.tenantId, tenantId),
-          sql`${secureScoreHistory.recordedAt} >= ${startDate}`,
-          sql`${secureScoreHistory.recordedAt} <= ${endDate}`
-        )
-      )
-      .orderBy(asc(secureScoreHistory.recordedAt));
-  }
-
-  async deleteSecureScoreHistoryByTenantId(tenantId: number): Promise<void> {
-    await db.delete(secureScoreHistory).where(eq(secureScoreHistory.tenantId, tenantId));
-  }
-
-  async getLatestSecureScoreForTenant(tenantId: number): Promise<SecureScoreHistory | undefined> {
-    const [latestScore] = await db
-      .select()
-      .from(secureScoreHistory)
-      .where(eq(secureScoreHistory.tenantId, tenantId))
-      .orderBy(desc(secureScoreHistory.recordedAt))
-      .limit(1);
-    return latestScore;
-  }
-
-  // Tenant Widget Recommendations
-  async createTenantWidgetRecommendation(
-    recommendation: InsertTenantWidgetRecommendation
-  ): Promise<TenantWidgetRecommendation> {
-    const [newRecommendation] = await db.insert(tenantWidgetRecommendations).values(recommendation).returning();
-    return newRecommendation;
-  }
-
-  async getTenantWidgetRecommendationsByTenantId(tenantId: number): Promise<TenantWidgetRecommendation[]> {
-    return await db
-      .select({
-        twr: tenantWidgetRecommendations,
-        gr: globalRecommendations,
-      })
-      .from(tenantWidgetRecommendations)
-      .innerJoin(
-        globalRecommendations,
-        eq(tenantWidgetRecommendations.globalRecommendationId, globalRecommendations.id)
-      )
-      .where(eq(tenantWidgetRecommendations.tenantId, tenantId))
-      .orderBy(globalRecommendations.priority, tenantWidgetRecommendations.widgetType)
-      .then((rows) =>
-        rows.map((row) => ({
-          ...row.twr,
-          title: row.gr.title,
-          description: row.gr.description,
-          priority: row.gr.priority,
-        }))
-      );
-  }
-
-  async getTenantWidgetRecommendationsByWidgetType(
-    tenantId: number,
-    widgetType: string
-  ): Promise<TenantWidgetRecommendation[]> {
-    // Convert widgetType to uppercase for case-insensitive comparison
-    const normalizedWidgetType = widgetType.toUpperCase();
-
-    return await db
-      .select({
-        twr: tenantWidgetRecommendations,
-        gr: globalRecommendations,
-      })
-      .from(tenantWidgetRecommendations)
-      .innerJoin(
-        globalRecommendations,
-        eq(tenantWidgetRecommendations.globalRecommendationId, globalRecommendations.id)
-      )
-      .where(
-        and(
-          eq(tenantWidgetRecommendations.tenantId, tenantId),
-          eq(sql`UPPER(${tenantWidgetRecommendations.widgetType})`, normalizedWidgetType)
-        )
-      )
-      .orderBy(globalRecommendations.priority)
-      .then((rows) =>
-        rows.map((row) => ({
-          ...row.twr,
-          title: row.gr.title,
-          description: row.gr.description,
-          priority: row.gr.priority,
-        }))
-      );
-  }
-
-  async getTenantWidgetRecommendationsByGlobalId(
-    globalRecommendationId: number
-  ): Promise<TenantWidgetRecommendation[]> {
-    return await db
-      .select()
-      .from(tenantWidgetRecommendations)
-      .where(eq(tenantWidgetRecommendations.globalRecommendationId, globalRecommendationId))
-      .orderBy(tenantWidgetRecommendations.tenantId);
-  }
-
-  async getAllTenantWidgetRecommendations(): Promise<TenantWidgetRecommendation[]> {
-    return await db.select().from(tenantWidgetRecommendations).orderBy(tenantWidgetRecommendations.tenantId);
-  }
-
-  async getTenantWidgetRecommendation(id: number): Promise<TenantWidgetRecommendation | undefined> {
-    const [recommendation] = await db
-      .select()
-      .from(tenantWidgetRecommendations)
-      .where(eq(tenantWidgetRecommendations.id, id));
-    return recommendation;
-  }
-
-  async updateTenantWidgetRecommendation(
-    id: number,
-    recommendation: Partial<InsertTenantWidgetRecommendation>
-  ): Promise<TenantWidgetRecommendation> {
-    const [updatedRecommendation] = await db
-      .update(tenantWidgetRecommendations)
-      .set({ ...recommendation, updatedAt: new Date() })
-      .where(eq(tenantWidgetRecommendations.id, id))
-      .returning();
-    return updatedRecommendation;
-  }
-
-  async deleteTenantWidgetRecommendation(id: number): Promise<void> {
-    await db.delete(tenantWidgetRecommendations).where(eq(tenantWidgetRecommendations.id, id));
   }
 }
 

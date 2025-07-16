@@ -19,6 +19,7 @@ import {
   Filler
 } from 'chart.js';
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import ErrorResponseMessage from "@/components/ui/ErrorResponseMessage";
 
 ChartJS.register(
   LineElement,
@@ -40,17 +41,24 @@ const SecureScores = () => {
   const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const initialiseData = async () => {
       try {
         setLoading(true);
-        if (userId) {
-          const data = await getSecureScores(userId);
+        setError(false)
+        if (userId && tenantId) {
+          const params = {
+            userId,
+            tenantId
+          }
+          const data = await getSecureScores(params);
           dispatch(cloudAndInfrastructureActions.setSecureScores(data));
         }
       } catch (err) {
         console.error("Failed to fetch secure scores", err);
+        setError(true)
       } finally {
         setLoading(false);
       }
@@ -116,6 +124,10 @@ const SecureScores = () => {
       },
     },
   };
+
+  if (error && tenantId) {
+    return <ErrorResponseMessage tenantId={tenantId} text="Microsoft Secure Score"/>
+  }
 
   return (
     <div>

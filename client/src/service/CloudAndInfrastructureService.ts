@@ -1,6 +1,11 @@
-export const getSecureScores = async (userId: string) => {
+interface ParamsModel {
+    userId: string
+    tenantId: string
+}
+
+export const getSecureScores = async (params: ParamsModel) => {
     try {
-        const res = await fetch(`/api/secure-scores/${userId}`, {
+        const res = await fetch(`/api/secure-scores/${params.userId}/${params.tenantId}`, {
         credentials: 'include',
         });
         if(!res.ok) {
@@ -11,5 +16,6 @@ export const getSecureScores = async (userId: string) => {
 
     } catch(err) {
         console.log(err)
+        throw new Error('Failed to get secure scores')
     }
 }

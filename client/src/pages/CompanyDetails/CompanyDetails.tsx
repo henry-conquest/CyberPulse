@@ -20,7 +20,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
     useEffect(() => {
         const getTenantData = async () => {
             const tenants = await getTenants()
-            const selectedTenant = tenants.find((t: any) => t.id === +tenantId )
+            const selectedTenant = tenants.find((t: any) => t.id === tenantId )
             dispatch(sessionInfoActions.setTenants(tenants))
             dispatch(sessionInfoActions.setSelectedClient(selectedTenant))
         }
@@ -47,29 +47,38 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">Identities and People</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {identitiesAndPeopleWidgets.map(((widget, index) => {
-                let apiParam;
+                let apiParams;
                 let onClickParam;
                 switch (widget.id) {
                     case 'microsoft365Admins':
-                    apiParam = tenantId;
+                    apiParams = {tenantId};
                     break;
                     case 'riskySignInPolicies':
-                    apiParam = user.id
+                    apiParams = {
+                        userId: user.id,
+                        tenantId
+                    };
                     break
                     case 'trustedLocations':
-                    apiParam = user.id
+                    apiParams = {
+                        userId: user.id,
+                        tenantId
+                    };
                     onClickParam = tenantId
                     break
                     case 'phishResistantMFA':
-                    apiParam = user.id
+                    apiParams = {
+                        userId: user.id,
+                        tenantId
+                    };
                     onClickParam = tenantId
                     break
                     // future cases:
                     // case 'someOtherWidget':
-                    //   apiParam = { tenantId, region: 'US' };
+                    //   apiParams = { tenantId, region: 'US' };
                     //   break;
                     default:
-                    apiParam = undefined;
+                    apiParams = undefined;
                 }
                 return (
                     <Widget
@@ -79,7 +88,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     hideButton={widget.hideButton}
                     buttonText={widget.buttonText}
                     apiCall={widget.apiCall}
-                    apiParam={apiParam}
+                    apiParams={apiParams}
                     render={widget.render}
                     onButtonClick={widget.onButtonClick}
                     onClickParam={onClickParam}
@@ -96,19 +105,25 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {endUserDevicesWidgets.map(((widget: WidgetModel, index) => {
                 if(widget.id === 'compliancePolicies') console.log(user.id)
-                let apiParam;
+                let apiParams;
                 let onClickParam;
                 switch (widget.id) {
                     case 'noEncryption':
-                    apiParam = user.id;
+                    apiParams = {
+                        userId: user.id,
+                        tenantId
+                    };
                     onClickParam = tenantId
                     break;
                     case 'compliancePolicies':
-                    apiParam = user.id;
+                    apiParams = {
+                        userId: user.id,
+                        tenantId
+                    };
                     onClickParam = tenantId
                     break;
                     default:
-                    apiParam = undefined;
+                    apiParams = undefined;
                 }
                 return (
                     <Widget
@@ -118,7 +133,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     hideButton={widget.hideButton}
                     buttonText={widget.buttonText}
                     apiCall={widget.apiCall}
-                    apiParam={apiParam}
+                    apiParams={apiParams}
                     render={widget.render}
                     onButtonClick={widget.onButtonClick}
                     onClickParam={onClickParam}
@@ -134,15 +149,18 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">Cloud and Infrastructure</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {cloudAndInfrastructureWidgets.map(((widget: WidgetModel, index) => {
-                let apiParam;
+                let apiParams;
                 let onClickParam;
                 switch (widget.id) {
                     case 'microsoftSecureScore':
-                    apiParam = user.id;
+                    apiParams = {
+                        userId: user.id,
+                        tenantId
+                    };
                     onClickParam = tenantId
                     break;
                     default:
-                    apiParam = undefined;
+                    apiParams = undefined;
                 }
                 return (
                     <Widget
@@ -152,7 +170,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     hideButton={widget.hideButton}
                     buttonText={widget.buttonText}
                     apiCall={widget.apiCall}
-                    apiParam={apiParam}
+                    apiParams={apiParams}
                     render={widget.render}
                     onButtonClick={widget.onButtonClick}
                     onClickParam={onClickParam}
@@ -168,13 +186,13 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">Data</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {dataWidgets.map(((widget: WidgetModel, index) => {
-                let apiParam;
+                let apiParams;
                 switch (widget.id) {
                     case 'microsoft365Admins':
-                    apiParam = tenantId;
+                    apiParams = {tenantId};
                     break;
                     default:
-                    apiParam = undefined;
+                    apiParams = undefined;
                 }
                 return (
                     <Widget
@@ -184,7 +202,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     hideButton={widget.hideButton}
                     buttonText={widget.buttonText}
                     apiCall={widget.apiCall}
-                    apiParam={apiParam}
+                    apiParams={apiParams}
                     render={widget.render}
                     >
                     {widget.content}

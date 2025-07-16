@@ -10,7 +10,7 @@ const CompanySecureScore = () => {
             </div>
             <div data-testid='secure-score-container' className="flex-col justify-center relative items-start py-4 basis-4/5">
                <div data-testid='secure-score-top' className="flex justify-around mb-6">
-                 <h1 data-testid='secure-score-heading' className="text-brand-green text-3xl font-bold mr-6">Company Risk Rating (Low, Medium, High)</h1>
+                 <h1 data-testid='secure-score-heading' className="text-brand-green text-3xl font-bold mr-6">Company Risk Rating</h1>
                  <Button className="bg-brand-green hover:bg-brand-green/90">View Risk Trend</Button>
                </div>
                <div data-testid='secure-score-middle' className="font-montserrat mb-6">
@@ -23,7 +23,7 @@ const CompanySecureScore = () => {
                  <Button className="bg-brand-teal hover:bg-brand-teal/90">Download Tender / Insurer Pack</Button>
                </div>
                <div className="flex justify-end">
-                  <span className="text-brand-teal text-xs">Risk score last refreshed: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
+                  <span className="text-brand-teal text-xs mt-6">Last refreshed: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
                </div>
             </div>
         </div>

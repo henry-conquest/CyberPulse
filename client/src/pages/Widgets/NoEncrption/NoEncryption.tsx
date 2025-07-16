@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ErrorResponseMessage from "@/components/ui/ErrorResponseMessage";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getEncryptedDeviceInfo } from "@/service/EndUserDevicesService";
 import { getTenants } from "@/service/TenantService";
@@ -13,6 +14,7 @@ const NoEncryptionDetails = () => {
   const userId = useSelector((state: any) => state?.sessionInfo?.user?.id);
   const { tenantId } = useParams();
   const dispatch = useDispatch();
+  const [error, setError] = useState(false); 
 
   const [loading, setLoading] = useState(true);
 
@@ -20,12 +22,18 @@ const NoEncryptionDetails = () => {
     const initialiseData = async () => {
       try {
         setLoading(true);
-        if (userId) {
-          const data = await getEncryptedDeviceInfo(userId);
+        setError(false)
+        if (userId && tenantId) {
+          const params = {
+            userId, 
+            tenantId
+          }
+          const data = await getEncryptedDeviceInfo(params);
           dispatch(endUserDevicesActions.setNoEncryption(data));
         }
       } catch (err) {
         console.error("Failed to fetch device data", err);
+        setError(true)
       } finally {
         setLoading(false);
       }
@@ -35,6 +43,12 @@ const NoEncryptionDetails = () => {
   }, [tenantId, userId]);
 
   const devices = noEncryptionData?.devices || [];
+
+  if (error && tenantId) {
+    return (
+      <ErrorResponseMessage tenantId={tenantId} text="Microsoft 365 Missing Device Encryption"/>
+    );
+  }
 
   return (
     <div>

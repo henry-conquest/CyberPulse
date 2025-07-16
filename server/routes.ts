@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from 'express';
+import type { Express, Request, Response } from 'express';
 import { createServer, type Server } from 'http';
 import { storage } from './storage';
 import { setupAuth, isAuthenticated, isAuthorized } from './auth';
@@ -7,13 +7,8 @@ import { z } from 'zod';
 import {
   insertTenantSchema,
   insertMicrosoft365ConnectionSchema,
-  insertRecommendationSchema,
-  insertTenantWidgetRecommendationSchema,
   UserRoles,
-  RecommendationStatus,
 } from '@shared/schema';
-import { db } from './db';
-import { MicrosoftGraphService } from './microsoft';
 import {
   generateState,
   storeState,
@@ -23,7 +18,7 @@ import { emailService } from './email';
 import crypto from 'crypto';
 
 // Helper to check if user has access to a tenant
-async function hasTenantAccess(userId: string, tenantId: number): Promise<boolean> {
+async function hasTenantAccess(userId: string, tenantId: string): Promise<boolean> {
   // First check if user is an admin - admins have access to all tenants
   const user = await storage.getUser(userId);
   if (user?.role === UserRoles.ADMIN) {
@@ -188,6 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Audit log
       await storage.createAuditLog({
+        id: crypto.randomUUID(),
         userId: (req.user as any).id,
         action: 'invite_user',
         details: `Invited ${email} to tenant ${tenantId} with role ${role}`,
@@ -223,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/m365-admins/:id', isAuthenticated, async (req, res) => {
     try {
-      const connection = await storage.getMicrosoft365ConnectionByTenantId(+req.params.id);
+      const connection = await storage.getMicrosoft365ConnectionByTenantId(req.params.id);
       if (!connection) {
         return res.status(404).json({ error: 'No Microsoft 365 connection found for this tenant' });
       }
@@ -291,9 +287,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/sign-in-policies/:userId', isAuthenticated, async (req, res) => {
+  app.get('/api/sign-in-policies/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-    const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
+    const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
     if (!accessToken) {
       return res.status(401).json({ error: 'Access token is missing' });
     }
@@ -313,9 +309,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   })
-  app.get('/api/trusted-locations/:userId', isAuthenticated, async (req, res) => {
+  app.get('/api/trusted-locations/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-    const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
+    const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
 
     if (!accessToken) {
       return res.status(401).json({ error: 'Access token is missing' });
@@ -338,9 +334,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
-  app.get('/api/phish-resistant-mfa/:userId', isAuthenticated, async (req, res) => {
+  app.get('/api/phish-resistant-mfa/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-    const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
+    const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
 
     if (!accessToken) {
       return res.status(401).json({ error: 'Access token is missing' });
@@ -364,9 +360,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
-  app.get('/api/encrypted-devices/:userId', isAuthenticated, async (req, res) => {
+  app.get('/api/encrypted-devices/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-      const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
+      const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
 
       if (!accessToken) {
         return res.status(401).json({ error: 'Access token is missing' });
@@ -413,9 +409,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/device-compliance-policies/:userId', isAuthenticated, async (req, res) => {
+  app.get('/api/device-compliance-policies/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-      const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
+      const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
 
       if (!accessToken) {
         return res.status(401).json({ error: 'Access token is missing' });
@@ -441,9 +437,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/secure-scores/:userId', isAuthenticated, async (req, res) => {
+  app.get('/api/secure-scores/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-      const accessToken = await getValidMicrosoftAccessToken(req.params.userId);
+      const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
 
       if (!accessToken) {
         return res.status(401).json({ error: 'Access token is missing' });
@@ -543,8 +539,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Link to tenant
       await storage.addUserToTenant({
+        id: crypto.randomUUID(),
         userId: user.id,
-        tenantId: +invite.tenantId,
+        tenantId: invite.tenantId,
       });
 
       // Mark invite as accepted
@@ -587,7 +584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     asyncHandler(async (req: any, res) => {
       const userId = req.user.id;
-      const connectionId = parseInt(req.params.id);
+      const connectionId = req.params.id;
 
       try {
         // Get the connection to check if it belongs to the user
@@ -602,6 +599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Create audit log
         await storage.createAuditLog({
+          id: crypto.randomUUID(),
           userId,
           action: 'delete_microsoft365_connection',
           details: `Deleted Microsoft 365 connection for tenant: ${connection.tenantName || connection.tenantId}`,
@@ -654,6 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Log the action
     await storage.createAuditLog({
+      id: crypto.randomUUID(),
       userId: (req.user as any).id,
       action: 'update_user_tenants',
       details: `Updated tenants for user ${userId}: [${tenantIds.join(', ')}]`,
@@ -697,6 +696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create audit log
       await storage.createAuditLog({
+        id: crypto.randomUUID(),
         userId: (req.user as any).id,
         action: 'update_user_role',
         details: `Updated role for user ${userId} to ${role}`,
@@ -726,7 +726,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
-      const validatedData = insertTenantSchema.parse(req.body);
+      const {tenantId: tenId, tenantName: tenName} = req.body
+      const data = {id: tenId, name: tenName}
+      console.log('this is the data', data)
+      const validatedData = insertTenantSchema.parse(data);
       // Check if tenant name already exists (case-insensitive recommended)
       const existingTenant = await storage.getTenantByName(validatedData.name);
       if (existingTenant) {
@@ -736,6 +739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create audit log
       await storage.createAuditLog({
+        id: crypto.randomUUID(),
         userId: (req.user as any).id,
         tenantId: tenant.id,
         action: 'create_tenant',
@@ -751,7 +755,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     asyncHandler(async (req, res) => {
       const userId = (req.user as any).id;
-      const tenantId = parseInt(req.params.id);
+      const tenantId = req.params.id;
 
       // Check if user has access to this tenant
       const user = await storage.getUser(userId);
@@ -775,13 +779,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
-      const tenantId = parseInt(req.params.id);
+      const tenantId = req.params.id;
       const validatedData = insertTenantSchema.partial().parse(req.body);
 
       const tenant = await storage.updateTenant(tenantId, validatedData);
 
       // Create audit log
       await storage.createAuditLog({
+        id: crypto.randomUUID(),
         userId: (req.user as any).id,
         tenantId: tenant.id,
         action: 'update_tenant',
@@ -797,7 +802,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
-      const tenantId = parseInt(req.params.id);
+      const tenantId = req.params.id;
 
       // Get tenant for audit log
       const tenant = await storage.getTenant(tenantId);
@@ -809,6 +814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create audit log
       await storage.createAuditLog({
+        id: crypto.randomUUID(),
         userId: (req.user as any).id,
         action: 'delete_tenant',
         details: `Deleted tenant: ${tenant.name}`,
@@ -824,7 +830,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     asyncHandler(async (req, res) => {
       const userId = (req.user as any).id;
-      const tenantId = parseInt(req.params.id);
+      const tenantId = req.params.id;
 
       const user = await storage.getUser(userId);
       const hasAccess = user?.role === UserRoles.ADMIN || (await hasTenantAccess(userId, tenantId));
@@ -843,7 +849,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
-      const tenantId = parseInt(req.params.id);
+      const tenantId = req.params.id;
       const { userId } = req.body;
 
       if (!userId) {
@@ -857,12 +863,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userTenant = await storage.addUserToTenant({
+        id: crypto.randomUUID(),
         userId,
         tenantId,
       });
 
       // Create audit log
       await storage.createAuditLog({
+        id: crypto.randomUUID(),
         userId: (req.user as any).id,
         tenantId,
         action: 'add_user_to_tenant',
@@ -878,13 +886,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
-      const tenantId = parseInt(req.params.id);
+      const tenantId = req.params.id;
       const { userId } = req.params;
 
       await storage.removeUserFromTenant(userId, tenantId);
 
       // Create audit log
       await storage.createAuditLog({
+        id: crypto.randomUUID(),
         userId: (req.user as any).id,
         tenantId,
         action: 'remove_user_from_tenant',
@@ -901,7 +910,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     asyncHandler(async (req, res) => {
       const userId = (req.user as any).id;
-      const tenantId = parseInt(req.params.id);
+      const tenantId = req.params.id;
 
       const user = await storage.getUser(userId);
       const hasAccess = user?.role === UserRoles.ADMIN || (await hasTenantAccess(userId, tenantId));
@@ -927,13 +936,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
-      const tenantId = parseInt(req.params.id);
+      console.log('THIS IS THE BODY', req.body)
+      console.log('THIS IS THE PARAMS', req.params.id)
+      console.log('THIS IS THE USER', req.user)
+      const tenantId = req.params.id;
       const userId = (req.user as any).id;
 
       const validatedData = insertMicrosoft365ConnectionSchema.parse({
         ...req.body,
-        tenantId,
         userId,
+        id: crypto.randomUUID()
       });
 
       // Check if a connection already exists for this tenant
@@ -946,6 +958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Create audit log for update
         await storage.createAuditLog({
+          id: crypto.randomUUID(),
           userId,
           tenantId,
           action: 'update_microsoft365_connection',
@@ -957,6 +970,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Create audit log for creation
         await storage.createAuditLog({
+          id: crypto.randomUUID(),
           userId,
           tenantId,
           action: 'create_microsoft365_connection',
@@ -970,24 +984,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(connectionWithoutSecret);
     })
   );
-
-  // Debug endpoint to examine all tenant widget recommendations (development only)
-  if (process.env.NODE_ENV === 'development') {
-    app.get('/api/debug/tenant-widget-recommendations', isAuthenticated, async (_req, res) => {
-      try {
-        // Get all widget recommendations from the database directly
-        const result = await storage.getAllTenantWidgetRecommendations();
-
-        // Log the results for debugging
-        console.log('All tenant widget recommendations:', JSON.stringify(result, null, 2));
-
-        res.status(200).json(result);
-      } catch (error) {
-        console.error('Error fetching debug data:', error);
-        res.status(500).json({ message: 'Internal server error' });
-      }
-    });
-  }
 
   const httpServer = createServer(app);
   return httpServer;

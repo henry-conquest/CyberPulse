@@ -11,13 +11,13 @@ interface WidgetProps {
   onClickParam?: string;
   hideButton?: boolean;
   apiCall?: (param?: any) => Promise<any>;
-  apiParam?: any
+  apiParams?: any
   render?: (data: any) => React.ReactNode;
   children?: any
 }
 
 const Widget = (props: WidgetProps) => {
-  const { title, buttonText = 'View Details', onButtonClick, hideButton = false, apiCall, render, children, apiParam, id, onClickParam } = props;
+  const { title, buttonText = 'View Details', onButtonClick, hideButton = false, apiCall, render, children, apiParams, id, onClickParam } = props;
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(!!apiCall);
@@ -27,7 +27,7 @@ const Widget = (props: WidgetProps) => {
     const fetchData = async () => {
       if (!apiCall) return;
       try {
-        const result = await apiCall(apiParam);
+        const result = await apiCall(apiParams);
         setData(result);
         if(id === 'trustedLocations') dispatch(identitiesAndPeopleActions.setKnownLocations(result))
         if(id === 'phishResistantMFA') dispatch(identitiesAndPeopleActions.setPhishResistantMFA(result))

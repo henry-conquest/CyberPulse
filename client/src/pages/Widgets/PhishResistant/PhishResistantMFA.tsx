@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import ErrorResponseMessage from "@/components/ui/ErrorResponseMessage"
 import LoadingSpinner from "@/components/ui/LoadingSpinner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { GroupedMFAData } from "@/models/IdentitiesAndPeopleModel"
 import { getPhishResistantMFA } from "@/service/IdentitiesAndPeopleService"
-import { getTenants } from "@/service/TenantService"
-import { identitiesAndPeopleActions, sessionInfoActions } from "@/store/store"
+import { identitiesAndPeopleActions } from "@/store/store"
 import { format } from "date-fns"
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
@@ -42,35 +42,32 @@ const PhishResistantMFA = () => {
       const initialiseData = async () => {
         try {
           setLoading(true);
-          setError(false);
-          if ((!groupedData || isGroupedDataEmpty) && userId) {
-          const data = await getPhishResistantMFA(userId);
-          dispatch(identitiesAndPeopleActions.setPhishResistantMFA(data));
+          if ((!groupedData || isGroupedDataEmpty) && userId && tenantId) {
+            const params = {
+              userId, 
+              tenantId
+            }
+            const data = await getPhishResistantMFA(params);
+            setError(false);
+            setLoading(false)
+            dispatch(identitiesAndPeopleActions.setPhishResistantMFA(data));
         }
-        } catch (error) {
-          console.error("Failed to load data", error);
-          setError(true)
-          throw Error
-        } finally {
-          setLoading(false);
+      }catch (err: any) {
+          setError(true);
+          setLoading(false)
         }
       };
 
       initialiseData();
     }, [tenantId, userId]);
 
-    if (loading) return <LoadingSpinner />;
-    // if (!Array.isArray(groupedData)) return (
-    //   <>
-    //     <div className="flex justify-between align-center ml-6 mr-6 mt-4 mb-12">
-    //       <Link to={`/tenants/${tenantId}/details`} className="inline-flex items-center text-sm text-brand-teal hover:underline">
-    //           ← Back
-    //         </Link>
-    //         <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
-    //     </div>
-    //     <div className="text-center text-red-600 mt-8">Failed to load data. Please try again.</div>
-    //   </>
-    // )
+    if (loading) return <LoadingSpinner />
+
+    if (error && tenantId) {
+      return (
+       <ErrorResponseMessage tenantId={tenantId} text="Microsoft MFA Recommendations"/>
+      );
+    }
 
     return (
       <>
@@ -96,7 +93,12 @@ const PhishResistantMFA = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[...groupedData.toEnable, ...groupedData.toDisable, ...groupedData.enhance].map((method) => {
+              {[
+                ...(groupedData?.toEnable ?? []),
+                ...(groupedData?.toDisable ?? []),
+                ...(groupedData?.enhance ?? [])
+              ]
+              .map((method) => {
                 const { text, className } = getPhishResistantStatus(method.isPhishResistant);
                 return (
                 <TableRow key={method.id}>
@@ -128,7 +130,7 @@ const PhishResistantMFA = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {groupedData.correct.map((method) => {
+              {groupedData?.correct.map((method) => {
                 const { text, className } = getPhishResistantStatus(method.isPhishResistant);
                 return (
                   <TableRow key={method.id}>

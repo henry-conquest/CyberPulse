@@ -169,8 +169,11 @@ export const cloudAndInfrastructureWidgets = [
         title: 'Microsoft Secure Score',
         hideButton: false,
         render: (data: any) => {
+        if (!data) {
+        return <div className="text-red-500">Failed to get data</div>;
+        }
         // Sort ascending by date just to be sure
-        const sortedData = [...data].sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const sortedData = [...data]?.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         // Take the last entry
         const latestEntry = sortedData[sortedData.length - 1];

@@ -1,6 +1,15 @@
-export const get365Admins = async (tenantId: string) => {
+interface tenantIdParamModel {
+    tenantId: string
+}
+
+interface userAndTenantParamModel {
+    tenantId: string
+    userId: string
+}
+
+export const get365Admins = async (params: tenantIdParamModel) => {
     try {
-        const res = await fetch(`/api/m365-admins/${tenantId}`, {
+        const res = await fetch(`/api/m365-admins/${params.tenantId}`, {
         credentials: 'include',
         });
         if(!res.ok) {
@@ -14,9 +23,9 @@ export const get365Admins = async (tenantId: string) => {
     }
 }
 
-export const getRiskySignInPolicies = async (userId: string) => {
+export const getRiskySignInPolicies = async (params: userAndTenantParamModel) => {
     try {
-        const res = await fetch(`/api/sign-in-policies/${userId}`, {
+        const res = await fetch(`/api/sign-in-policies/${params.userId}/${params.tenantId}`, {
         credentials: 'include',
         });
         if(!res.ok) {
@@ -45,9 +54,9 @@ export const getRiskySignInPolicies = async (userId: string) => {
         console.log(err)
     }
 }
-export const getKnownLocations = async (userId: string) => {
+export const getKnownLocations = async (params: userAndTenantParamModel) => {
     try {
-        const res = await fetch(`/api/trusted-locations/${userId}`, {
+        const res = await fetch(`/api/trusted-locations/${params.userId}/${params.tenantId}`, {
         credentials: 'include',
         });
         if(!res.ok) {
@@ -61,9 +70,9 @@ export const getKnownLocations = async (userId: string) => {
     }
 }
 
-export const getPhishResistantMFA = async (userId: string) => {
+export const getPhishResistantMFA = async (params: userAndTenantParamModel) => {
     try {
-        const res = await fetch(`/api/phish-resistant-mfa/${userId}`, {
+        const res = await fetch(`/api/phish-resistant-mfa/${params.userId}/${params.tenantId}`, {
         credentials: 'include',
         });
         if(!res.ok) {
@@ -74,5 +83,6 @@ export const getPhishResistantMFA = async (userId: string) => {
 
     } catch(err) {
         console.log(err)
+        throw new Error('Failed to get phish resistant MFA data')
     }
 }

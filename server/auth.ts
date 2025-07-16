@@ -6,12 +6,13 @@ import passport from 'passport';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
 import { storage } from './storage';
+import { parseJwt } from './helper';
 
 const getOIDCConfig = memoize(
   () => ({
-    issuer: `https://login.microsoftonline.com/${process.env.TENANT_ID}/v2.0`,
-    authorizationURL: `https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/authorize`,
-    tokenURL: `https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/token`,
+    issuer: `https://login.microsoftonline.com/common/v2.0`,
+    authorizationURL: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize`,
+    tokenURL: `https://login.microsoftonline.com/common/oauth2/v2.0/token`,
     userInfoURL: `https://graph.microsoft.com/oidc/userinfo`,
     clientID: process.env.CLIENT_ID!,
     clientSecret: process.env.CLIENT_SECRET!,
@@ -62,8 +63,8 @@ export async function setupAuth(app: Express) {
     'azure',
     new OAuth2Strategy(
       {
-        authorizationURL: `https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/authorize`,
-        tokenURL: `https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/token`,
+        authorizationURL: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize`,
+        tokenURL: `https://login.microsoftonline.com/common/oauth2/v2.0/token`,
         clientID: process.env.CLIENT_ID!,
         clientSecret: process.env.CLIENT_SECRET!,
         callbackURL: process.env.REPLIT_REDIRECT_URI!,
@@ -85,12 +86,22 @@ export async function setupAuth(app: Express) {
           const userInfo = await graphRes.json();
           console.log('📦 Microsoft Graph profile:', userInfo);
 
+          const tenantId = params.id_token
+            ? parseJwt(params.id_token).tid
+            : undefined;
+
+          if (!tenantId) {
+            return done(new Error("Missing tenant ID"));
+          }
+
+
           const user = {
             id: userInfo.id,
             email: userInfo.mail || userInfo.userPrincipalName,
             name: userInfo.displayName,
             firstName: userInfo.givenName,
             lastName: userInfo.surname,
+            tenantId,
             access_token: accessToken,
             refresh_token: refreshToken,
             expires_at: Math.floor(Date.now() / 1000) + (params.expires_in ?? 3599),
@@ -105,7 +116,8 @@ export async function setupAuth(app: Express) {
           });
 
           await storage.upsertMicrosoftToken({
-          id: user.id,
+          userId: user.id,
+          tenantId,
           accessToken: accessToken,
           refreshToken: refreshToken,
           expiresAt: new Date(Date.now() + (params.expires_in ?? 3599) * 1000),

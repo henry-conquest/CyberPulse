@@ -22,79 +22,6 @@ export const useCompanies = () => {
 
   type CompanyFormValues = z.infer<typeof companyFormSchema>;
 
-  const createTenant = async (data: any) => {
-    try {
-      const response = await fetch('/api/tenants', {
-        method: 'POST',
-        body: data,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        toast({
-          title: 'Tenant created',
-          description: 'The tenant was successfully created.',
-        });
-      }
-    } catch (err: any) {
-      throw new Error('Failed to create tenant ', err);
-    }
-  };
-
-  const connectToM365 = () => {
-    const tenantDomain = (document.getElementById('tenantDomain') as HTMLInputElement)?.value;
-    const tenantName = (document.getElementById('tenantName') as HTMLInputElement)?.value;
-    const clientId = (document.getElementById('clientId') as HTMLInputElement)?.value;
-    const clientSecret = (document.getElementById('clientSecret') as HTMLInputElement)?.value;
-
-    if (!tenantDomain || !tenantName || !clientId || !clientSecret) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please fill in all fields',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Create the Microsoft 365 connection directly with the API
-    fetch(`/api/tenants/${selectedTenantId}/microsoft365`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        tenantDomain,
-        tenantName,
-        clientId,
-        clientSecret,
-      }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          return response.json().then((data) => {
-            throw new Error(data.message || 'Failed to create Microsoft 365 connection');
-          });
-        }
-        return response.json();
-      })
-      .then((data) => {
-        toast({
-          title: 'Connection Successful',
-          description: `Successfully connected to Microsoft 365 tenant: ${tenantName}`,
-        });
-        setM365DialogOpen(false);
-      })
-      .catch((error) => {
-        toast({
-          title: 'Connection Error',
-          description: error.message || 'Failed to create Microsoft 365 connection',
-          variant: 'destructive',
-        });
-      });
-  };
-
   // Form for creating new company
   const form = useForm<CompanyFormValues>({
     resolver: zodResolver(companyFormSchema),
@@ -102,42 +29,6 @@ export const useCompanies = () => {
       name: '',
     },
   });
-
-  // Mutation for creating a new company
-  const createCompanyMutation = useMutation({
-    mutationFn: async (formData: CompanyFormValues) => {
-      return await apiRequest('POST', '/api/tenants', formData);
-    },
-    onSuccess: async () => {
-      setLoading(true);
-      toast({
-        title: 'Success',
-        description: 'Company created successfully',
-      });
-
-      // Reset the form
-      form.reset();
-
-      // Close the dialog
-      setCreateDialogOpen(false);
-
-      // Invalidate the tenants query to refresh the data
-      await queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
-      setLoading(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to create company',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Handle form submission
-  const onSubmit = (data: CompanyFormValues) => {
-    createCompanyMutation.mutate(data);
-  };
 
   const { data: tenants, isLoading: isTenantsLoading } = useQuery({
     queryKey: ['/api/tenants'],
@@ -157,7 +48,7 @@ export const useCompanies = () => {
       if (res.status === 204) {
         toast({
           title: 'Tenant deleted',
-          description: 'The client was successfully removed.',
+          description: 'The tenant was successfully removed.',
         });
       } else {
         const data = await res.json();
@@ -176,7 +67,6 @@ export const useCompanies = () => {
   };
 
   return {
-    connectToM365,
     m365DialogOpen,
     createDialogOpen,
     setSelectedTenantId,
@@ -184,14 +74,11 @@ export const useCompanies = () => {
     isTenantsLoading,
     user,
     isUserLoading,
-    onSubmit,
     form,
     setCreateDialogOpen,
-    createCompanyMutation,
     setM365DialogOpen,
     deleteTenant,
     loading,
-    setLoading,
-    createTenant,
+    setLoading
   };
 };
