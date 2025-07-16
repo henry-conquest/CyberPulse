@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 const ConnectToM365Form = (props: any) => {
-  const { m365DialogOpen, setM365DialogOpen, connectToM365, createTenant } = props;
+  const { m365DialogOpen, setM365DialogOpen, connectToM365 } = props;
 
   const [tenantDomain, setTenantDomain] = useState('');
   const [tenantName, setTenantName] = useState('');
@@ -26,7 +26,6 @@ const ConnectToM365Form = (props: any) => {
     };
 
     connectToM365();
-    createTenant(data);
   };
 
   return (

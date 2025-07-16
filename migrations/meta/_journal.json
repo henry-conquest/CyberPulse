@@ -50,6 +50,90 @@
       "when": 1749477964151,
       "tag": "0006_unique_living_lightning",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1752500073098,
+      "tag": "0007_dashing_phil_sheldon",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1752500240025,
+      "tag": "0008_common_the_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1752501231703,
+      "tag": "0009_sharp_golden_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1752650065920,
+      "tag": "0010_curious_misty_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1752650246586,
+      "tag": "0011_sturdy_warbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1752650627994,
+      "tag": "0012_swift_talkback",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1752651033772,
+      "tag": "0013_deep_strong_guy",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1752651306739,
+      "tag": "0014_bouncy_sphinx",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1752654794727,
+      "tag": "0015_flashy_warbound",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1752654855561,
+      "tag": "0016_majestic_mongu",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1752656498337,
+      "tag": "0017_sleepy_malice",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1752657717691,
+      "tag": "0018_rich_lilandra",
+      "breakpoints": true
     }
   ]
 }

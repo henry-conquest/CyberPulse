@@ -1,6 +1,11 @@
-export const getEncryptedDeviceInfo = async (userId: string) => {
+interface userAndTenantParamModel {
+    tenantId: string
+    userId: string
+}
+
+export const getEncryptedDeviceInfo = async (params: userAndTenantParamModel) => {
     try {
-        const res = await fetch(`/api/encrypted-devices/${userId}`, {
+        const res = await fetch(`/api/encrypted-devices/${params.userId}/${params.tenantId}`, {
         credentials: 'include',
         });
         if(!res.ok) {
@@ -11,12 +16,13 @@ export const getEncryptedDeviceInfo = async (userId: string) => {
 
     } catch(err) {
         console.log(err)
+        throw new Error('Failed to get encrypted device information')
     }
 }
 
-export const getCompliancePolicies = async (userId: string) => {
+export const getCompliancePolicies = async (params: userAndTenantParamModel) => {
     try {
-        const res = await fetch(`/api/device-compliance-policies/${userId}`, {
+        const res = await fetch(`/api/device-compliance-policies/${params.userId}/${params.tenantId}`, {
         credentials: 'include',
         });
         if(!res.ok) {
@@ -27,5 +33,6 @@ export const getCompliancePolicies = async (userId: string) => {
 
     } catch(err) {
         console.log(err)
+        throw new Error('Failed to get encrypted device information')
     }
 }

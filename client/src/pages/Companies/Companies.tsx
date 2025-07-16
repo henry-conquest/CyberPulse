@@ -22,22 +22,18 @@ import { sessionInfoActions } from '@/store/store';
 
 export default function Companies() {
   const {
-    connectToM365,
     m365DialogOpen,
     createDialogOpen,
     tenants,
     isTenantsLoading,
     user,
     isUserLoading,
-    onSubmit,
     setCreateDialogOpen,
     form,
-    createCompanyMutation,
     setM365DialogOpen,
     deleteTenant,
     loading,
     setLoading,
-    createTenant,
   } = useCompanies();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [tenantToDelete, setTenantToDelete] = useState<any>(null);
@@ -66,8 +62,8 @@ export default function Companies() {
               form={form}
               createDialogOpen={createDialogOpen}
               setCreateDialogOpen={setCreateDialogOpen}
-              createCompanyMutation={createCompanyMutation}
-              onSubmit={onSubmit}
+              queryClient={queryClient}
+              setLoading={setLoading}
             />
           )}
         </div>
@@ -93,8 +89,8 @@ export default function Companies() {
             form={form}
             createDialogOpen={createDialogOpen}
             setCreateDialogOpen={setCreateDialogOpen}
-            createCompanyMutation={createCompanyMutation}
-            onSubmit={onSubmit}
+            queryClient={queryClient}
+            setLoading={setLoading}
           />
         ) : (
           <Button className='w-100 pl-10 pr-10 text-base bg-brand-green hover:bg-brand-green/90 font-montserrat'>Suggest a Feature</Button>
@@ -181,8 +177,6 @@ export default function Companies() {
       <ConnectToM365Form
         m365DialogOpen={m365DialogOpen}
         setM365DialogOpen={setM365DialogOpen}
-        connectToM365={connectToM365}
-        createTenant={createTenant}
       />
     </div>
   );

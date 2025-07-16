@@ -1,6 +1,6 @@
 import { storage } from "./storage";
 
-export async function refreshMicrosoftAccessToken(refreshToken: string) {
+export async function refreshMicrosoftAccessToken(refreshToken: string, tenantId: string) {
   const params = new URLSearchParams();
   params.append('client_id', process.env.CLIENT_ID!);
   params.append('client_secret', process.env.CLIENT_SECRET!);
@@ -8,7 +8,7 @@ export async function refreshMicrosoftAccessToken(refreshToken: string) {
   params.append('refresh_token', refreshToken);
   params.append('scope', 'https://graph.microsoft.com/.default');
 
-  const response = await fetch(`https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/token`, {
+  const response = await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params.toString()
@@ -30,30 +30,30 @@ export async function refreshMicrosoftAccessToken(refreshToken: string) {
 
 // tokenManager.ts
 
-export async function getValidMicrosoftAccessToken(userId: string): Promise<string> {
-  let tokens = await storage.getMicrosoftTokenByUserId(userId);
+export async function getValidMicrosoftAccessToken(userId: string, tenantId: string): Promise<string> {
+  const token = await storage.getMicrosoftTokenByUserIdAndTenantId(userId, tenantId);
 
-  if (!tokens) {
-    throw new Error('Missing Microsoft token for user');
+  if (!token) {
+    throw new Error(`Missing Microsoft token for user ${userId} and tenant ${tenantId}`);
   }
 
   const isExpired = (expiresAt: Date) => new Date() > new Date(expiresAt);
 
-  if (isExpired(tokens.expiresAt)) {
-    const refreshed = await refreshMicrosoftAccessToken(tokens.refreshToken);
+  if (isExpired(token.expiresAt)) {
+    const refreshed = await refreshMicrosoftAccessToken(token.refreshToken, tenantId);
 
     await storage.upsertMicrosoftToken({
-      id: userId,
+      userId,
+      tenantId,
       accessToken: refreshed.accessToken,
       refreshToken: refreshed.refreshToken,
       expiresAt: new Date(Date.now() + refreshed.expiresIn * 1000),
-      updatedAt: new Date(),
     });
 
     return refreshed.accessToken;
   }
 
-  return tokens.accessToken;
+  return token.accessToken;
 }
 
 type PhishResistanceLevel = true | false | "partial";
@@ -132,3 +132,15 @@ export const evaluatePhishMethodsGrouped = (data: GraphResponse): GroupedEvaluat
 
   return grouped;
 };
+
+
+export const parseJwt = (token: string): any => {
+  try {
+    const base64 = token.split('.')[1];
+    const decoded = Buffer.from(base64, 'base64').toString('utf8');
+    return JSON.parse(decoded);
+  } catch (err) {
+    console.error("Failed to parse JWT", err);
+    return {};
+  }
+}
