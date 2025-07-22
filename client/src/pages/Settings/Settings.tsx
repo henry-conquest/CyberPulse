@@ -111,10 +111,10 @@ export default function Settings() {
               <div>
                 <h3 className="text-lg font-medium mb-2">Multi-Factor Authentication</h3>
                 <p className="text-sm text-secondary-500 mb-4">
-                  Multi-factor authentication is enforced through your organization's security policies.
+                  Multi-factor authentication is enforced through your organisation's security policies.
                 </p>
                 <Badge variant="outline" className="bg-success/10 text-success">
-                  Enabled via Organization Policy
+                  Enabled via organisation Policy
                 </Badge>
               </div>
 

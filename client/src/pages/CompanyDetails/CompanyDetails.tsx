@@ -214,7 +214,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             <div className="w-full h-px bg-brand-teal my-20" />
 
             {/* Analyst Comments */}
-            <AnalystComments
+            {/* <AnalystComments
             latest={{
                 comment: "We believe the company is well-positioned for Q3...",
                 author: "Richard King",
@@ -230,7 +230,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                 note: "Market volatility observed, but fundamentals remain strong.",
                 },
             ]}
-            />
+            /> */}
 
 
         </div>

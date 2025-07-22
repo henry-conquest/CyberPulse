@@ -30,7 +30,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUsers } from './useUsers';
 import InviteForm from './InviteForm/InviteForm';
 import ManageAccessDialog from './ManageAccess/ManageAccess';
-import { deleteInvites } from '@/service/Settings';
+import InvitesTable from './Tables/InvitesTable';
 
 export default function Users() {
   const {
@@ -170,13 +170,14 @@ export default function Users() {
                 <TableRow>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Organizations</TableHead>
+                  <TableHead>organisations</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user: UserModel) => {
+                  console.log('user', user)
                   return (
                     <TableRow key={user.id}>
                       <TableCell>{user.email}</TableCell>
@@ -239,59 +240,7 @@ export default function Users() {
                 })}
               </TableBody>
             </Table>
-            <CardTitle className='mt-6'>Invites</CardTitle>
-              <Table>
-              <TableHeader>
-                <TableRow>
-                  {/* <TableHead>User</TableHead> */}
-                  <TableHead></TableHead>
-                  <TableHead></TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Invited</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invites.length > 0 && invites.map((invite: any) => {
-                  const hasAcceptedInvite = allUsers.find((user: UserModel) => {
-                    return user.email === invite.email
-                  })
-                  if(hasAcceptedInvite) return
-                  return (
-                    <TableRow key={invite.id}>
-                      <TableCell>{invite.email}</TableCell>
-                      <TableCell></TableCell>
-                      <TableCell><Badge variant={'outline'}>PENDING</Badge></TableCell>
-                      <TableCell>
-                        {isValid(new Date(invite?.created_at)) ? format(new Date(invite.created_at), 'MMM d, yyyy') : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={async () => {
-                                await deleteInvites(invite.email)
-                                fetchInvites()
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Cancel Invite
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <InvitesTable fetchInvites={fetchInvites} allUsers={allUsers} invites={invites}/>
             </>
           ) : (
             <div className="py-8 text-center">

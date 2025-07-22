@@ -1,21 +1,20 @@
 export const connectToM365 = async (formData: any) => {
-    try {
-        const res = await fetch(`/api/tenants/${formData.tenantId}/microsoft365`, {
-        method: 'POST',
-        body: JSON.stringify(formData),
-        headers: {
-        'Content-Type': 'application/json',
-      },
-        credentials: 'include',
-        });
-        if(!res.ok) {
-            throw new Error('Failed to create connection')
-        }
+  const res = await fetch(`/api/tenants/${formData.tenantId}/microsoft365`, {
+    method: 'POST',
+    body: JSON.stringify(formData),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
 
-    } catch(err) {
-        console.log(err)
-    }
-}
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const message = errorData?.error || 'Failed to establish connection to Microsoft 365 tenant please check details are correct.';
+    throw new Error(message);
+  }
+};
+
 
 export const createTenant = async (data: any) => {
     try {
@@ -27,10 +26,13 @@ export const createTenant = async (data: any) => {
         },
       });
 
-      if(!response.ok) {
-        throw new Error('Failed to create tenant')
-      }
+      if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const message = errorData?.error || 'Failed to establish connection to Microsoft 365 tenant please check details are correct.';
+      throw new Error(message);
+    }
     } catch (err: any) {
-      throw new Error('Failed to create tenant ', err);
+      console.log('ERR', err)
+      throw new Error(err);
     }
   };

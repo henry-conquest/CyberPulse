@@ -26,6 +26,7 @@ import {
 } from '@shared/schema';
 import { db } from './db';
 import { eq, and, inArray, desc, asc, sql, like, or, isNull } from 'drizzle-orm';
+import { randomUUID } from 'crypto';
 
 // Interface for storage operations
 export interface IStorage {
@@ -45,7 +46,7 @@ export interface IStorage {
   getTenantsByUserId(userId: string): Promise<Tenant[]>;
 
   // User-tenant operations
-  addUserToTenant(userTenant: InsertUserTenant): Promise<UserTenant>;
+  addUserToTenant(userTenant: any): any;
   removeUserFromTenant(userId: string, tenantId: string): Promise<void>;
   getUsersForTenant(tenantId: string): Promise<User[]>;
 
@@ -151,8 +152,31 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async markInviteAccepted(token: string): Promise<void> {
-    await db.update(invites).set({ accepted: true }).where(eq(invites.token, token));
+  async getInviteByEmail(email: string) {
+  return db.select().from(invites).where(eq(invites.email, email)).limit(1).then(res => res[0]);
+}
+
+  // Check if user is already added to a tenant
+  async checkUserTenantExists(userId: string, tenantId: string) {
+    const result = await db
+      .select()
+      .from(userTenants)
+      .where(and(eq(userTenants.userId, userId), eq(userTenants.tenantId, tenantId)))
+      .limit(1);
+    return result.length > 0;
+  }
+
+
+  async addUserToTenant({ userId, tenantId }: { userId: string; tenantId: string }) {
+    await db.insert(userTenants).values({
+      id: crypto.randomUUID(),
+      userId,
+      tenantId,
+    });
+  }
+
+  async markInviteAccepted(inviteId: string): Promise<void> {
+    await db.update(invites).set({ accepted: true }).where(eq(invites.id, inviteId));
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -207,8 +231,15 @@ export class DatabaseStorage implements IStorage {
     return newTenant;
   }
 
+  async restoreTenant(id: string,): Promise<void> {
+  await db
+    .update(tenants)
+    .set({ deletedAt: null }) // you can update name if needed
+    .where(eq(tenants.id, id));
+}
+
+
   async getTenant(id: string): Promise<Tenant | undefined> {
-    console.log('BOLLOCKS', id)
     const [tenant] = await db.select().from(tenants).where(eq(tenants.id, id));
     return tenant;
   }
@@ -235,21 +266,22 @@ export class DatabaseStorage implements IStorage {
   }
 
 
-async setTenantsForUser(userId: string, tenantIds: number[]): Promise<void> {
-  // 1. Remove existing assignments
-  await db.delete(userTenants).where(eq(userTenants.userId, userId));
+  async setTenantsForUser(userId: string, tenantIds: string[]): Promise<void> {
+    // 1. Remove existing assignments
+    await db.delete(userTenants).where(eq(userTenants.userId, userId));
 
-  // 2. Insert new assignments (if any)
-  if (tenantIds.length > 0) {
-    await db.insert(userTenants).values(
-      tenantIds.map((tenantId) => ({
+    // 2. Insert new assignments (if any)
+    if (tenantIds.length > 0) {
+      const records = tenantIds.map((tenantId) => ({
+        id: randomUUID(),
         userId,
         tenantId,
         createdAt: new Date(),
-      }))
-    );
+      }));
+
+      await db.insert(userTenants).values(records);
+    }
   }
-}
 
   async deleteTenant(id: string): Promise<void> {
     await db.update(tenants).set({ deletedAt: new Date() }).where(eq(tenants.id, id));
@@ -265,12 +297,6 @@ async setTenantsForUser(userId: string, tenantIds: number[]): Promise<void> {
       .where(eq(userTenants.userId, userId));
 
     return userTenantRecords.map((record) => record.tenant);
-  }
-
-  // User-tenant operations
-  async addUserToTenant(userTenant: InsertUserTenant): Promise<UserTenant> {
-    const [newUserTenant] = await db.insert(userTenants).values(userTenant).onConflictDoNothing().returning();
-    return newUserTenant;
   }
 
   async removeUserFromTenant(userId: string, tenantId: string): Promise<void> {
