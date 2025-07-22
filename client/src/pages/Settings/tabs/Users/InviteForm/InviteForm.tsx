@@ -82,11 +82,11 @@ const InviteForm = (props: any) => {
           name="tenantId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Organization</FormLabel>
+              <FormLabel>Organisation</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select an organization" />
+                    <SelectValue placeholder="Select an organisation" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -97,7 +97,7 @@ const InviteForm = (props: any) => {
                   ))}
                 </SelectContent>
               </Select>
-              <FormDescription>The organization this user will belong to.</FormDescription>
+              <FormDescription>The organisation this user will belong to.</FormDescription>
               <FormMessage />
             </FormItem>
           )}

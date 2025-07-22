@@ -45,7 +45,7 @@ export const users = pgTable('users', {
   microsoftTenantId: varchar('microsoft_tenant_id'),
 });
 
-// Tenants (client organizations)
+// Tenants (client organisations)
 export const tenants = pgTable('tenants', {
   id: varchar('id').primaryKey(),
   name: varchar('name').notNull(),
@@ -62,11 +62,9 @@ export const userTenants = pgTable(
   {
     id: varchar('id').primaryKey(),
     userId: varchar('user_id')
-      .notNull()
-      .references(() => users.id),
+      .notNull(),
     tenantId: varchar('tenant_id')
-      .notNull()
-      .references(() => tenants.id),
+      .notNull(),
     createdAt: timestamp('created_at').defaultNow(),
   },
   (table) => {

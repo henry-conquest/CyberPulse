@@ -45,8 +45,13 @@ const CreateCompanyForm = (props: any) => {
       await queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
 
       setCreateDialogOpen(false);
-    } catch (error) {
-      console.error("Error connecting or creating tenant:", error);
+    } catch (error: any) {
+      const message = error?.message || 'An unknown error occurred.';
+      toast({
+        title: 'Connection Failed',
+        description: message,
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
       setLoadingLocal(false)

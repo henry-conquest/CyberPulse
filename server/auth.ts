@@ -59,77 +59,121 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  passport.use(
-    'azure',
-    new OAuth2Strategy(
-      {
-        authorizationURL: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize`,
-        tokenURL: `https://login.microsoftonline.com/common/oauth2/v2.0/token`,
-        clientID: process.env.CLIENT_ID!,
-        clientSecret: process.env.CLIENT_SECRET!,
-        callbackURL: process.env.REPLIT_REDIRECT_URI!,
-        scope: ['openid', 'profile', 'email', 'offline_access', 'User.Read'].join(' '),
-      },
-      async (accessToken, refreshToken, params, profile, done) => {
-        try {
-          const graphRes = await fetch('https://graph.microsoft.com/v1.0/me', {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          });
+passport.use(
+  'azure',
+  new OAuth2Strategy(
+    {
+      authorizationURL: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize`,
+      tokenURL: `https://login.microsoftonline.com/common/oauth2/v2.0/token`,
+      clientID: process.env.CLIENT_ID!,
+      clientSecret: process.env.CLIENT_SECRET!,
+      callbackURL: process.env.REPLIT_REDIRECT_URI!,
+      scope: [
+      'openid',
+      'profile',
+      'email',
+      'offline_access',
+      'User.Read',
+      'Directory.Read.All',
+      'Policy.Read.All',
+      'DeviceManagementConfiguration.Read.All',
+      'DeviceManagementManagedDevices.Read.All',
+      'IdentityRiskEvent.Read.All',
+      'IdentityRiskyUser.Read.All',
+      'SecurityEvents.Read.All'
+    ]
+    .join(' '),
+    },
+    async (accessToken, refreshToken, params, profile, done) => {
+      try {
+        const graphRes = await fetch('https://graph.microsoft.com/v1.0/me', {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
 
-          if (!graphRes.ok) {
-            console.error('❌ Failed to fetch Microsoft Graph profile:', await graphRes.text());
-            return done(new Error('Failed to fetch Microsoft Graph profile'));
-          }
+        if (!graphRes.ok) {
+          console.error('❌ Failed to fetch Microsoft Graph profile:', await graphRes.text());
+          return done(new Error('Failed to fetch Microsoft Graph profile'));
+        }
 
-          const userInfo = await graphRes.json();
-          console.log('📦 Microsoft Graph profile:', userInfo);
+        const photoRes = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
 
-          const tenantId = params.id_token
-            ? parseJwt(params.id_token).tid
-            : undefined;
+        let profileImageUrl = null;
 
-          if (!tenantId) {
-            return done(new Error("Missing tenant ID"));
-          }
+        if (photoRes.ok) {
+          const buffer = await photoRes.arrayBuffer();
+          const base64 = Buffer.from(buffer).toString('base64');
+          profileImageUrl = `data:image/jpeg;base64,${base64}`;
+        } else {
+          console.log('No profile photo available or error fetching photo');
+        }
 
 
-          const user = {
-            id: userInfo.id,
-            email: userInfo.mail || userInfo.userPrincipalName,
-            name: userInfo.displayName,
-            firstName: userInfo.givenName,
-            lastName: userInfo.surname,
-            tenantId,
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            expires_at: Math.floor(Date.now() / 1000) + (params.expires_in ?? 3599),
-          };
+        const userInfo = await graphRes.json();
+        const microsoftTenantId = parseJwt(params.id_token).tid;
+        const email = userInfo.mail || userInfo.userPrincipalName;
 
-          await storage.upsertUser({
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profileImageUrl: null,
-          });
+        if (!microsoftTenantId || !email) {
+          return done(new Error("Missing tenant ID or email"));
+        }
 
-          await storage.upsertMicrosoftToken({
-          userId: user.id,
+        // Check if this user was invited
+        const invite = await storage.getInviteByEmail(email);
+        const tenantId = invite?.tenantId || microsoftTenantId;
+
+        // Save Microsoft token under the invite tenantId
+        await storage.upsertMicrosoftToken({
+          userId: userInfo.id,
           tenantId,
-          accessToken: accessToken,
-          refreshToken: refreshToken,
+          accessToken,
+          refreshToken,
           expiresAt: new Date(Date.now() + (params.expires_in ?? 3599) * 1000),
         });
 
-          done(null, user);
-        } catch (err) {
-          done(err as Error);
+        
+        // Create or update user record
+        await storage.upsertUser({
+          id: userInfo.id,
+          email,
+          firstName: userInfo.givenName,
+          lastName: userInfo.surname,
+          profileImageUrl
+        });
+
+        // Assign user to the invite tenant
+        const alreadyAssigned = await storage.checkUserTenantExists(userInfo.id, tenantId);
+        if (!alreadyAssigned) {
+          await storage.addUserToTenant({ userId: userInfo.id, tenantId });
         }
+
+        // Mark invite as accepted
+        if (invite && !invite.accepted) {
+          await storage.markInviteAccepted(invite.id);
+        }
+
+        const user = {
+          id: userInfo.id,
+          email,
+          name: userInfo.displayName,
+          firstName: userInfo.givenName,
+          lastName: userInfo.surname,
+          tenantId,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expires_at: Math.floor(Date.now() / 1000) + (params.expires_in ?? 3599),
+        };
+
+        return done(null, user);
+      } catch (err) {
+        return done(err as Error);
       }
-    )
-  );
+    }
+  )
+);
+
 
   passport.serializeUser((user: any, done) => {
     done(null, user);

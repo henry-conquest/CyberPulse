@@ -16,6 +16,9 @@ import {
 } from './microsoft-oauth';
 import { emailService } from './email';
 import crypto from 'crypto';
+import { ConfidentialClientApplication } from '@azure/msal-node';
+import { Client } from '@microsoft/microsoft-graph-client';
+import 'isomorphic-fetch';
 
 // Helper to check if user has access to a tenant
 async function hasTenantAccess(userId: string, tenantId: string): Promise<boolean> {
@@ -165,8 +168,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set expiry (e.g. 7 days from now)
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-      // Create invite
-      const invite = await storage.createUserInvite({
+      
+      await emailService.sendInviteEmail(email, token, tenantId);
+      
+      // Save invite to DB
+      await storage.createUserInvite({
         email,
         firstName,
         lastName,
@@ -178,8 +184,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: (req.user as any).id,
         createdAt: new Date(),
       });
-
-      await emailService.sendInviteEmail(email, token, tenantId);
 
       // Audit log
       await storage.createAuditLog({
@@ -539,7 +543,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Link to tenant
       await storage.addUserToTenant({
-        id: crypto.randomUUID(),
         userId: user.id,
         tenantId: invite.tenantId,
       });
@@ -643,10 +646,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { userId } = req.params;
     const { tenantIds } = req.body;
 
-    if (!Array.isArray(tenantIds) || tenantIds.some(id => typeof id !== 'number')) {
-      return res.status(400).json({ message: 'tenantIds must be an array of numbers' });
-    }
-
     // Replace user-tenant associations
     await storage.setTenantsForUser(userId, tenantIds);
 
@@ -726,27 +725,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
-      const {tenantId: tenId, tenantName: tenName} = req.body
-      const data = {id: tenId, name: tenName}
-      console.log('this is the data', data)
-      const validatedData = insertTenantSchema.parse(data);
-      // Check if tenant name already exists (case-insensitive recommended)
-      const existingTenant = await storage.getTenantByName(validatedData.name);
-      if (existingTenant) {
-        return res.status(400).json({ error: 'A tenant with this name already exists.' });
+      const {
+        tenantId: tenId,
+        tenantName: tenName,
+        clientId,
+        clientSecret,
+      } = req.body;
+
+      // 🔐 Step 1: Verify Microsoft 365 tenant
+      try {
+        const authority = `https://login.microsoftonline.com/${tenId}`;
+        const msalConfig = {
+          auth: {
+            clientId,
+            authority,
+            clientSecret,
+          },
+        };
+
+        const cca = new ConfidentialClientApplication(msalConfig);
+
+        const tokenResult = await cca.acquireTokenByClientCredential({
+          scopes: ['https://graph.microsoft.com/.default'],
+        });
+
+        if (!tokenResult?.accessToken) {
+          return res.status(401).json({ error: 'Failed to authenticate with Microsoft 365.' });
+        }
+
+        const graphClient = Client.init({
+          authProvider: (done) => done(null, tokenResult.accessToken),
+        });
+
+        const org = await graphClient.api('/organization').get();
+
+        if (!org?.value?.length) {
+          return res.status(400).json({ error: 'Invalid tenant: No organisation data found.' });
+        }
+
+        const orgInfo = org.value[0];
+        const validatedData = insertTenantSchema.parse({
+          id: orgInfo.id, // use verified tenant ID
+          name: orgInfo.displayName || tenName, // prefer MS name
+        });
+
+        // Step 2: Check if tenant with same ID already exists
+        const existingTenantById = await storage.getTenant(validatedData.id);
+        let tenant: any;
+
+        if (existingTenantById) {
+          if (existingTenantById.deletedAt) {
+            await storage.restoreTenant(validatedData.id);
+            console.log(`Restored soft-deleted tenant: ${validatedData.id}`);
+            tenant = await storage.getTenant(validatedData.id);
+          } else {
+            return res.status(400).json({ error: 'A tenant with this ID already exists.' });
+          }
+        } else {
+          tenant = await storage.createTenant(validatedData);
+        }
+
+
+        // 📝 Step 4: Create audit log
+        await storage.createAuditLog({
+          id: crypto.randomUUID(),
+          userId: (req.user as any).id,
+          tenantId: tenant.id,
+          action: 'create_tenant',
+          details: `Created tenant: ${tenant.name}`,
+        });
+
+        res.status(201).json(tenant);
+      } catch (error) {
+        console.error('Microsoft 365 tenant verification failed:', error);
+        return res.status(500).json({ error: 'Failed to verify Microsoft 365 tenant.' });
       }
-      const tenant = await storage.createTenant(validatedData);
-
-      // Create audit log
-      await storage.createAuditLog({
-        id: crypto.randomUUID(),
-        userId: (req.user as any).id,
-        tenantId: tenant.id,
-        action: 'create_tenant',
-        details: `Created tenant: ${tenant.name}`,
-      });
-
-      res.status(201).json(tenant);
     })
   );
 
@@ -863,7 +916,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userTenant = await storage.addUserToTenant({
-        id: crypto.randomUUID(),
         userId,
         tenantId,
       });

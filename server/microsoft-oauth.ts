@@ -147,7 +147,7 @@ export function getAuthorizationUrl(state: string, clientId?: string, redirectUr
 }
 
 export const getMicrosoft365ConnectionForTenant = async (tenantId: string) => {
-  const connection = await storage.getMicrosoft365ConnectionByTenantId(+tenantId);
+  const connection = await storage.getMicrosoft365ConnectionByTenantId(tenantId);
 
   if (!connection) {
     throw new Error(`No Microsoft 365 connection found for the requested organisation`);
@@ -299,9 +299,9 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
  * Get tenant information using access token
  */
 export async function getTenantInfo(accessToken: string): Promise<TenantInfo> {
-  // First try to get organization information
+  // First try to get organisation information
   try {
-    console.log('Fetching organization information from Microsoft Graph API');
+    console.log('Fetching organisation information from Microsoft Graph API');
     const graphUrl = 'https://graph.microsoft.com/v1.0/organization';
 
     const response = await fetch(graphUrl, {
@@ -310,18 +310,18 @@ export async function getTenantInfo(accessToken: string): Promise<TenantInfo> {
       },
     });
 
-    console.log('Organization API response status:', response.status);
+    console.log('organisation API response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Organization API error:', response.status, errorText);
+      console.error('organisation API error:', response.status, errorText);
       // Continue to fallback, don't throw error here
     } else {
       const data = await response.json();
-      console.log('Organization API response received');
+      console.log('organisation API response received');
 
       if (data.value && data.value.length > 0) {
-        console.log('Organization data found:', data.value[0].displayName);
+        console.log('organisation data found:', data.value[0].displayName);
 
         const domains = Array.isArray(data.value[0].verifiedDomains)
           ? data.value[0].verifiedDomains.map((d: any) => d.name)
@@ -335,9 +335,9 @@ export async function getTenantInfo(accessToken: string): Promise<TenantInfo> {
       }
     }
 
-    console.log('No organization data found, falling back to /me endpoint');
+    console.log('No organisation data found, falling back to /me endpoint');
   } catch (error) {
-    console.error('Error fetching organization data:', error);
+    console.error('Error fetching organisation data:', error);
     console.log('Falling back to /me endpoint');
   }
 

@@ -199,7 +199,7 @@ const IntegrationsTab = () => {
                     <AlertTitle>No connection found</AlertTitle>
                     <AlertDescription>
                       Connect your Microsoft 365 tenant to enable security insights and monitoring for your
-                      organization. This requires administrator permissions for your Microsoft 365 tenant.
+                      organisation. This requires administrator permissions for your Microsoft 365 tenant.
                     </AlertDescription>
                   </Alert>
                 )}

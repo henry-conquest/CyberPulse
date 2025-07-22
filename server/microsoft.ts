@@ -428,7 +428,7 @@ export class MicrosoftGraphService {
           title: rec.title,
           description: `To improve security, Microsoft recommends: ${rec.title}`,
           remediation: `Follow the Microsoft Security Portal guidance for implementing this control.`,
-          impact: "Implementing this control will improve your organization's security posture.",
+          impact: "Implementing this control will improve your organisation's security posture.",
           category: rec.category,
           service: rec.product,
           actionUrl: 'https://security.microsoft.com/securescore?viewid=actions',
