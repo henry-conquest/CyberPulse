@@ -52,12 +52,14 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                 switch (widget.id) {
                     case 'microsoft365Admins':
                     apiParams = {tenantId};
+                    onClickParam = tenantId
                     break;
                     case 'riskySignInPolicies':
                     apiParams = {
                         userId: user.id,
                         tenantId
                     };
+                    onClickParam = tenantId
                     break
                     case 'trustedLocations':
                     apiParams = {

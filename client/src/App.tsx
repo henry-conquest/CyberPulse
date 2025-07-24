@@ -15,6 +15,8 @@ import PhishResistantMFA from './pages/Widgets/PhishResistant/PhishResistantMFA'
 import NoEncryptionDetails from './pages/Widgets/NoEncrption/NoEncryption';
 import CompliancePoliciesDetails from './pages/Widgets/CompliancePolicies';
 import SecureScores from './pages/Widgets/SecureScores';
+import M365Admins from './pages/Widgets/M365Admins';
+import SignInPolicies from './pages/Widgets/SignInPolicies';
 
 function ProtectedRoute({
   component: Component,
@@ -62,7 +64,9 @@ function Router() {
       <Route path="/accept-invite" component={() => <ProtectedRoute component={AcceptInvite} />} />
 
       {/* Widget Routes */}
+      <Route path="/m365-admins/:tenantId" component={() => <ProtectedRoute component={M365Admins} />} />
       <Route path="/trusted-locations/:tenantId" component={() => <ProtectedRoute component={KnownLocations} />} />
+      <Route path="/sign-in-policies/:tenantId" component={() => <ProtectedRoute component={SignInPolicies} />} />
       <Route path="/phish-resistant-mfa/:tenantId" component={() => <ProtectedRoute component={PhishResistantMFA} />} />
       <Route path="/no-encryption/:tenantId" component={() => <ProtectedRoute component={NoEncryptionDetails} />} />
       <Route path="/compliance-policies/:tenantId" component={() => <ProtectedRoute component={CompliancePoliciesDetails} />} />

@@ -468,45 +468,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         comparative: number;
       };
 
-      const monthlyScores: { [month: string]: MonthlyScore } = {};
-
       // approx 2 years in milliseconds
       const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000; 
       const now = Date.now();
 
+      const allDailyScores: MonthlyScore[] = [];
+
       for (const entry of data.value) {
-        const date = new Date(entry.createdDateTime);
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // "2025-07"
         const entryDate = new Date(entry.createdDateTime);
-        
-        // Skip if entry is older than 2 years
+        // if under 2 years keep going
         if (now - entryDate.getTime() > TWO_YEARS_MS) {
           continue;
         }
-
+        // get the different scores
         const percentScore = entry.maxScore
-        ? (entry.currentScore / entry.maxScore) * 100
-        : 0;
-        
-        // Get comparative score
-        const allTenantScoreObj = entry.averageComparativeScores?.find((scoreObj: any) => scoreObj.basis === 'AllTenants')
-        const comparativeScore = allTenantScoreObj ? allTenantScoreObj.averageScore : 0;
+          ? (entry.currentScore / entry.maxScore) * 100
+          : 0;
 
-        // Only keep the latest score for the month
-        if (!monthlyScores[key] || new Date(entry.createdDateTime) > new Date(monthlyScores[key].date)) {
-          monthlyScores[key] = {
-            date: entry.createdDateTime,
-            percentage: parseFloat(percentScore.toFixed(2)),
-            comparative: parseFloat(comparativeScore.toFixed(2))
-          };
-        }
+        const comparativeScore =
+          entry.averageComparativeScores?.find((s: any) => s.basis === 'AllTenants')?.averageScore || 0;
+
+        // save scores to array
+        allDailyScores.push({
+          date: entry.createdDateTime,
+          percentage: parseFloat(percentScore.toFixed(2)),
+          comparative: parseFloat(comparativeScore.toFixed(2)),
+        });
       }
-      // Convert object of data entries into an array of objects to return
-      const result = Object.entries(monthlyScores)
-        .map(([key, value]) => ({ month: key, ...value }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      // sort scores by time
+      const result = allDailyScores.sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
 
       res.status(200).json(result);
+
     } catch (error) {
       console.error('Error fetching secure scores:', error);
       res.status(500).json({ error: 'Failed to fetch secure scores' });

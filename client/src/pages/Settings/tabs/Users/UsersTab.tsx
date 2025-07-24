@@ -170,14 +170,13 @@ export default function Users() {
                 <TableRow>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>organisations</TableHead>
+                  <TableHead>Organisations</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user: UserModel) => {
-                  console.log('user', user)
                   return (
                     <TableRow key={user.id}>
                       <TableCell>{user.email}</TableCell>

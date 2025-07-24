@@ -17,9 +17,9 @@ const CompanySecureScore = () => {
                 <p className="text-brand-green">Medium Risk</p>
                 <p className="text-brand-teal font-bold">Your business has taken some steps to protect against Cyber Threats but more could be done.</p>
                </div>
-               <div data-testid='secure-score-bottom' className="flex justify-between font-montserrat" >
+               <div data-testid='secure-score-bottom' className="flex justify-around font-montserrat" >
                  <Button className="bg-brand-teal mr-10 hover:bg-brand-teal/90">Download Executive Report</Button>
-                 <Button className="bg-brand-teal hover:bg-brand-teal/90">Download Detailed Report</Button>
+                 {/* <Button className="bg-brand-teal hover:bg-brand-teal/90">Download Detailed Report</Button> */}
                  <Button className="bg-brand-teal hover:bg-brand-teal/90">Download Tender / Insurer Pack</Button>
                </div>
                <div className="flex justify-end">

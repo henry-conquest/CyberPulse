@@ -33,7 +33,8 @@ export const identitiesAndPeopleWidgets = [
             </h1>
             )
         },
-        apiCall: get365Admins
+        apiCall: get365Admins,
+        onButtonClick: (tenantId: string) => navigate(`/m365-admins/${tenantId}`)
     },
     {
     id: 'phishResistantMFA',
@@ -79,9 +80,11 @@ export const identitiesAndPeopleWidgets = [
         title: 'Risky Sign In Policies',
         hideButton: false,
         render: (riskySignInPoliciesExist: any) => {
-            return riskySignInPoliciesExist ? <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div> : <div className="bg-brand-green rounded-full p-4"><Check className="text-white w-6 h-6" /></div>
+            return riskySignInPoliciesExist.exists ? <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div> : <div className="bg-brand-green rounded-full p-4"><Check className="text-white w-6 h-6" /></div>
         },
-        apiCall: getRiskySignInPolicies
+        apiCall: getRiskySignInPolicies,
+        onButtonClick: (tenantId: string) => navigate(`/sign-in-policies/${tenantId}`)
+
     },
 ]
 export const endUserDevicesWidgets = [
