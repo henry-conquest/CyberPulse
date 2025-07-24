@@ -8,7 +8,9 @@ export const initialIdentitiesAndPeopleState: IdentitiesAndPeopleSliceModel = {
     toDisable: [],
     enhance: [],
     correct: []
-  }
+  },
+  m365Admins: null,
+  signInPolicies: null
 };
 
 const identitiesAndPeopleSlice = createSlice({
@@ -21,6 +23,12 @@ const identitiesAndPeopleSlice = createSlice({
     setPhishResistantMFA(state, action) {
       state.phishResistantMFA = action.payload;
     },
+    setM365Admins(state, action) {
+      state.m365Admins = action.payload;
+    },
+    setSignInPolicies(state, action) {
+      state.signInPolicies = action.payload;
+    },
     reset(state) {
       state.knownLocations = null
       state.phishResistantMFA = {
@@ -28,7 +36,9 @@ const identitiesAndPeopleSlice = createSlice({
         toDisable: [],
         enhance: [],
         correct: []
-  }
+      },
+      state.m365Admins = null,
+      state.signInPolicies = null
     }
   },
 });

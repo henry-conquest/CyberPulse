@@ -1,12 +1,13 @@
 import { getSecureScores } from "@/service/CloudAndInfrastructureService";
-import { getTenants } from "@/service/TenantService";
-import { cloudAndInfrastructureActions, sessionInfoActions } from "@/store/store";
+import { cloudAndInfrastructureActions } from "@/store/store";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useParams } from "wouter";
+import 'chartjs-adapter-date-fns';
 import {
+  TimeScale,
   Chart as ChartJS,
   LineElement,
   LineController,
@@ -30,7 +31,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  TimeScale
 );
 
 
@@ -39,6 +41,7 @@ const SecureScores = () => {
   const userId = useSelector((state: any) => state?.sessionInfo?.user?.id);
   const { tenantId } = useParams();
   const dispatch = useDispatch();
+  const [labels, setLabels] = useState<String[]>([])
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -72,7 +75,13 @@ const SecureScores = () => {
     ? [...secureScores].sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
     : [];
 
-  const labels = sortedData.map(d => d.month);
+    
+  useEffect(() => {
+    if(sortedData.length > 1) {
+      const labels = sortedData.map(d => format(new Date(d.date), "yyyy-MM-dd"));
+      setLabels(labels)
+    }
+  }, [])
   const allSecureScores = sortedData.map(d => d.percentage);
   const allComparativeScores = sortedData.map(d => d.comparative);
 
@@ -117,11 +126,16 @@ const SecureScores = () => {
         },
       },
       x: {
+        type: 'time',
+        time: {
+          unit: 'month',
+          tooltipFormat: 'PPP', // Pretty print date
+        },
         title: {
           display: true,
-          text: "Month",
+          text: 'Date',
         },
-      },
+      }
     },
   };
 

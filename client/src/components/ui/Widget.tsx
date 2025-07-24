@@ -29,6 +29,8 @@ const Widget = (props: WidgetProps) => {
       try {
         const result = await apiCall(apiParams);
         setData(result);
+        if(id === 'microsoft365Admins') dispatch(identitiesAndPeopleActions.setM365Admins(result))
+        if(id === 'riskySignInPolicies') dispatch(identitiesAndPeopleActions.setSignInPolicies(result.policies))
         if(id === 'trustedLocations') dispatch(identitiesAndPeopleActions.setKnownLocations(result))
         if(id === 'phishResistantMFA') dispatch(identitiesAndPeopleActions.setPhishResistantMFA(result))
         if(id === 'noEncryption') dispatch(endUserDevicesActions.setNoEncryption(result))

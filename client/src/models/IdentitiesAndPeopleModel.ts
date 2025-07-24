@@ -18,6 +18,8 @@ export interface GroupedMFAData {
 
 export interface IdentitiesAndPeopleSliceModel {
   knownLocations: any
+  m365Admins: any
+  signInPolicies: any
   phishResistantMFA: GroupedMFAData
 
 }

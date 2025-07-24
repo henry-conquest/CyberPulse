@@ -26,34 +26,39 @@ export const get365Admins = async (params: tenantIdParamModel) => {
 export const getRiskySignInPolicies = async (params: userAndTenantParamModel) => {
     try {
         const res = await fetch(`/api/sign-in-policies/${params.userId}/${params.tenantId}`, {
-        credentials: 'include',
+            credentials: 'include',
         });
-        if(!res.ok) {
-            throw new Error('Failed to get admins')
+
+        if (!res.ok) {
+            throw new Error('Failed to get sign-in policies');
         }
-        const data = await res.json()
+
+        const data = await res.json();
         const policies = data.value || [];
 
-        // Define accepted risk levels
         const allowedRiskLevels = ['high', 'medium', 'low'];
 
-        // Check if any policy meets the requirements
         const matchingPolicy = policies.find((policy: any) => {
-            const state = policy.state === 'enabled';
+            const state = policy.state === 'enabled' || policy.state === 'enabledForReportingButNotEnforced';
             const signInRiskLevels = policy?.conditions?.signInRiskLevels || [];
-
-            const hasRiskLevel = signInRiskLevels.some((risk: any) => allowedRiskLevels.includes(risk.toLowerCase()));
-            
+            const hasRiskLevel = signInRiskLevels.some((risk: any) =>
+                allowedRiskLevels.includes(risk.toLowerCase())
+            );
             return state && hasRiskLevel;
         });
 
         const exists = Boolean(matchingPolicy);
-        return exists
 
-    } catch(err) {
-        console.log(err)
+        return {
+            exists,
+            policies,
+        };
+    } catch (err) {
+        console.error('Error fetching risky sign-in policies', err);
+        throw err;
     }
-}
+};
+
 export const getKnownLocations = async (params: userAndTenantParamModel) => {
     try {
         const res = await fetch(`/api/trusted-locations/${params.userId}/${params.tenantId}`, {
