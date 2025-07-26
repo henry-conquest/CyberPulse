@@ -66,8 +66,6 @@ const InviteForm = (props: any) => {
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="analyst">Security Analyst</SelectItem>
-                  <SelectItem value="account_manager">Account Manager</SelectItem>
                   <SelectItem value="user">Regular User</SelectItem>
                 </SelectContent>
               </Select>

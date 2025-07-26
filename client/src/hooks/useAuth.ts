@@ -10,7 +10,7 @@ interface User {
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
-  role: string; // admin, analyst, account_manager, or user
+  role: string; // admin or user
   createdAt?: string;
   updatedAt?: string;
   tenants?: {

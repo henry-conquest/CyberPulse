@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { identitiesAndPeopleActions, endUserDevicesActions, cloudAndInfrastructureActions } from '@/store/store';
+import { identitiesAndPeopleActions, endUserDevicesActions, cloudAndInfrastructureActions, manualWidgetsActions } from '@/store/store';
 import { useDispatch } from 'react-redux';
+import { Switch } from '@/components/ui/switch';
+import { BadgeAlert, Check } from 'lucide-react';
+import { updateManualWidget } from '@/service/ManualWidgetsService';
 
 interface WidgetProps {
   id: string
@@ -14,14 +17,30 @@ interface WidgetProps {
   apiParams?: any
   render?: (data: any) => React.ReactNode;
   children?: any
+  manualToggle?: boolean
+  implemented?: boolean
+  tenantId: string
+  manualLoading?: boolean
+  widgetId?: string
+  fetchManualWidgets: any
 }
 
 const Widget = (props: WidgetProps) => {
-  const { title, buttonText = 'View Details', onButtonClick, hideButton = false, apiCall, render, children, apiParams, id, onClickParam } = props;
+  const { title, buttonText = 'View Details', onButtonClick, hideButton = false, apiCall, render, children, apiParams, id, onClickParam, manualToggle = false, implemented = false, manualLoading, widgetId, tenantId, fetchManualWidgets} = props;
 
   const [data, setData] = useState<any>(null);
+  const [toggleUpdating, setToggleUpdating] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(!!apiCall);
   const dispatch = useDispatch()
+
+  const handleToggleChange = async (val: boolean) => {
+    if(tenantId && widgetId) {
+      setToggleUpdating(true)
+      await updateManualWidget(tenantId, widgetId, val)
+      await fetchManualWidgets()
+      setToggleUpdating(false)
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,13 +48,31 @@ const Widget = (props: WidgetProps) => {
       try {
         const result = await apiCall(apiParams);
         setData(result);
-        if(id === 'microsoft365Admins') dispatch(identitiesAndPeopleActions.setM365Admins(result))
-        if(id === 'riskySignInPolicies') dispatch(identitiesAndPeopleActions.setSignInPolicies(result.policies))
-        if(id === 'trustedLocations') dispatch(identitiesAndPeopleActions.setKnownLocations(result))
-        if(id === 'phishResistantMFA') dispatch(identitiesAndPeopleActions.setPhishResistantMFA(result))
-        if(id === 'noEncryption') dispatch(endUserDevicesActions.setNoEncryption(result))
-        if(id === 'compliancePolicies') dispatch(endUserDevicesActions.setCompliancePolicies(result))
-        if(id === 'microsoftSecureScore') dispatch(cloudAndInfrastructureActions.setSecureScores(result))
+        switch (id) {
+          case 'microsoft365Admins' :
+            dispatch(identitiesAndPeopleActions.setM365Admins(result))
+            break
+          case 'riskySignInPolicies' :
+            dispatch(identitiesAndPeopleActions.setSignInPolicies(result.policies))
+            break
+          case 'trustedLocations' :
+            dispatch(identitiesAndPeopleActions.setKnownLocations(result))
+            break
+          case 'phishResistantMFA' :
+            dispatch(identitiesAndPeopleActions.setPhishResistantMFA(result))
+            break
+          case 'noEncryption' :
+            dispatch(endUserDevicesActions.setNoEncryption(result))
+            break
+          case 'compliancePolicies' :
+            dispatch(endUserDevicesActions.setCompliancePolicies(result))
+            break
+          case 'microsoftSecureScore' :
+            dispatch(cloudAndInfrastructureActions.setSecureScores(result))
+            break
+          default:
+            dispatch(manualWidgetsActions.setManualWidgets(result))
+        }
       } catch (err) {
         console.error('Widget API call failed:', err);
       } finally {
@@ -56,29 +93,52 @@ const Widget = (props: WidgetProps) => {
 
   return (
     <div className="border border-brand-teal rounded p-4 flex flex-col justify-between items-center w-72 h-64 max-h-[250px]">
-      {/* Title */}
       <h2 className="text-brand-green text-lg font-bold mb-2 text-center whitespace-nowrap">
-        {title}
+        {title} {manualToggle && <p className="text-xs text-gray-500">(Manual)</p>}
       </h2>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center w-full">
-        {loading ? (
-          <div className="w-6 h-6 border-2 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
-        ) : (
-          render ? render(data) : children
-        )}
-      </div>
+     <div className="flex-1 flex items-center justify-center w-full">
+      {(loading) && (
+        <div className="w-6 h-6 border-2 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
+      )}
+      {(manualToggle && manualLoading) && (
+        <div className="w-6 h-6 border-2 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
+      )}
 
-      {/* Optional Button */}
-      <div className="mt-4 h-10 w-full">
-        {!hideButton && (
-          <Button className="bg-brand-teal w-full h-10 hover:bg-brand-teal/90" onClick={handleClick}>
-            {buttonText}
-          </Button>
-        )}
-      </div>
+      {!loading && (render ? render(data) : children)}
+
+      {(manualToggle && !manualLoading) && (
+        implemented ? (
+          <div className="bg-brand-green rounded-full p-4">
+            <Check className="text-white" size={32} />
+          </div>
+        ) : (
+          <div className="bg-red-500 rounded-full p-4">
+            <BadgeAlert className="text-white" size={32} />
+          </div>
+        )
+      )}
     </div>
+
+
+    {/* Manual Toggle */}
+    {manualToggle && !loading && (
+      <div className="flex items-center justify-between w-full mt-2 text-sm">
+        <span>Implemented</span>
+        <Switch disabled={toggleUpdating} checked={implemented} onCheckedChange={handleToggleChange} />
+      </div>
+    )}
+
+    {/* Optional Button */}
+    {!hideButton && (
+      <div className="mt-4 h-10 w-full">
+        <Button className="bg-brand-teal w-full h-10 hover:bg-brand-teal/90" onClick={handleClick}>
+          {buttonText}
+        </Button>
+      </div>
+    )}
+  </div>
   );
 };
 

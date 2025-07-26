@@ -4,6 +4,7 @@ import PhishResistantMFAChart from "@/pages/Widgets/PhishResistant/PhishResistan
 import { getSecureScores } from "@/service/CloudAndInfrastructureService";
 import { getCompliancePolicies, getEncryptedDeviceInfo } from "@/service/EndUserDevicesService";
 import { get365Admins, getKnownLocations, getPhishResistantMFA, getRiskySignInPolicies } from "@/service/IdentitiesAndPeopleService";
+import { getManualWidgetStatuses } from "@/service/ManualWidgetsService";
 import { Check, BadgeAlert } from "lucide-react";
 import { navigate } from "wouter/use-browser-location";
 
@@ -11,16 +12,15 @@ export const identitiesAndPeopleWidgets = [
     {
         id: 'cyberSecurityTraining',
         title: 'Cyber Security Training',
-        hideButton: false,
-        content: <div className="bg-brand-green rounded-full p-4"><Check className="text-white" size={32}/></div>,
-        buttonText: 'View Platform'
+        hideButton: true,
+        manual: true,
+        // buttonText: 'View Platform',
     },
     {
         id: 'identityThreatDetection',
         title: 'Identity Threat Detection',
         hideButton: true,
-        content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
-        
+        manual: true,
     },
     {
         id: 'microsoft365Admins',
@@ -124,8 +124,6 @@ export const endUserDevicesWidgets = [
             return <div className="text-red-500">Failed to get data</div>;
             }
 
-            let hi = null
-
             return data.value.length ?
                 <div className="bg-brand-green rounded-full p-4"><Check className="text-white" size={32}/></div>
                 :
@@ -135,16 +133,10 @@ export const endUserDevicesWidgets = [
         onButtonClick: (tenantId: string) => navigate(`/compliance-policies/${tenantId}`)
     },
     {
-        id: 'vulnerabilityManagement',
-        title: 'Vulnerability Management',
-        hideButton: true,
-        content: <div className="bg-brand-green rounded-full p-4"><Check className="text-white" size={32}/></div>,
-    },
-    {
         id: 'devicesHardened',
         title: 'Devices Hardened',
-        hideButton: false,
-        content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
+        hideButton: true,
+        manual: true,
     },
     {
         id: 'patchCompliance',
@@ -191,9 +183,8 @@ export const cloudAndInfrastructureWidgets = [
     {
         id: 'firewallConfigured',
         title: 'Firewall Configured',
-        hideButton: false,
-        content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
-        
+        hideButton: true,      
+        manual: true,
     },
     // {
     //     id: 'gdapAccess',
@@ -204,8 +195,8 @@ export const cloudAndInfrastructureWidgets = [
     {
         id: 'serversHardened',
         title: 'Servers Hardened',
-        hideButton: false,
-        content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
+        hideButton: true,
+        manual: true,
     },
     //  {
     //     id: 'applicationWhitelisting',
@@ -218,38 +209,37 @@ export const dataWidgets = [
     {
         id: 'sensitivityLabeling',
         title: 'Sensitivity Labeling',
-        hideButton: false,
-        content: <div className="bg-brand-green rounded-full p-4"><Check className="text-white" size={32}/></div>,
+        hideButton: true,
+        manual: true,
     },
     {
         id: 'dataLossPrevention',
         title: 'Data Loss Prevention',
         hideButton: true,
-        content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
-        
+        manual: true,
     },
     {
         id: 'microsoft365Backups',
         title: 'Microsoft 365 Backups',
         hideButton: true,
-        content: <ProgressCircle number={7} />
+        manual: true,
     },
     {
         id: 'serverBackups',
         title: 'Server Backups',
-        hideButton: false,
-        content: <div className="bg-brand-green rounded-full p-4"><Check className="text-white" size={32}/></div>,
+        hideButton: true,
+        manual: true,
     },
     {
-    id: 'backupTesting',
-    title: 'Backup Testing',
-    hideButton: false,
-    content: <div className="bg-brand-green rounded-full p-4"><Check className="text-white" size={32}/></div>,
+        id: 'backupTesting',
+        title: 'Backup Testing',
+        hideButton: true,
+        manual: true,
     },
     {
-    id: 'cloudAppProtection',
-    title: 'Cloud App Protection',
-    hideButton: false,
-    content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
+        id: 'cloudAppProtection',
+        title: 'Cloud App Protection',
+        hideButton: true,
+        manual: true,
     }
 ]
