@@ -39,7 +39,7 @@ export const users = pgTable('users', {
   firstName: varchar('first_name'),
   lastName: varchar('last_name'),
   profileImageUrl: varchar('profile_image_url'),
-  role: varchar('role').default('user').notNull(), // admin, analyst, account_manager
+  role: varchar('role').default('user').notNull(), // admin, user
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
   microsoftTenantId: varchar('microsoft_tenant_id'),
@@ -124,7 +124,7 @@ export const invites = pgTable('invites', {
 export const microsoftTokens = pgTable(
   'microsoft_tokens',
   {
-    id: uuid('id'),
+    id: varchar('id'),
     userId: uuid('user_id').notNull(),
     tenantId: varchar('tenant_id').notNull(),
     accessToken: text('access_token').notNull(),
@@ -137,6 +137,45 @@ export const microsoftTokens = pgTable(
     pk: primaryKey({ columns: [tokens.userId, tokens.tenantId] }),
   })
 );
+
+export const widgets = pgTable('widgets', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  key: varchar('key', { length: 100 }).notNull().unique(), // e.g., 'secure_score'
+  name: varchar('name', { length: 255 }).notNull(), // e.g., 'Secure Score'
+  description: text('description'),
+  defaultEnabled: boolean('default_enabled').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  manual: boolean('manual').default(false), 
+});
+
+export const tenantWidgets = pgTable('tenant_widgets', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantId: varchar('tenant_id').notNull().references(() => tenants.id),
+  widgetId: uuid('widget_id').notNull().references(() => widgets.id),
+  isEnabled: boolean('is_enabled').default(false),
+  manuallyToggled: boolean('manually_toggled').default(false),
+  forceManual: boolean('force_manual').default(false),
+  lastUpdated: timestamp('last_updated').defaultNow(),
+}, (table) => ({
+  uniqueTenantWidget: unique().on(table.tenantId, table.widgetId),
+}));
+
+// Integrations
+
+export const integrations = pgTable('integrations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantId: varchar('tenant_id').notNull().references(() => tenants.id),
+  type: varchar('type', { length: 100 }).notNull(), // e.g., 'microsoft365', 'ninja'
+  status: varchar('status', { length: 50 }).default('connected'), // 'connected' | 'disconnected' | 'error'
+  connectedAt: timestamp('connected_at').defaultNow(),
+  disconnectedAt: timestamp('disconnected_at'),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  uniqueIntegration: unique().on(table.tenantId, table.type),
+}));
+
 
 // Audit logs
 export const auditLogs = pgTable('audit_logs', {
@@ -171,6 +210,17 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
   timestamp: true,
 });
 
+export const insertWidgetSchema = createInsertSchema(widgets).omit({
+  createdAt: true,
+});
+export const insertTenantWidgetSchema = createInsertSchema(tenantWidgets).omit({
+  lastUpdated: true,
+});
+export const insertIntegrationSchem = createInsertSchema(integrations).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -188,13 +238,16 @@ export type Invite = typeof invites.$inferSelect;
 export type InsertInvite = typeof invites.$inferInsert;
 export type MicrosoftToken = typeof microsoftTokens.$inferSelect;
 export type InsertMicrosoftToken = typeof microsoftTokens.$inferInsert;
+export type Widget = typeof widgets.$inferSelect;
+export type InsertWidget = z.infer<typeof insertWidgetSchema>;
+export type TenantWidget = typeof tenantWidgets.$inferSelect;
+export type InsertTenantWidget = z.infer<typeof insertTenantWidgetSchema>;
+export type Integration = typeof integrations.$inferSelect;
+export type InsertIntegration = z.infer<typeof insertIntegrationSchem>;
 
 // Enums
 export const UserRoles = {
   ADMIN: 'admin',
-  ANALYST: 'analyst',
-  ANALYST_NOTES: 'analyst_notes',
-  ACCOUNT_MANAGER: 'account_manager',
   USER: 'user',
 } as const;
 

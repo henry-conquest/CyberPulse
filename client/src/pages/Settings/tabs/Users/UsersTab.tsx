@@ -76,10 +76,6 @@ export default function Users() {
     switch (role) {
       case 'admin':
         return <Badge variant="destructive">Admin</Badge>;
-      case 'analyst':
-        return <Badge variant="default">Analyst</Badge>;
-      case 'account_manager':
-        return <Badge variant="secondary">Account Manager</Badge>;
       case 'user':
         return <Badge variant="outline">User</Badge>;
       default:
@@ -143,8 +139,6 @@ export default function Users() {
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="analyst">Security Analyst</SelectItem>
-              <SelectItem value="account_manager">Account Manager</SelectItem>
               <SelectItem value="user">Regular User</SelectItem>
             </SelectContent>
           </Select>
@@ -301,8 +295,6 @@ export default function Users() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="analyst">Security Analyst</SelectItem>
-                        <SelectItem value="account_manager">Account Manager</SelectItem>
                         <SelectItem value="user">Regular User</SelectItem>
                       </SelectContent>
                     </Select>

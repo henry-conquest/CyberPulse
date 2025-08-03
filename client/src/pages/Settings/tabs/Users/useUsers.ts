@@ -13,7 +13,7 @@ type Invite = {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'analyst' | 'account_manager' | 'user';
+  role: 'admin' | 'user';
   tenantId: string;
 };
 
@@ -51,13 +51,13 @@ export const useUsers = () => {
     email: z.string().email('Please enter a valid email address'),
     firstName: z.string().min(1, 'Please enter a valid first name').min(1),
     lastName: z.string().min(1, 'Please enter a valid last name'),
-    role: z.enum(['admin', 'analyst', 'account_manager', 'user']),
+    role: z.enum(['admin', 'user']),
     tenantId: z.string().min(1, 'Please select a tenant'),
   });
 
   // Schema for updating user role
   const updateRoleSchema = z.object({
-    role: z.enum(['admin', 'analyst', 'account_manager', 'user']),
+    role: z.enum(['admin', 'user']),
   });
 
   // Forms
@@ -236,7 +236,7 @@ export const useUsers = () => {
   const openEditRoleDialog = (user: UserModel) => {
     setSelectedUser(user);
     updateRoleForm.reset({
-      role: user.role as 'admin' | 'analyst' | 'account_manager' | 'user',
+      role: user.role as 'admin' | 'user',
     });
     setIsEditRoleDialogOpen(true);
   };

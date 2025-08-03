@@ -2,7 +2,10 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { useCompanies } from '@/hooks/useCompanies';
+import CreateCompanyForm from '@/pages/Companies/Forms/CreateCompanyForm';
 import { deleteIntegration, getIntegrations } from '@/service/Settings';
+import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Cloud, ExternalLink, Link2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
@@ -12,6 +15,8 @@ const IntegrationsTab = () => {
     const [connections, setConnections] = useState<any>([])
     const [isLoadingConnections, setIsLoadingConnections] = useState(true)
     const [deletingConnectionId, setDeletingConnectionId] = useState<string | null>(null);
+    const { createDialogOpen, setCreateDialogOpen, setM365DialogOpen, form, setLoading } = useCompanies()
+    const queryClient = useQueryClient();
 
     useEffect(() => {
     const getData = async () => {
@@ -180,15 +185,14 @@ const IntegrationsTab = () => {
                         <AlertTriangle className="h-4 w-4 inline-block mr-2 text-amber-500" />
                         Disconnecting will remove access to Microsoft 365 security metrics
                       </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        type="button"
-                        onClick={() => setLocation('/integrations?tab=microsoft365&action=connect')}
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Connect Another Tenant
-                      </Button>
+                      <CreateCompanyForm
+                      isIntegrationTab={true}
+                      setM365DialogOpen={setM365DialogOpen}
+                      form={form}
+                      createDialogOpen={createDialogOpen}
+                      setCreateDialogOpen={setCreateDialogOpen}
+                      queryClient={queryClient}
+                      setLoading={setLoading}/>
                     </div>
                   </div>
                 )}

@@ -22,7 +22,16 @@ import {
   invites,
   microsoftTokens,
   type MicrosoftToken,
-  type InsertMicrosoftToken
+  type InsertMicrosoftToken,
+  widgets,
+  tenantWidgets,
+  type Widget,
+  type InsertWidget,
+  type TenantWidget,
+  type InsertTenantWidget,
+  InsertIntegration,
+  Integration,
+  integrations
 } from '@shared/schema';
 import { db } from './db';
 import { eq, and, inArray, desc, asc, sql, like, or, isNull } from 'drizzle-orm';
@@ -85,6 +94,22 @@ export interface IStorage {
   createUserInvite(invite: InsertInvite): Promise<Invite>;
   getInviteByToken(token: string): Promise<Invite | undefined>;
   markInviteAccepted(token: string): Promise<void>;
+
+  // Widgets
+  getAllWidgets(): Promise<Widget[]>;
+  createWidget(widget: InsertWidget): Promise<Widget>;
+
+  // TenantWidgets
+  getTenantWidgets(tenantId: string): Promise<any[]>;
+  upsertTenantWidget(widget: InsertTenantWidget): Promise<TenantWidget>;
+
+  // Integrations
+  createIntegration(integration: InsertIntegration): Promise<Integration>;
+  getIntegrationsByTenantId(tenantId: string): Promise<Integration[]>;
+  getIntegration(tenantId: string, type: string): Promise<Integration | undefined>;
+  updateIntegration(id: string, data: Partial<InsertIntegration>): Promise<Integration>;
+
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -496,6 +521,126 @@ export class DatabaseStorage implements IStorage {
   async getAuditLogsByUserId(userId: string): Promise<AuditLog[]> {
     return await db.select().from(auditLogs).where(eq(auditLogs.userId, userId)).orderBy(desc(auditLogs.timestamp));
   }
+
+  // Widgets
+  async getAllWidgets(): Promise<Widget[]> {
+    return await db.select().from(widgets).orderBy(asc(widgets.name));
+  }
+
+  async createWidget(widget: InsertWidget): Promise<Widget> {
+    const [newWidget] = await db.insert(widgets).values(widget).returning();
+    return newWidget;
+  }
+
+  // TenantWidgets
+ async getTenantWidgets(tenantId: string) {
+  const result = await db
+    .select({
+      tenantId: tenantWidgets.tenantId,
+      widgetId: tenantWidgets.widgetId,
+      isEnabled: tenantWidgets.isEnabled,
+      lastUpdated: tenantWidgets.lastUpdated,
+      widgetName: widgets.key,
+    })
+    .from(tenantWidgets)
+    .innerJoin(widgets, eq(tenantWidgets.widgetId, widgets.id))
+    .where(eq(tenantWidgets.tenantId, tenantId));
+
+  return result;
+}
+
+  async upsertTenantWidget(widget: InsertTenantWidget): Promise<TenantWidget> {
+    const [result] = await db
+      .insert(tenantWidgets)
+      .values(widget)
+      .onConflictDoUpdate({
+        target: [tenantWidgets.tenantId, tenantWidgets.widgetId],
+        set: {
+          isEnabled: widget.isEnabled,
+          manuallyToggled: widget.manuallyToggled,
+          forceManual: widget.forceManual ?? false,
+          lastUpdated: new Date(),
+        },
+      })
+      .returning();
+    return result;
+  }
+
+  // Get only manual widgets
+   getManualWidgets = async () => {
+    return await db
+      .select()
+      .from(widgets)
+      .where(eq(widgets.manual, true));
+  };
+
+  // Bulk insert
+   insertTenantWidgets = async (entries: any[]) => {
+    return await db.insert(tenantWidgets).values(entries).onConflictDoNothing();
+  };
+
+  async updateTenantWidgetStatus({
+  tenantId,
+  widgetId,
+  isEnabled,
+  }: {
+    tenantId: string;
+    widgetId: string;
+    isEnabled: boolean;
+  }) {
+    return await db
+      .update(tenantWidgets)
+      .set({
+        isEnabled,
+        manuallyToggled: true,
+        lastUpdated: new Date(),
+      })
+      .where(
+        and(
+          eq(tenantWidgets.tenantId, tenantId),
+          eq(tenantWidgets.widgetId, widgetId)
+        )
+      );
+  }
+
+  // --- Integrations ---
+
+  async createIntegration(integration: InsertIntegration): Promise<Integration> {
+    const [result] = await db.insert(integrations).values(integration).returning();
+    return result;
+  }
+
+  async getIntegrationsByTenantId(tenantId: string): Promise<Integration[]> {
+    return await db
+      .select()
+      .from(integrations)
+      .where(eq(integrations.tenantId, tenantId));
+  }
+
+  async getIntegration(tenantId: string, type: string): Promise<Integration | undefined> {
+    const [integration] = await db
+      .select()
+      .from(integrations)
+      .where(and(
+        eq(integrations.tenantId, tenantId),
+        eq(integrations.type, type)
+      ));
+    return integration;
+  }
+
+  async updateIntegration(id: string, data: Partial<InsertIntegration>): Promise<Integration> {
+    const [updated] = await db
+      .update(integrations)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(integrations.id, id))
+      .returning();
+    return updated;
+  }
+
+
 }
 
 export const storage = new DatabaseStorage();

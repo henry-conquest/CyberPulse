@@ -12,8 +12,8 @@ import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { connectToM365, createTenant } from '@/service/M365Service';
-import { Plus } from 'lucide-react';
-import { useState } from 'react';
+import { ExternalLink, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import CompanyFormField from './FormField';
 import { createCompanyFields } from '@/config/createCompanyForm';
 import { toast } from '@/hooks/use-toast';
@@ -27,10 +27,15 @@ export const schema = yup.object().shape({
 });
 
 const CreateCompanyForm = (props: any) => {
-  const { createDialogOpen, setCreateDialogOpen, setM365DialogOpen, setLoading, queryClient } = props;
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm({
+  const { createDialogOpen, setCreateDialogOpen, setM365DialogOpen, setLoading, queryClient, isIntegrationTab } = props;
+  const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm({
     resolver: yupResolver(schema),
   });
+
+  // clear form errors when the modal is hidden
+  useEffect(() => {
+    if(!createDialogOpen) reset()
+  }, [createDialogOpen])
 
   const [loadingLocal, setLoadingLocal] = useState(false);
 
@@ -61,15 +66,26 @@ const CreateCompanyForm = (props: any) => {
   return (
     <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
       <DialogTrigger asChild>
+        {isIntegrationTab ? (
+        <Button
+        variant="outline"
+        size="sm"
+        type="button"
+      >
+        <ExternalLink className="h-3 w-3 mr-1" />
+        Connect Another Tenant
+      </Button>
+      ) : (
         <Button>
           <Plus className="mr-2 h-4 w-4" />
           Add New Tenant
         </Button>
+      )}
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create New Tenant</DialogTitle>
+          <DialogTitle>Connect New Tenant</DialogTitle>
           <DialogDescription>
             Add a new tenant to monitor and manage its cybersecurity.
           </DialogDescription>
@@ -89,7 +105,7 @@ const CreateCompanyForm = (props: any) => {
           ))}
 
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setM365DialogOpen(false)} disabled={loadingLocal}>
+            <Button type='button' variant="outline" onClick={() => setCreateDialogOpen(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={loadingLocal}>

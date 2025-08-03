@@ -1032,6 +1032,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(connectionWithoutSecret);
     })
   );
+  app.get(
+  '/api/tenants/:id/widgets',
+  isAuthenticated,
+  isAuthorized([UserRoles.ADMIN]),
+  asyncHandler(async (req, res) => {
+    const tenantId = req.params.id;
+
+    // Get all tenant widgets
+    let widgets = await storage.getTenantWidgets(tenantId);
+
+    // If tenant_widgets is empty for this tenant, seed it
+    if (!widgets || widgets.length === 0) {
+      console.log(`No widgets found for tenant ${tenantId}, seeding...`);
+
+      // 1. Get all widgets marked as 'manual'
+      const allWidgets = await storage.getManualWidgets(); // You define this
+
+      // 2. Prepare default entries for this tenant
+      const defaultTenantWidgets = allWidgets.map(widget => ({
+        tenantId,
+        widgetId: widget.id,
+        isEnabled: false,
+        manuallyToggled: false,
+        forceManual: true, // if applicable
+      }));
+
+      // 3. Insert into tenant_widgets
+      await storage.insertTenantWidgets(defaultTenantWidgets);
+
+      // 4. Fetch again
+      widgets = await storage.getTenantWidgets(tenantId);
+    }
+
+    res.status(200).json(widgets);
+  })
+  );
+
+  app.post(
+    '/api/tenants/:tenantId/widgets/:widgetId/toggle',
+    isAuthenticated,
+    isAuthorized([UserRoles.ADMIN]),
+    asyncHandler(async (req, res) => {
+      const { tenantId, widgetId } = req.params;
+      const { isEnabled } = req.body;
+
+      if (typeof isEnabled !== 'boolean') {
+        return res.status(400).json({ message: "Invalid 'isEnabled' value" });
+      }
+
+      try {
+        await storage.updateTenantWidgetStatus({
+          tenantId,
+          widgetId,
+          isEnabled,
+        });
+
+        res.status(200).json({ success: true });
+      } catch (error) {
+        console.error('Error updating widget status:', error);
+        res.status(500).json({ message: 'Failed to update widget status' });
+      }
+    })
+  );
+
 
   const httpServer = createServer(app);
   return httpServer;

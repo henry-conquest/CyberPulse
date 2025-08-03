@@ -6,6 +6,7 @@ interface WidgetModel {
     apiCall?: any
     apiParam?: any
     buttonText?: string
-    content: any
+    content?: any
     onButtonClick?: any
+    manual?: boolean
 }

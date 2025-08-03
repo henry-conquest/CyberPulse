@@ -1,11 +1,8 @@
-import { useDispatch, useSelector } from "react-redux"
+import { useSelector } from "react-redux"
 import CompanySecureScore from "./SecureScoreWidget/CompanySecureScore"
-import { useEffect } from "react"
-import { getTenants } from "@/service/TenantService"
-import { sessionInfoActions } from "@/store/store"
 import { cloudAndInfrastructureWidgets, dataWidgets, endUserDevicesWidgets, identitiesAndPeopleWidgets } from "@/config/widgetConfig"
 import Widget from "@/components/ui/Widget"
-import AnalystComments from "./AnalystComments"
+import { useCompanyDetails } from "@/hooks/useCompanyDetails"
 
 interface CompanyDetailsProps {
     tenantId: string
@@ -13,23 +10,11 @@ interface CompanyDetailsProps {
 
 const CompanyDetails = (props: CompanyDetailsProps) => {
     const { tenantId } = props
+    const { manWidgets, manLoading, fetchManualWidgets } = useCompanyDetails(tenantId)
     const tenant = useSelector((state: any) => state.sessionInfo.selectedClient)
-    const user = useSelector((state: any) => state.sessionInfo.user)
-    const dispatch = useDispatch()
-
-    useEffect(() => {
-        const getTenantData = async () => {
-            const tenants = await getTenants()
-            const selectedTenant = tenants.find((t: any) => t.id === tenantId )
-            dispatch(sessionInfoActions.setTenants(tenants))
-            dispatch(sessionInfoActions.setSelectedClient(selectedTenant))
-        }
-        getTenantData()
-    }, [])
-
+    const user = useSelector((state: any) => state.sessionInfo.user)    
 
     // Loading state
-
     if(!tenant) {
         return (
             <div className="flex items-center justify-center h-[calc(100vh-80px)]">
@@ -46,7 +31,8 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             {/* Identities & People Widgets */}
             <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">Identities and People</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
-                {identitiesAndPeopleWidgets.map(((widget, index) => {
+                {identitiesAndPeopleWidgets.map(((widget: WidgetModel, index) => {
+                const manualWidget = manWidgets.find((widg: any) => widg.widgetName === widget.id)
                 let apiParams;
                 let onClickParam;
                 switch (widget.id) {
@@ -80,7 +66,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     //   apiParams = { tenantId, region: 'US' };
                     //   break;
                     default:
-                    apiParams = undefined;
+                    apiParams = tenantId;
                 }
                 return (
                     <Widget
@@ -94,6 +80,12 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     render={widget.render}
                     onButtonClick={widget.onButtonClick}
                     onClickParam={onClickParam}
+                    manualToggle={widget.manual}
+                    implemented={manualWidget ? manualWidget.isEnabled : false}
+                    widgetId={manualWidget ? manualWidget.widgetId : ''}
+                    manualLoading={manLoading}
+                    tenantId={tenantId}
+                    fetchManualWidgets={fetchManualWidgets}
                     >
                     {widget.content}
                     </Widget>
@@ -106,7 +98,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">End User Devices</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {endUserDevicesWidgets.map(((widget: WidgetModel, index) => {
-                if(widget.id === 'compliancePolicies') console.log(user.id)
+                const manualWidget = manWidgets.find((widg: any) => widg.widgetName === widget.id)
                 let apiParams;
                 let onClickParam;
                 switch (widget.id) {
@@ -125,7 +117,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     onClickParam = tenantId
                     break;
                     default:
-                    apiParams = undefined;
+                    apiParams = tenantId;
                 }
                 return (
                     <Widget
@@ -139,6 +131,12 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     render={widget.render}
                     onButtonClick={widget.onButtonClick}
                     onClickParam={onClickParam}
+                    manualToggle={widget.manual}
+                    implemented={manualWidget ? manualWidget.isEnabled : false}
+                    widgetId={manualWidget ? manualWidget.widgetId : ''}
+                    manualLoading={manLoading}
+                    tenantId={tenantId}
+                    fetchManualWidgets={fetchManualWidgets}
                     >
                     {widget.content}
                     </Widget>
@@ -151,6 +149,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">Cloud and Infrastructure</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {cloudAndInfrastructureWidgets.map(((widget: WidgetModel, index) => {
+                const manualWidget = manWidgets.find((widg: any) => widg.widgetName === widget.id)
                 let apiParams;
                 let onClickParam;
                 switch (widget.id) {
@@ -162,7 +161,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     onClickParam = tenantId
                     break;
                     default:
-                    apiParams = undefined;
+                    apiParams = tenantId;
                 }
                 return (
                     <Widget
@@ -176,6 +175,12 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     render={widget.render}
                     onButtonClick={widget.onButtonClick}
                     onClickParam={onClickParam}
+                    manualToggle={widget.manual}
+                    implemented={manualWidget ? manualWidget.isEnabled : false}
+                    widgetId={manualWidget ? manualWidget.widgetId : ''}
+                    manualLoading={manLoading}
+                    tenantId={tenantId}
+                    fetchManualWidgets={fetchManualWidgets}
                     >
                     {widget.content}
                     </Widget>
@@ -188,13 +193,14 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             <p className="font-montserrat text-brand-teal m-auto flex justify-center mb-6 text-xl font-bold">Data</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
                 {dataWidgets.map(((widget: WidgetModel, index) => {
+                const manualWidget = manWidgets.find((widg: any) => widg.widgetName === widget.id)
                 let apiParams;
                 switch (widget.id) {
                     case 'microsoft365Admins':
                     apiParams = {tenantId};
                     break;
                     default:
-                    apiParams = undefined;
+                    apiParams = tenantId;
                 }
                 return (
                     <Widget
@@ -206,6 +212,12 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
                     apiCall={widget.apiCall}
                     apiParams={apiParams}
                     render={widget.render}
+                    manualToggle={widget.manual}
+                    implemented={manualWidget ? manualWidget.isEnabled : false}
+                    widgetId={manualWidget ? manualWidget.widgetId : ''}
+                    manualLoading={manLoading}
+                    tenantId={tenantId}
+                    fetchManualWidgets={fetchManualWidgets}
                     >
                     {widget.content}
                     </Widget>
