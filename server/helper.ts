@@ -30,6 +30,36 @@ export async function refreshMicrosoftAccessToken(refreshToken: string, tenantId
 
 // tokenManager.ts
 
+export async function getTenantAccessTokenFromDB(tenantId: string): Promise<string> {
+  const connection = await storage.getMicrosoft365ConnectionByTenantId(tenantId);
+
+  if (!connection) {
+    throw new Error(`No Microsoft 365 connection found for tenant ID: ${tenantId}`);
+  }
+
+  const authority = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+
+  const params = new URLSearchParams();
+  params.append('client_id', connection.clientId);
+  params.append('client_secret', connection.clientSecret);
+  params.append('scope', 'https://graph.microsoft.com/.default');
+  params.append('grant_type', 'client_credentials');
+
+  const response = await fetch(authority, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to get app token: ${response.status} ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.access_token;
+}
+
 export async function getValidMicrosoftAccessToken(userId: string, tenantId: string): Promise<string> {
   const token = await storage.getMicrosoftTokenByUserIdAndTenantId(userId, tenantId);
 

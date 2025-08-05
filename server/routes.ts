@@ -2,7 +2,7 @@ import type { Express, Request, Response } from 'express';
 import { createServer, type Server } from 'http';
 import { storage } from './storage';
 import { setupAuth, isAuthenticated, isAuthorized } from './auth';
-import { evaluatePhishMethodsGrouped, getValidMicrosoftAccessToken } from './helper';
+import { evaluatePhishMethodsGrouped, getTenantAccessTokenFromDB } from './helper';
 import { z } from 'zod';
 import {
   insertTenantSchema,
@@ -293,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sign-in-policies/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-    const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
+    const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
     if (!accessToken) {
       return res.status(401).json({ error: 'Access token is missing' });
     }
@@ -315,7 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   })
   app.get('/api/trusted-locations/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-    const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
+    const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
 
     if (!accessToken) {
       return res.status(401).json({ error: 'Access token is missing' });
@@ -340,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/phish-resistant-mfa/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-    const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
+    const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
 
     if (!accessToken) {
       return res.status(401).json({ error: 'Access token is missing' });
@@ -366,7 +366,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/encrypted-devices/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-      const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
+      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
 
       if (!accessToken) {
         return res.status(401).json({ error: 'Access token is missing' });
@@ -415,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/device-compliance-policies/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-      const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
+      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
 
       if (!accessToken) {
         return res.status(401).json({ error: 'Access token is missing' });
@@ -443,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/secure-scores/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-      const accessToken = await getValidMicrosoftAccessToken(req.params.userId, req.params.tenantId);
+      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
 
       if (!accessToken) {
         return res.status(401).json({ error: 'Access token is missing' });
