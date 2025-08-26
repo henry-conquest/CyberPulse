@@ -1,5 +1,5 @@
 import { getSecureScores } from "@/service/CloudAndInfrastructureService";
-import { cloudAndInfrastructureActions } from "@/store/store";
+import { cloudAndInfrastructureActions, scoresActions } from "@/store/store";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
@@ -21,6 +21,7 @@ import {
 } from 'chart.js';
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import ErrorResponseMessage from "@/components/ui/ErrorResponseMessage";
+import { getAppScores, getDataScores, getIdentityScores } from "@/service/MicrosoftScoresService";
 
 ChartJS.register(
   LineElement,
@@ -35,112 +36,129 @@ ChartJS.register(
   TimeScale
 );
 
+interface ScoreChartProps {
+  id: "secure" | "identity" | "app" | "data";
+  title: string;
+}
 
-const SecureScores = () => {
-  const secureScores = useSelector((state: any) => state.cloudAndInfrastructure.secureScores);
-  const userId = useSelector((state: any) => state?.sessionInfo?.user?.id);
+
+const dataMap = {
+  secure: {
+    selector: (state: any) => state.cloudAndInfrastructure.secureScores,
+    fetcher: getSecureScores,
+    setAction: cloudAndInfrastructureActions.setSecureScores
+  },
+  identity: {
+    selector: (state: any) => state.scores.identityScores,
+    fetcher: getIdentityScores,
+    setAction: scoresActions.setIdentityScores
+  },
+  app: {
+    selector: (state: any) => state.scores.appScores,
+    fetcher: getAppScores,
+    setAction: scoresActions.setAppScores
+  },
+  data: {
+    selector: (state: any) => state.scores.dataScores,
+    fetcher: getDataScores,
+    setAction: scoresActions.setDataScores
+  }
+} as const;
+
+
+const ScoreChart = ({ id, title }: ScoreChartProps) => {
   const { tenantId } = useParams();
+  const userId = useSelector((state: any) => state?.sessionInfo?.user?.id);
   const dispatch = useDispatch();
-  const [labels, setLabels] = useState<String[]>([])
 
+  const [labels, setLabels] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  // pick the right data/fetcher for this id
+  const { selector, fetcher, setAction } = dataMap[id];
+  const scores = useSelector(selector);
 
   useEffect(() => {
     const initialiseData = async () => {
       try {
         setLoading(true);
-        setError(false)
+        setError(false);
+
         if (userId && tenantId) {
-          const params = {
-            userId,
-            tenantId
-          }
-          const data = await getSecureScores(params);
-          dispatch(cloudAndInfrastructureActions.setSecureScores(data));
+          const params = { userId, tenantId };
+          const data = await fetcher(params);
+          dispatch(setAction(data));
         }
       } catch (err) {
-        console.error("Failed to fetch secure scores", err);
-        setError(true)
+        console.error(`Failed to fetch ${id} scores`, err);
+        setError(true);
       } finally {
         setLoading(false);
       }
     };
 
     initialiseData();
-  }, [tenantId, userId]);
+  }, [id, tenantId, userId]);
 
-  // Only compute if data is available
-  const sortedData = secureScores?.length
-    ? [...secureScores].sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
+  const sortedData = scores?.length
+    ? [...scores].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     : [];
 
-    
   useEffect(() => {
-    if(sortedData.length > 1) {
-      const labels = sortedData.map(d => format(new Date(d.date), "yyyy-MM-dd"));
-      setLabels(labels)
+    if (sortedData.length > 1) {
+      const labels = sortedData.map((d) => format(new Date(d.date), "yyyy-MM-dd"));
+      setLabels(labels);
     }
-  }, [])
-  const allSecureScores = sortedData.map(d => d.percentage);
-  const allComparativeScores = sortedData.map(d => d.comparative);
+  }, [sortedData]);
 
-  const chartData = {
-    labels,
-    datasets: [
-      {
-        label: "Secure Score (%)",
-        data: allSecureScores,
-        borderColor: "rgba(54, 162, 235, 1)",
-        backgroundColor: "rgba(54, 162, 235, 0.2)",
-        tension: 0.3,
-      },
-      {
-        label: "Organisations of similar size (%)",
-        data: allComparativeScores,
-        borderColor: "rgba(255, 99, 132, 1)",
-        backgroundColor: "rgba(255, 99, 132, 0.2)",
-        tension: 0.3,
-      },
-    ],
-  };
+  const allScores = sortedData.map((d) => d.percentage);
+  const allComparativeScores = sortedData.map((d) => d.comparative);
+
+const chartData = {
+  labels,
+  datasets: [
+    {
+      label: `${title} (%)`,
+      data: allScores,
+      borderColor: "rgba(54, 162, 235, 1)",
+      backgroundColor: "rgba(54, 162, 235, 0.2)",
+      tension: 0.3,
+    },
+    ...(id === "secure" // Only include comparative dataset for secure score
+      ? [
+          {
+            label: "Organisations of similar size (%)",
+            data: allComparativeScores,
+            borderColor: "rgba(255, 99, 132, 1)",
+            backgroundColor: "rgba(255, 99, 132, 0.2)",
+            tension: 0.3,
+          },
+        ]
+      : []),
+  ],
+};
+
 
   const options = {
     responsive: true,
     plugins: {
-      legend: {
-        position: "top" as const,
-      },
-      title: {
-        display: true,
-        text: "Secure Scores - Last 2 Years",
-      },
+      legend: { position: "top" as const },
+      title: { display: true, text: `${title} - Last 2 Years` }
     },
     scales: {
-      y: {
-        min: 0,
-        max: 100,
-        title: {
-          display: true,
-          text: "Percentage (%)",
-        },
-      },
+      y: { min: 0, max: 100, title: { display: true, text: "Percentage (%)" } },
       x: {
-        type: 'time',
-        time: {
-          unit: 'month',
-          tooltipFormat: 'PPP', // Pretty print date
-        },
-        title: {
-          display: true,
-          text: 'Date',
-        },
+        type: "time" as const,
+        time: { unit: "month", tooltipFormat: "PPP" },
+        title: { display: true, text: "Date" }
       }
     },
+    animation: false
   };
 
   if (error && tenantId) {
-    return <ErrorResponseMessage tenantId={tenantId} text="Microsoft Secure Score"/>
+    return <ErrorResponseMessage tenantId={tenantId} text={title} />;
   }
 
   return (
@@ -157,15 +175,13 @@ const SecureScores = () => {
         </span>
       </div>
 
-      <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">
-        Microsoft 365 Secure Score
-      </h1>
+      <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">{title}</h1>
 
       <div className="ml-6 mr-6">
         {loading ? (
           <LoadingSpinner />
         ) : sortedData.length === 0 ? (
-          <p>No secure score data available.</p>
+          <p>No {title} data available.</p>
         ) : (
           <Line data={chartData} options={options} />
         )}
@@ -174,4 +190,5 @@ const SecureScores = () => {
   );
 };
 
-export default SecureScores;
+
+export default ScoreChart;

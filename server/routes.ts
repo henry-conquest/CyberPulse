@@ -2,7 +2,7 @@ import type { Express, Request, Response } from 'express';
 import { createServer, type Server } from 'http';
 import { storage } from './storage';
 import { setupAuth, isAuthenticated, isAuthorized } from './auth';
-import { evaluatePhishMethodsGrouped, getTenantAccessTokenFromDB } from './helper';
+import { evaluatePhishMethodsGrouped, fetchSecureScores, getTenantAccessTokenFromDB, transformCategoryScores } from './helper';
 import { z } from 'zod';
 import {
   insertTenantSchema,
@@ -441,6 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Overall scores
   app.get('/api/secure-scores/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
       const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
@@ -508,6 +509,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to fetch secure scores' });
     }
   });
+
+  // Identity scores
+  app.get('/api/secure-scores/identity/:userId/:tenantId', isAuthenticated, async (req, res) => {
+    try {
+      const data = await fetchSecureScores(req.params.tenantId);
+      const result = transformCategoryScores(data, 'Identity');
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching identity scores:', error);
+      res.status(500).json({ error: 'Failed to fetch identity scores' });
+    }
+  });
+
+  // Data scores
+  app.get('/api/secure-scores/data/:userId/:tenantId', isAuthenticated, async (req, res) => {
+    try {
+      const data = await fetchSecureScores(req.params.tenantId);
+      const result = transformCategoryScores(data, 'Data');
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching data scores:', error);
+      res.status(500).json({ error: 'Failed to fetch data scores' });
+    }
+  });
+
+  // Apps scores
+  app.get('/api/secure-scores/apps/:userId/:tenantId', isAuthenticated, async (req, res) => {
+    try {
+      const data = await fetchSecureScores(req.params.tenantId);
+      const result = transformCategoryScores(data, 'Apps');
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error fetching apps scores:', error);
+      res.status(500).json({ error: 'Failed to fetch apps scores' });
+    }
+  });
+
 
 
 
@@ -1035,39 +1073,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
   '/api/tenants/:id/widgets',
   isAuthenticated,
-  isAuthorized([UserRoles.ADMIN]),
   asyncHandler(async (req, res) => {
     const tenantId = req.params.id;
 
-    // Get all tenant widgets
-    let widgets = await storage.getTenantWidgets(tenantId);
+    // 1. Get tenant widgets (joined with widget metadata)
+    let tenantWidgets = await storage.getTenantWidgets(tenantId);
 
-    // If tenant_widgets is empty for this tenant, seed it
-    if (!widgets || widgets.length === 0) {
-      console.log(`No widgets found for tenant ${tenantId}, seeding...`);
+    // 2. Get all widgets that should be manual
+    const manualWidgets = await storage.getManualWidgets();
 
-      // 1. Get all widgets marked as 'manual'
-      const allWidgets = await storage.getManualWidgets(); // You define this
+    // 3. Find which manual widgets are missing for this tenant
+    const tenantWidgetNames = tenantWidgets.map(w => w.widgetName);
+    const missing = manualWidgets.filter(w => !tenantWidgetNames.includes(w.key));
 
-      // 2. Prepare default entries for this tenant
-      const defaultTenantWidgets = allWidgets.map(widget => ({
+    if (missing.length > 0) {
+      console.log(`Seeding ${missing.length} missing manual widgets for tenant ${tenantId}`);
+
+      const defaultTenantWidgets = missing.map(widget => ({
         tenantId,
         widgetId: widget.id,
         isEnabled: false,
         manuallyToggled: false,
-        forceManual: true, // if applicable
+        forceManual: true,
       }));
 
-      // 3. Insert into tenant_widgets
       await storage.insertTenantWidgets(defaultTenantWidgets);
 
-      // 4. Fetch again
-      widgets = await storage.getTenantWidgets(tenantId);
+      // Re-fetch with the new inserts
+      tenantWidgets = await storage.getTenantWidgets(tenantId);
     }
 
-    res.status(200).json(widgets);
+    res.status(200).json(tenantWidgets);
   })
-  );
+);
+
 
   app.post(
     '/api/tenants/:tenantId/widgets/:widgetId/toggle',

@@ -174,3 +174,58 @@ export const parseJwt = (token: string): any => {
     return {};
   }
 }
+
+
+// shared helper
+export const fetchSecureScores = async (tenantId: string) => {
+  const accessToken = await getTenantAccessTokenFromDB(tenantId);
+
+  if (!accessToken) {
+    throw new Error('Access token is missing');
+  }
+
+  const response = await fetch('https://graph.microsoft.com/v1.0/security/secureScores?$top=500', {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Graph API error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export const transformCategoryScores = (data: any, category: string) => {
+  const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  // Filter data from last 2 years
+  const scoresFromLastTwoYears = data.value.filter(
+    (entry: any) => now - new Date(entry.createdDateTime).getTime() <= TWO_YEARS_MS
+  );
+
+  // Transform: for each day, get average score for the requested category
+  const categoryScores = scoresFromLastTwoYears.map((entry: any) => {
+    const controls = entry.controlScores?.filter(
+      (c: any) => c.controlCategory === category
+    ) || [];
+
+    const avgScore =
+      controls.reduce((sum: number, c: any) => sum + (c.scoreInPercentage || 0), 0) /
+      (controls.length || 1);
+
+    return {
+      date: entry.createdDateTime,
+      percentage: parseFloat(avgScore.toFixed(2))
+    };
+  });
+
+  // Sort by date ascending (oldest first)
+  return categoryScores.sort(
+    (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+}
+

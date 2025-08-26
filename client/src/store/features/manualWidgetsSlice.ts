@@ -10,7 +10,6 @@ const manualWidgetsSlice = createSlice({
   initialState: initialManualWidgetsState,
   reducers: {
     setManualWidgets(state, action) {
-        console.log('called', action.payload)
       state.manualWidgets = action.payload;
     },
     reset(state) {
