@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { identitiesAndPeopleActions, endUserDevicesActions, cloudAndInfrastructureActions, manualWidgetsActions } from '@/store/store';
+import { identitiesAndPeopleActions, endUserDevicesActions, cloudAndInfrastructureActions, manualWidgetsActions, scoresActions } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
 import { BadgeAlert, Check } from 'lucide-react';
@@ -22,11 +22,12 @@ interface WidgetProps {
   tenantId: string
   manualLoading?: boolean
   widgetId?: string
-  fetchManualWidgets: any
+  fetchManualWidgets?: any
+  isAdmin?: boolean
 }
 
 const Widget = (props: WidgetProps) => {
-  const { title, buttonText = 'View Details', onButtonClick, hideButton = false, apiCall, render, children, apiParams, id, onClickParam, manualToggle = false, implemented = false, manualLoading, widgetId, tenantId, fetchManualWidgets} = props;
+  const { title, buttonText = 'View Details', onButtonClick, hideButton = false, apiCall, render, children, apiParams, id, onClickParam, manualToggle = false, implemented = false, manualLoading, widgetId, tenantId, fetchManualWidgets, isAdmin} = props;
 
   const [data, setData] = useState<any>(null);
   const [toggleUpdating, setToggleUpdating] = useState<boolean>(false)
@@ -70,6 +71,15 @@ const Widget = (props: WidgetProps) => {
           case 'microsoftSecureScore' :
             dispatch(cloudAndInfrastructureActions.setSecureScores(result))
             break
+          case 'identityScores' :
+            dispatch(scoresActions.setIdentityScores(result))
+            break
+          case 'dataScores' :
+            dispatch(scoresActions.setDataScores(result))
+            break
+          case 'appScores' :
+            dispatch(scoresActions.setAppScores(result))
+            break
           default:
             dispatch(manualWidgetsActions.setManualWidgets(result))
         }
@@ -91,10 +101,12 @@ const Widget = (props: WidgetProps) => {
     }
   };
 
+  const isScoreWidget = ['identityScores', 'dataScores', 'appScores', 'microsoftSecureScore'].includes(id);
+
   return (
-    <div className="border border-brand-teal rounded p-4 flex flex-col justify-between items-center w-72 h-64 max-h-[250px]">
+    <div className={`border border-brand-teal rounded p-4 flex flex-col justify-between items-center w-72 h-64 max-h-[250px] ${isScoreWidget ? 'score-widget' : ''}`}>
       <h2 className="text-brand-green text-lg font-bold mb-2 text-center whitespace-nowrap">
-        {title} {manualToggle && <p className="text-xs text-gray-500">(Manual)</p>}
+        {title} {(manualToggle && isAdmin) && <p className="text-xs text-gray-500">(Manual)</p>}
       </h2>
 
       {/* Main Content */}
@@ -123,7 +135,7 @@ const Widget = (props: WidgetProps) => {
 
 
     {/* Manual Toggle */}
-    {manualToggle && !loading && (
+    {manualToggle && !loading && isAdmin && (
       <div className="flex items-center justify-between w-full mt-2 text-sm">
         <span>Implemented</span>
         <Switch disabled={toggleUpdating} checked={implemented} onCheckedChange={handleToggleChange} />

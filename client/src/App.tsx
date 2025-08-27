@@ -17,6 +17,7 @@ import CompliancePoliciesDetails from './pages/Widgets/CompliancePolicies';
 import SecureScores from './pages/Widgets/SecureScores';
 import M365Admins from './pages/Widgets/M365Admins';
 import SignInPolicies from './pages/Widgets/SignInPolicies';
+import ScoreChart from './pages/Widgets/SecureScores';
 
 function ProtectedRoute({
   component: Component,
@@ -70,7 +71,34 @@ function Router() {
       <Route path="/phish-resistant-mfa/:tenantId" component={() => <ProtectedRoute component={PhishResistantMFA} />} />
       <Route path="/no-encryption/:tenantId" component={() => <ProtectedRoute component={NoEncryptionDetails} />} />
       <Route path="/compliance-policies/:tenantId" component={() => <ProtectedRoute component={CompliancePoliciesDetails} />} />
-      <Route path="/secure-scores/:tenantId" component={() => <ProtectedRoute component={SecureScores} />} />
+      <Route 
+        path="/secure-scores/:tenantId" 
+        component={() => (
+          <ProtectedRoute component={ScoreChart} id="secure" title="Microsoft 365 Secure Score" />
+        )}
+      />
+
+      <Route 
+        path="/identity-scores/:tenantId" 
+        component={() => (
+          <ProtectedRoute component={ScoreChart} id="identity" title="Microsoft 365 Identity Score" />
+        )}
+      />
+
+      <Route 
+        path="/app-scores/:tenantId" 
+        component={() => (
+          <ProtectedRoute component={ScoreChart} id="app" title="Microsoft 365 App Score" />
+        )}
+      />
+
+      <Route 
+        path="/data-scores/:tenantId" 
+        component={() => (
+          <ProtectedRoute component={ScoreChart} id="data" title="Microsoft 365 Data Score" />
+        )}
+      />
+
 
       {/* Fallback to 404 */}
       <Route component={NotFound} />
