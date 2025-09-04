@@ -65,7 +65,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           </div>
             <div className="ml-3">
               <p className="text-base font-medium">{user?.firstName || user?.email?.split('@')[0] || 'User'}</p>
-              <p className="text-xs text-white/70">{isAdmin ? 'Admin' : 'Analyst'}</p>
+              <p className="text-xs text-white/70">{isAdmin ? 'Admin' : 'Customer'}</p>
             </div>
           </div>
         </div>
@@ -89,7 +89,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             Recommendations
           </NavItem> */}
 
-          {!isAdmin && (
+          {/* {!isAdmin && (
             <>
               <NavItem
                 href={`/tenants/${currentTenantId}/cyber-risk-review`}
@@ -99,7 +99,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 Cyber Risk Overview
               </NavItem>
             </>
-          )}
+          )} */}
         </div>
 
         {isAdmin && (

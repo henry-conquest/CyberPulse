@@ -27,7 +27,7 @@ const GuaranteesPanel = (props: GuaranteesPanelProps) => {
     // { label: "Data", value: latestData },
     // { label: "Apps", value: latestApps },
     { label: "Secure", value: latestSecure },
-    { label: "Risk Rating", value: 75 },
+    { label: "Maturity Rating", value: 75 },
   ]
 
   const getColor = (val: number | null) => {
