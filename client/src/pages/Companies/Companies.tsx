@@ -93,7 +93,8 @@ export default function Companies() {
             setLoading={setLoading}
           />
         ) : (
-          <Button className='w-100 pl-10 pr-10 text-base bg-brand-green hover:bg-brand-green/90 font-montserrat'>Suggest a Feature</Button>
+          // <Button className='w-100 pl-10 pr-10 text-base bg-brand-green hover:bg-brand-green/90 font-montserrat'>Suggest a Feature</Button>
+          <></>
         )}
       </div>
 
