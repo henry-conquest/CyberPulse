@@ -1,0 +1,54 @@
+name: Azure Node.js Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_WEBAPP_NAME: cyber-risk-portal
+  AZURE_WEBAPP_PACKAGE_PATH: '.'      # Root of repo
+  NODE_VERSION: '20.16.11'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout GitHub Action
+        uses: actions/checkout@v3
+
+      # 2️⃣ Login to Azure
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # 3️⃣ Setup Node
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # 4️⃣ Install dependencies and build
+      - name: Install and build
+        run: |
+          npm install
+          npm run build
+        working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      # 5️⃣ Deploy to Azure Web App
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      # 6️⃣ Logout from Azure
+      - name: Azure Logout
+        run: az logout
