@@ -140,13 +140,17 @@ export const microsoftTokens = pgTable(
 
 export const widgets = pgTable('widgets', {
   id: uuid('id').defaultRandom().primaryKey(),
-  key: varchar('key', { length: 100 }).notNull().unique(), // e.g., 'secure_score'
-  name: varchar('name', { length: 255 }).notNull(), // e.g., 'Secure Score'
+  key: varchar('key', { length: 100 }).notNull().unique(), 
+  name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
   defaultEnabled: boolean('default_enabled').default(true),
   createdAt: timestamp('created_at').defaultNow(),
-  manual: boolean('manual').default(false), 
+  manual: boolean('manual').default(false),
+  pointsAvailable: integer('points_available').default(0).notNull(),
+  scoringType: varchar('scoring_type', { length: 50 }).notNull().default('yesno'),
+  scoringConfig: jsonb('scoring_config').default('{}').notNull(),
 });
+
 
 export const tenantWidgets = pgTable('tenant_widgets', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -159,6 +163,19 @@ export const tenantWidgets = pgTable('tenant_widgets', {
 }, (table) => ({
   uniqueTenantWidget: unique().on(table.tenantId, table.widgetId),
 }));
+
+export const tenantScores = pgTable('tenant_scores', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantId: varchar('tenant_id').notNull().references(() => tenants.id),
+  scoreDate: date('score_date').defaultNow(),
+  totalScore: integer('total_score').notNull(),
+  maxScore: integer('max_score').notNull().default(300),
+  breakdown: jsonb('breakdown').notNull(), 
+  lastUpdated: timestamp('last_updated').defaultNow(),
+}, (table) => ({
+  uniqueTenantDay: unique().on(table.tenantId, table.scoreDate),
+}));
+
 
 // Integrations
 
@@ -216,6 +233,9 @@ export const insertWidgetSchema = createInsertSchema(widgets).omit({
 export const insertTenantWidgetSchema = createInsertSchema(tenantWidgets).omit({
   lastUpdated: true,
 });
+export const insertTenantScoresSchema = createInsertSchema(tenantScores).omit({
+  lastUpdated: true,
+});
 export const insertIntegrationSchem = createInsertSchema(integrations).omit({
   createdAt: true,
   updatedAt: true,
@@ -242,6 +262,8 @@ export type Widget = typeof widgets.$inferSelect;
 export type InsertWidget = z.infer<typeof insertWidgetSchema>;
 export type TenantWidget = typeof tenantWidgets.$inferSelect;
 export type InsertTenantWidget = z.infer<typeof insertTenantWidgetSchema>;
+export type TenantScores = typeof tenantScores.$inferSelect;
+export type InsertTenantScores = z.infer<typeof insertTenantScoresSchema>;
 export type Integration = typeof integrations.$inferSelect;
 export type InsertIntegration = z.infer<typeof insertIntegrationSchem>;
 

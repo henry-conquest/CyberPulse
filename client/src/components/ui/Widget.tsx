@@ -101,7 +101,7 @@ const Widget = (props: WidgetProps) => {
     }
   };
 
-  const isScoreWidget = ['identityScores', 'dataScores', 'appScores', 'microsoftSecureScore'].includes(id);
+  const isScoreWidget = ['identityScores', 'dataScores', 'microsoftSecureScore'].includes(id);
 
   return (
     <div className={`border border-brand-teal rounded p-4 flex flex-col justify-between items-center w-72 h-64 max-h-[250px] ${isScoreWidget ? 'score-widget' : ''}`}>

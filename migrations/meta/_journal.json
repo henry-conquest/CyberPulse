@@ -162,6 +162,20 @@
       "when": 1754147369348,
       "tag": "0022_friendly_living_lightning",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1757066224334,
+      "tag": "0023_lowly_sage",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1757066567715,
+      "tag": "0024_modern_earthquake",
+      "breakpoints": true
     }
   ]
 }

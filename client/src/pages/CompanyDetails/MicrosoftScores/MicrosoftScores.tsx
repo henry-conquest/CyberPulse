@@ -36,9 +36,6 @@ const MicrosoftScores = (props: MicrosoftScoresProps) => {
                 )
             })}
             </div>
-            <div className="flex justify-end">
-                <span className="text-brand-teal text-xs mt-6">Last refreshed: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
-            </div>
         </div>
     )
 }

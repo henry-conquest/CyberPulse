@@ -149,7 +149,7 @@ export const endUserDevicesWidgets = [
         id: 'unsupportedDevices',
         title: 'Unsupported Devices',
         hideButton: false,
-        content: <RiskScoreChart score={5}/>
+        content: <RiskScoreChart score={100}/>
     },
         {
         id: 'firewallConfigured',
@@ -249,7 +249,7 @@ export const dataWidgets = [
 export const scoresWidgets = [
     {
         id: 'microsoftSecureScore',
-        title: 'Microsoft Secure Score',
+        title: 'Secure Score',
         hideButton: false,
         render: (data: any) => {
         if (!data) {
@@ -270,7 +270,7 @@ export const scoresWidgets = [
     },
   {
     id: 'identityScores',
-    title: 'Identity Scores',
+    title: 'Identity Score',
     hideButton: false,
     apiCall: getIdentityScores,
     render: (data: any) => {
@@ -282,7 +282,7 @@ export const scoresWidgets = [
   },
   {
     id: 'dataScores',
-    title: 'Data Scores',
+    title: 'Data Score',
     hideButton: false,
     apiCall: getDataScores,
     render: (data: any) => {
@@ -294,7 +294,7 @@ export const scoresWidgets = [
   },
   {
     id: 'appScores',
-    title: 'App Scores',
+    title: 'App Score',
     hideButton: false,
     apiCall: getAppScores,
     render: (data: any) => {
