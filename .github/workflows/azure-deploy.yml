@@ -11,7 +11,7 @@ permissions:
 
 env:
   AZURE_WEBAPP_NAME: cyberriskportal
-  AZURE_WEBAPP_PACKAGE_PATH: './dist'      # Root of repo
+  AZURE_WEBAPP_PACKAGE_PATH: 'dist'      # Root of repo
   NODE_VERSION: '20.18'
 
 jobs:
