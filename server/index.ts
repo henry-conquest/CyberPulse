@@ -55,7 +55,7 @@ import { setupVite, serveStatic, log } from './vite';
   }
 
   // Use Azure's PORT if defined, otherwise default to 5000
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 5010;
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
 
   server.listen(port, '0.0.0.0', () => {
     log(`Server running on port ${port} [${app.get('env')}]`);
