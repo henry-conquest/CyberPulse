@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 env:
-  AZURE_WEBAPP_NAME: cyberriskportal
-  AZURE_WEBAPP_PACKAGE_PATH: 'dist'      # Root of repo
+  AZURE_WEBAPP_NAME: cyberriskportal      # 👈 your Azure App Service name
+  AZURE_WEBAPP_PACKAGE_PATH: dist         # 👈 folder created after build
   NODE_VERSION: '20.18'
 
 jobs:
@@ -34,12 +34,11 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      # 4️⃣ Install dependencies and build
+      # 4️⃣ Install dependencies and build (run from repo root)
       - name: Install and build
         run: |
           npm install
           npm run build
-        working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
       # 5️⃣ Deploy to Azure Web App
       - uses: azure/webapps-deploy@v3
