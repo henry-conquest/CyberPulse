@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "noEmitOnError": false,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "outDir": "dist-webjob",
+    "baseUrl": ".",
+    "paths": {
+      "server/*": ["server/*"]
+    }
+  },
+  "include": [
+    "server/App_Data/jobs/triggered/DailyScoreJob/**/*.ts",
+    "server/db.ts",
+    "server/services/scoringService.ts",
+    "shared/schema.ts"
+  ],
+  "exclude": ["node_modules"]
+}

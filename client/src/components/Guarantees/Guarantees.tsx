@@ -62,7 +62,21 @@ const GuaranteesPanel = (props: GuaranteesPanelProps) => {
                 key={idx}
                 className="flex items-center justify-between cursor-pointer group hover:bg-gray-100 transition-colors p-2"
                 onClick={() => {
-                    if(score.label === 'Secure') navigate(`/secure-scores/${props.tenantId}`)
+                  switch(score.label) {
+                    case 'Secure Score' :
+                      navigate(`/secure-scores/${props.tenantId}`)
+                      break
+                    case 'Data' :
+                      navigate(`/data-scores/${props.tenantId}`)
+                      break
+                    case 'Identity' :
+                      navigate(`/identity-scores/${props.tenantId}`)
+                      break
+                    case 'Apps' :
+                      navigate(`/app-scores/${props.tenantId}`)
+                    case 'Maturity Rating' :
+                      navigate(`/maturity-scores/${props.tenantId}`)
+                  }
                 }}
               >
                 <span className="text-sm font-medium text-gray-700">

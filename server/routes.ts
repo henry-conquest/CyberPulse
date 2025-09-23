@@ -4,7 +4,7 @@ import { storage } from './storage';
 import { setupAuth, isAuthenticated, isAuthorized } from './auth';
 import { evaluatePhishMethodsGrouped, fetchSecureScores, getTenantAccessTokenFromDB, transformCategoryScores } from './helper';
 import { z } from 'zod';
-import { eq, desc } from 'drizzle-orm';
+import { gt, and, desc, eq } from 'drizzle-orm';
 import {
   insertTenantSchema,
   insertMicrosoft365ConnectionSchema,
@@ -1163,15 +1163,27 @@ app.post(
  * Fetch all daily scores for a tenant (most recent first)
  */
 app.get(
-  '/api/tenants/:tenantId/scores',
+  '/api/tenants/:tenantId/maturity-scores',
   asyncHandler(async (req, res) => {
     const { tenantId } = req.params;
 
     try {
+      // Calculate cutoff date (3 months ago)
+       const cutoffDate = new Date();
+      cutoffDate.setMonth(cutoffDate.getMonth() - 3);
+
+      // Convert to YYYY-MM-DD string
+      const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+
       const scores = await db
         .select()
         .from(tenantScores)
-        .where(eq(tenantScores.tenantId, tenantId))
+        .where(
+          and(
+            eq(tenantScores.tenantId, tenantId),
+            gt(tenantScores.scoreDate, cutoffDateStr)
+          )
+        )
         .orderBy(desc(tenantScores.scoreDate));
 
       res.status(200).json(scores);
