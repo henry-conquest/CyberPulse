@@ -1163,7 +1163,7 @@ app.post(
  * Fetch all daily scores for a tenant (most recent first)
  */
 app.get(
-  '/api/tenants/:tenantId/scores',
+  '/api/tenants/:tenantId/maturity-scores',
   asyncHandler(async (req, res) => {
     const { tenantId } = req.params;
 
