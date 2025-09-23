@@ -32,7 +32,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
             {/* Guarantees */}
             <GuaranteesModal tenantId={tenantId} />
             {/* Secure Score */}
-            <CompanySecureScore />
+            <CompanySecureScore tenantId={tenantId}/>
             {/* Microsoft secure score */}
             <MicrosoftScores tenantId={tenantId}/>
             {/* Identities & People Widgets */}

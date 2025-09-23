@@ -4,10 +4,12 @@ import { storage } from './storage';
 import { setupAuth, isAuthenticated, isAuthorized } from './auth';
 import { evaluatePhishMethodsGrouped, fetchSecureScores, getTenantAccessTokenFromDB, transformCategoryScores } from './helper';
 import { z } from 'zod';
+import { eq, desc } from 'drizzle-orm';
 import {
   insertTenantSchema,
   insertMicrosoft365ConnectionSchema,
   UserRoles,
+  tenantScores,
 } from '@shared/schema';
 import {
   generateState,
@@ -19,6 +21,8 @@ import crypto from 'crypto';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { Client } from '@microsoft/microsoft-graph-client';
 import 'isomorphic-fetch';
+import { saveTenantScore } from './services/scoringService';
+import { db } from './db';
 
 // Helper to check if user has access to a tenant
 async function hasTenantAccess(userId: string, tenantId: string): Promise<boolean> {
@@ -53,19 +57,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    console.log('🔍 Session ID:', req.sessionID);
-    console.log('🔍 Session contents:', req.session);
-    console.log('🔍 Is Authenticated:', req.isAuthenticated());
+    // console.log('🔍 Session ID:', req.sessionID);
+    // console.log('🔍 Session contents:', req.session);
+    // console.log('🔍 Is Authenticated:', req.isAuthenticated());
     console.log('🔍 User:', req.user);
     try {
       const userId = req.user?.id;
-      console.log('🔍 userId:', userId);
+      // console.log('🔍 userId:', userId);
 
       const user = await storage.getUser(userId);
-      console.log('🔍 user from DB:', user);
+      // console.log('🔍 user from DB:', user);
 
       const tenants = await storage.getTenantsByUserId(userId);
-      console.log('🔍 tenants from DB:', tenants);
+      // console.log('🔍 tenants from DB:', tenants);
 
       res.json({
         ...user,
@@ -1134,6 +1138,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     })
   );
+
+  /**
+ * POST /api/tenants/:tenantId/scores
+ * Trigger a new score calculation for the tenant and store snapshot
+ */
+app.post(
+  '/api/tenants/:tenantId/scores',
+  asyncHandler(async (req, res) => {
+    const { tenantId } = req.params;
+
+    try {
+      const { totalScore, maxScore } = await saveTenantScore(tenantId);
+      res.status(200).json({ tenantId, totalScore, maxScore });
+    } catch (err) {
+      console.error('Error calculating tenant score:', err);
+      res.status(500).json({ error: 'Failed to calculate tenant score' });
+    }
+  })
+);
+
+/**
+ * GET /api/tenants/:tenantId/scores
+ * Fetch all daily scores for a tenant (most recent first)
+ */
+app.get(
+  '/api/tenants/:tenantId/scores',
+  asyncHandler(async (req, res) => {
+    const { tenantId } = req.params;
+
+    try {
+      const scores = await db
+        .select()
+        .from(tenantScores)
+        .where(eq(tenantScores.tenantId, tenantId))
+        .orderBy(desc(tenantScores.scoreDate));
+
+      res.status(200).json(scores);
+    } catch (err) {
+      console.error('Error fetching tenant scores:', err);
+      res.status(500).json({ error: 'Failed to fetch tenant scores' });
+    }
+  })
+);
 
 
   const httpServer = createServer(app);

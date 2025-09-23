@@ -6,9 +6,10 @@ ChartJS.register(ArcElement, Tooltip);
 interface RiskScoreChartProps {
   score: number;
   marginLeft?: number
+  loading?: boolean
 }
 
-const RiskScoreChart = ({ score, marginLeft }: RiskScoreChartProps) => {
+const RiskScoreChart = ({ score, marginLeft, loading }: RiskScoreChartProps) => {
   // Determine color based on score
   let scoreColor = '#10B981'; // green by default
   if (score < 40) {
@@ -33,11 +34,12 @@ const RiskScoreChart = ({ score, marginLeft }: RiskScoreChartProps) => {
       tooltip: { enabled: false },
     },
   };
+  if(loading) return <div className="ml-16 w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
   return (
     <div className={`relative w-32 h-32 ${marginLeft ? `ml-${marginLeft}` : ''} `}>
       <Doughnut data={data} options={options} />
       <div className="absolute inset-0 flex items-center justify-center text-xl font-bold mt-3" style={{color: scoreColor}}>
-        {score}%
+        {!loading && score}%
       </div>
     </div>
   );
