@@ -56,7 +56,6 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_36C8FB6C28D140ACA0CF69BF75A71CD1 }}
       - name: Run Drizzle migrations
         run: |
-          npm install --only=dev
           npx drizzle-kit push
         env:
           DATABASE_URL: ${{ secrets.AZURE_DATABASE_URL }}
