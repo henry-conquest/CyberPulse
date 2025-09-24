@@ -54,6 +54,12 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D47E8D630CEF4ADCA881E5229878BC0A }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C8B19C00A9FB487497D98B13210E0A56 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_36C8FB6C28D140ACA0CF69BF75A71CD1 }}
+      - name: Run Drizzle migrations
+        run: |
+          npm install --only=dev
+          npx drizzle-kit push
+        env:
+          DATABASE_URL: ${{ secrets.AZURE_DATABASE_URL }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
