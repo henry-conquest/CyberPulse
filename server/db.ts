@@ -13,3 +13,15 @@ export const pool = new Pool({
   ssl: { rejectUnauthorized: false }, // Azure requires SSL
 });
 export const db = drizzle(pool, { schema });
+
+pool.connect()
+  .then(client => {
+    console.log("✅ Successfully connected to DB");
+    client.release();
+  })
+  .catch(err => {
+    console.error("❌ Failed to connect to DB");
+    console.error("Error code:", err.code);
+    console.error("Error message:", err.message);
+    console.error("Error stack:", err.stack);
+  });
