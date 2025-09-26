@@ -18,6 +18,7 @@ import SecureScores from './pages/Widgets/SecureScores';
 import M365Admins from './pages/Widgets/M365Admins';
 import SignInPolicies from './pages/Widgets/SignInPolicies';
 import ScoreChart from './pages/Widgets/SecureScores';
+import LoginRejected from './pages/LoginRejected/LoginRejected';
 
 function ProtectedRoute({
   component: Component,
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/companies" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
+      <Route path="/login-rejected" component={() => <ProtectedRoute component={LoginRejected}/>}/>
 
       <Route
         path="/tenants/:tenantId/details"
@@ -109,9 +111,19 @@ function Router() {
 function App() {
   return (
     <TooltipProvider>
-      <Layout>
-        <Router />
-      </Layout>
+      <Switch>
+        {/* Login Rejected sits outside the Layout */}
+        <Route path="/login-rejected" component={LoginRejected} />
+
+        {/* All other routes wrapped in Layout */}
+        <Route
+          component={() => (
+            <Layout>
+              <Router />
+            </Layout>
+          )}
+        />
+      </Switch>
     </TooltipProvider>
   );
 }

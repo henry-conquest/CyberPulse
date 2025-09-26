@@ -1,8 +1,8 @@
 import React from 'react';
+import logoImg from '../../assets/logo.png';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { useAuth } from '@/hooks/useAuth';
-import logoImg from '../../assets/logo.png';
 
 interface LayoutProps {
   children: React.ReactNode;

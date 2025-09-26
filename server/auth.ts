@@ -210,15 +210,22 @@ passport.use(
   app.get('/api/login', passport.authenticate('azure'));
 
   app.get('/login-failed', (req, res) => {
-  res.status(403).send('🚫 You are not assigned to this application. Please contact your administrator.');
-});
+   // Suppose message comes from Passport or default
+  let message: string | undefined = req.query.message as string | undefined;
+  if (!message) {
+    message = 'Your login attempt was rejected. Please contact your administrator.';
+  }
+
+  // Redirect with safe encoding
+  res.redirect(`/login-rejected`);
+  });
 
 
   app.get(
     '/auth/callback',
     passport.authenticate('azure', {
       successRedirect: '/',
-      failureRedirect: '/api/login-failed',
+      failureRedirect: '/login-failed',
     })
   );
 
