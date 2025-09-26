@@ -120,6 +120,30 @@ passport.use(
           return done(new Error("Missing tenant ID or email"));
         }
 
+        try {
+          const assignmentsRes = await fetch(
+            `https://graph.microsoft.com/v1.0/me/appRoleAssignments`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+          );
+
+          if (!assignmentsRes.ok) {
+            console.error("❌ Failed to fetch appRoleAssignments:", await assignmentsRes.text());
+            return done(new Error("Failed to verify app assignment"));
+          }
+
+          const assignments = await assignmentsRes.json();
+          const assigned = assignments.value.some(
+            (a: any) => a.resourceId === process.env.ENTERPRISE_APP_OBJECT_ID
+          );
+
+          if (!assigned) {
+            console.warn(`🚫 User ${email} is not assigned to Enterprise App`);
+            return done(null, false, { message: "User not assigned to this application" });
+          }
+        } catch (err) {
+          return done(err as Error);
+        }
+
         // Check if this user was invited
         const invite = await storage.getInviteByEmail(email);
         const tenantId = invite?.tenantId || microsoftTenantId;
@@ -185,11 +209,16 @@ passport.use(
 
   app.get('/api/login', passport.authenticate('azure'));
 
+  app.get('/login-failed', (req, res) => {
+  res.status(403).send('🚫 You are not assigned to this application. Please contact your administrator.');
+});
+
+
   app.get(
     '/auth/callback',
     passport.authenticate('azure', {
       successRedirect: '/',
-      failureRedirect: '/api/login',
+      failureRedirect: '/api/login-failed',
     })
   );
 
