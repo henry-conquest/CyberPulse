@@ -34,6 +34,9 @@ jobs:
         run: |
           npm run build:webjob
 
+      - name: List WebJob output
+        run: ls -R dist-webjob
+
       # 5️⃣ Copy compiled WebJob to App_Data folder
       - name: Copy WebJob to App_Data
         run: |
@@ -77,4 +80,3 @@ jobs:
           app-name: 'CyberRiskPortal'
           slot-name: 'Production'
           package: .
-          
