@@ -41,7 +41,7 @@ jobs:
       - name: Copy WebJob to App_Data
         run: |
           mkdir -p dist/App_Data/jobs/triggered/DailyScoreJob
-          cp dist-webjob/calculateScores.js dist/App_Data/jobs/triggered/DailyScoreJob/
+          cp dist-webjob/server/App_Data/jobs/triggered/DailyScoreJob/calculateScores.js dist/App_Data/jobs/triggered/DailyScoreJob/
           cp server/App_Data/jobs/triggered/DailyScoreJob/settings.job dist/App_Data/jobs/triggered/DailyScoreJob/
 
       # 6️⃣ Upload artifact for deployment job
