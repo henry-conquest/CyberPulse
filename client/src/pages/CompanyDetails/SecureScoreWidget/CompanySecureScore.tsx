@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import RiskScoreChart from "../RiskScoreChart/RiskScoreChart";
-import { format } from "date-fns";
 import axios from "axios";
 import { useDispatch } from "react-redux";
 import { scoresActions } from "@/store/store";
+import { navigate } from "wouter/use-browser-location";
 
 interface CompanySecureScoreProps {
   tenantId: string;
@@ -44,7 +44,7 @@ const CompanySecureScore = ({ tenantId }: CompanySecureScoreProps) => {
       <div data-testid='secure-score-container' className="flex-col justify-center relative items-start py-4 basis-4/5">
         <div data-testid='secure-score-top' className="flex justify-around mb-6">
           <h1 data-testid='secure-score-heading' className="text-brand-green text-3xl font-bold mr-6">Maturity Rating</h1>
-          <Button className="bg-brand-green hover:bg-brand-green/90">Maturity History</Button>
+          <Button onClick={() => navigate(`/maturity-scores/${tenantId}`)} className="bg-brand-green hover:bg-brand-green/90">Maturity History</Button>
         </div>
         <div data-testid='secure-score-middle' className="font-montserrat mb-6">
           {/* <p className="text-brand-green">{loading ? "Loading..." : `${Math.round((score / maxScore) * 100)}%`}</p> */}

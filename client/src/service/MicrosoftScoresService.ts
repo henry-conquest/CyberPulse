@@ -38,3 +38,7 @@ export const getDataScores = async (params: ParamsModel) => {
 export const getAppScores = async (params: ParamsModel) => {
   return fetchScores(`/api/secure-scores/apps/${params.userId}/${params.tenantId}`);
 };
+
+export const getMaturityScores = async (params: ParamsModel) => {
+  return fetchScores(`/api/tenants/${params.tenantId}/maturity-scores`);
+};

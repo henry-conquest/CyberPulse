@@ -1,5 +1,4 @@
 export const getManualWidgetStatuses = async (tenantId: string) => {
-  console.log('tenant id 1', tenantId)
     try {
       const response = await fetch(`/api/tenants/${tenantId}/widgets`)
       if (response.ok) {

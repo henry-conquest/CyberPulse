@@ -97,7 +97,6 @@ export async function calculateTenantScore(tenantId: string, userId?: string) {
     }
 
     const score = Math.round(calculateWidgetScore(widget.scoringType, config, value));
-    console.log(`SCORE FOR ${widget.key} -> `, score)
     totalScore += score;
     maxScore += widget.pointsAvailable ?? 0;
   }

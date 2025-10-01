@@ -100,6 +100,13 @@ function Router() {
           <ProtectedRoute component={ScoreChart} id="data" title="Microsoft 365 Data Score" />
         )}
       />
+      
+      <Route 
+        path="/maturity-scores/:tenantId" 
+        component={() => (
+          <ProtectedRoute component={ScoreChart} id="maturity" title="Maturity Score" />
+        )}
+      />
 
 
       {/* Fallback to 404 */}

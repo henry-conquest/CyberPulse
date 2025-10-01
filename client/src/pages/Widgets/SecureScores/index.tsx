@@ -1,7 +1,7 @@
 import { getSecureScores } from "@/service/CloudAndInfrastructureService";
 import { cloudAndInfrastructureActions, scoresActions } from "@/store/store";
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Line } from "react-chartjs-2";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useParams } from "wouter";
@@ -21,7 +21,7 @@ import {
 } from 'chart.js';
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import ErrorResponseMessage from "@/components/ui/ErrorResponseMessage";
-import { getAppScores, getDataScores, getIdentityScores } from "@/service/MicrosoftScoresService";
+import { getAppScores, getDataScores, getIdentityScores, getMaturityScores } from "@/service/MicrosoftScoresService";
 
 ChartJS.register(
   LineElement,
@@ -37,7 +37,7 @@ ChartJS.register(
 );
 
 interface ScoreChartProps {
-  id: "secure" | "identity" | "app" | "data";
+  id: "secure" | "identity" | "app" | "data" | "maturity";
   title: string;
 }
 
@@ -62,6 +62,11 @@ const dataMap = {
     selector: (state: any) => state.scores.dataScores,
     fetcher: getDataScores,
     setAction: scoresActions.setDataScores
+  },
+  maturity: {
+    selector: (state: any) => state.scores.maturityHistory,
+    fetcher: getMaturityScores,
+    setAction: scoresActions.setMaturityHistory
   }
 } as const;
 
@@ -78,6 +83,7 @@ const ScoreChart = ({ id, title }: ScoreChartProps) => {
   // pick the right data/fetcher for this id
   const { selector, fetcher, setAction } = dataMap[id];
   const scores = useSelector(selector);
+  const timeFrame = id !== 'maturity' ? 'Last 2 years' : 'Last 3 months'
 
   useEffect(() => {
     const initialiseData = async () => {
@@ -101,9 +107,31 @@ const ScoreChart = ({ id, title }: ScoreChartProps) => {
     initialiseData();
   }, [id, tenantId, userId]);
 
-  const sortedData = scores?.length
-    ? [...scores].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  const normalizedScores = useMemo(() => {
+  if (!scores?.length) return [];
+
+  if (id === "maturity") {
+    // Convert maturity format -> standard format
+    return scores.map((s: any) => ({
+      date: s.scoreDate,
+      percentage: (s.totalScore / s.maxScore) * 100, // convert to %
+      comparative: null,
+    }));
+  }
+
+  return scores;
+}, [scores, id]);
+
+
+const sortedData = useMemo(() => {
+  return normalizedScores.length
+    ? [...normalizedScores].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      )
     : [];
+}, [normalizedScores]);
+
+
 
   useEffect(() => {
     if (sortedData.length > 1) {
@@ -144,7 +172,7 @@ const chartData = {
     responsive: true,
     plugins: {
       legend: { position: "top" as const },
-      title: { display: true, text: `${title} - Last 2 Years` }
+      title: { display: true, text: `${title} - ${timeFrame}` }
     },
     scales: {
       y: { min: 0, max: 100, title: { display: true, text: "Percentage (%)" } },
@@ -154,7 +182,6 @@ const chartData = {
         title: { display: true, text: "Date" }
       }
     },
-    animation: false
   };
 
   if (error && tenantId) {

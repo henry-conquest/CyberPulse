@@ -38,7 +38,6 @@ export const useUsers = () => {
     const data = await getInvites()
     const userData = await getUsers(setLoading)
     setInvites(data.invites)
-    console.log('user data', userData)
     setAllUsers(userData)
     setLoading(false)
   }
