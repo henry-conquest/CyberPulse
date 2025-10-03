@@ -170,7 +170,8 @@ export const tenantScores = pgTable('tenant_scores', {
   scoreDate: date('score_date').defaultNow(),
   totalScore: integer('total_score').notNull(),
   maxScore: integer('max_score').notNull().default(300),
-  breakdown: jsonb('breakdown').notNull(), 
+  microsoftSecureScore: integer('ms_secure_score'),
+  breakdown: jsonb('breakdown').notNull(),
   lastUpdated: timestamp('last_updated').defaultNow(),
 }, (table) => ({
   uniqueTenantDay: unique().on(table.tenantId, table.scoreDate),
