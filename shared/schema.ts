@@ -17,6 +17,7 @@ import {
   real,
   doublePrecision,
   primaryKey,
+  numeric,
 } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
@@ -168,9 +169,16 @@ export const tenantScores = pgTable('tenant_scores', {
   id: uuid('id').defaultRandom().primaryKey(),
   tenantId: varchar('tenant_id').notNull().references(() => tenants.id),
   scoreDate: date('score_date').defaultNow(),
-  totalScore: integer('total_score').notNull(),
-  maxScore: integer('max_score').notNull().default(300),
-  microsoftSecureScore: integer('ms_secure_score'),
+
+  // Raw scores
+  totalScore: numeric('total_score').notNull(),
+  maxScore: numeric('max_score').notNull().default('300'),
+  microsoftSecureScore: numeric('ms_secure_score'),
+
+  // Percentage columns
+  totalScorePct: numeric('total_score_pct').notNull().default('0'),
+  microsoftSecureScorePct: numeric('ms_secure_score_pct').notNull().default('0'),
+
   breakdown: jsonb('breakdown').notNull(),
   lastUpdated: timestamp('last_updated').defaultNow(),
 }, (table) => ({

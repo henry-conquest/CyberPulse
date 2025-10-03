@@ -1199,23 +1199,21 @@ app.post(
   '/api/scores/run-daily',
   asyncHandler(async (req, res) => {
     try {
-      // 1. Fetch all active tenants (skip deleted ones)
+      // Get all active tenants
       const tenantsList = await db
         .select()
         .from(tenants)
         .where(sql`deleted_at IS NULL`);
 
-      const tenantIds = tenantsList.map(t => t.id);
-
-      // 2. Process each tenant
       const results = [];
-      for (const tenantId of tenantIds) {
+
+      for (const tenant of tenantsList) {
         try {
-          const result = await saveTenantDailyScores(tenantId);
+          const result = await saveTenantDailyScores(tenant.id);
           results.push(result);
         } catch (err) {
-          console.error(`Failed for tenant ${tenantId}:`, err);
-          results.push({ tenantId, error: err });
+          console.error(`Failed to calculate score for tenant ${tenant.id}:`, err);
+          results.push({ tenantId: tenant.id, error: err });
         }
       }
 

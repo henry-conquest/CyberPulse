@@ -106,35 +106,63 @@ export async function calculateTenantScore(tenantId: string, userId?: string) {
 
 // Store daily snapshot
 export async function saveTenantDailyScores(tenantId: string) {
-  // 1. Get Microsoft Secure Score
+  // 1️⃣ Fetch Microsoft Secure Scores (all recent entries)
   const secureScoreResponse = await fetchSecureScores(tenantId);
-  const secureScore = secureScoreResponse?.value?.[0]?.currentScore ?? null;
 
-  // 2. Calculate maturity score
+  // Find the latest entry within 2 years (like UI)
+  const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  const recentEntries = secureScoreResponse.value
+    .filter((entry: any) => now - new Date(entry.createdDateTime).getTime() <= TWO_YEARS_MS)
+    .sort((a: any, b: any) => new Date(b.createdDateTime).getTime() - new Date(a.createdDateTime).getTime());
+
+  const latestEntry = recentEntries[0];
+
+  const microsoftSecureScore = latestEntry?.currentScore ?? 0;
+  const microsoftSecureScorePct = latestEntry?.maxScore
+    ? parseFloat(((microsoftSecureScore / latestEntry.maxScore) * 100).toFixed(2))
+    : 0;
+
+  // 2️⃣ Calculate maturity score (existing logic)
   const { totalScore, maxScore } = await calculateTenantScore(tenantId);
+  const totalScorePct = maxScore ? parseFloat(((totalScore / maxScore) * 100).toFixed(2)) : 0;
 
-  // 3. Save to DB
-  await db
-    .insert(tenantScores)
-    .values({
-      tenantId,
-      totalScore: Math.round(totalScore),
-      maxScore: Math.round(maxScore),
-      microsoftSecureScore: secureScore ? Math.round(secureScore) : null,
+  // 3️⃣ Upsert into DB
+await db
+  .insert(tenantScores)
+  .values({
+    tenantId,
+    totalScore: totalScore.toString(),
+    maxScore: maxScore.toString(),
+    microsoftSecureScore: microsoftSecureScore.toString(),
+    totalScorePct: totalScorePct.toString(),
+    microsoftSecureScorePct: microsoftSecureScorePct.toString(),
+    lastUpdated: new Date(),
+    breakdown: {},
+  })
+  .onConflictDoUpdate({
+    target: [tenantScores.tenantId, tenantScores.scoreDate],
+    set: {
+      totalScore: totalScore.toString(),
+      maxScore: maxScore.toString(),
+      microsoftSecureScore: microsoftSecureScore.toString(),
+      totalScorePct: totalScorePct.toString(),
+      microsoftSecureScorePct: microsoftSecureScorePct.toString(),
       lastUpdated: new Date(),
-      breakdown: {}
-    })
-    .onConflictDoUpdate({
-      target: [tenantScores.tenantId, tenantScores.scoreDate],
-      set: {
-        totalScore,
-        maxScore,
-        microsoftSecureScore: secureScore,
-        lastUpdated: new Date(),
-        breakdown: {}
-      },
-    });
+      breakdown: {},
+    },
+  });
 
-  return { tenantId, totalScore, maxScore, microsoftSecureScore: secureScore };
+
+  return {
+    tenantId,
+    totalScore,
+    maxScore,
+    totalScorePct,
+    microsoftSecureScore,
+    microsoftSecureScorePct
+  };
 }
+
 
