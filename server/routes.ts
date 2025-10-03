@@ -22,7 +22,7 @@ import crypto from 'crypto';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { Client } from '@microsoft/microsoft-graph-client';
 import 'isomorphic-fetch';
-import { saveTenantDailyScores, saveTenantScore } from './services/scoringService';
+import { saveTenantDailyScores } from './services/scoringService';
 import { db } from './db';
 
 // Helper to check if user has access to a tenant
@@ -1150,7 +1150,7 @@ app.post(
     const { tenantId } = req.params;
 
     try {
-      const { totalScore, maxScore } = await saveTenantScore(tenantId);
+      const { totalScore, maxScore } = await saveTenantDailyScores(tenantId);
       res.status(200).json({ tenantId, totalScore, maxScore });
     } catch (err) {
       console.error('Error calculating tenant score:', err);
