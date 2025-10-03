@@ -4,12 +4,13 @@ import { storage } from './storage';
 import { setupAuth, isAuthenticated, isAuthorized } from './auth';
 import { evaluatePhishMethodsGrouped, fetchSecureScores, getTenantAccessTokenFromDB, transformCategoryScores } from './helper';
 import { z } from 'zod';
-import { gt, and, desc, eq } from 'drizzle-orm';
+import { gt, and, desc, eq, sql } from 'drizzle-orm';
 import {
   insertTenantSchema,
   insertMicrosoft365ConnectionSchema,
   UserRoles,
   tenantScores,
+  tenants,
 } from '@shared/schema';
 import {
   generateState,
@@ -21,7 +22,7 @@ import crypto from 'crypto';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { Client } from '@microsoft/microsoft-graph-client';
 import 'isomorphic-fetch';
-import { saveTenantScore } from './services/scoringService';
+import { saveTenantDailyScores, saveTenantScore } from './services/scoringService';
 import { db } from './db';
 
 // Helper to check if user has access to a tenant
@@ -1193,6 +1194,40 @@ app.get(
     }
   })
 );
+
+app.post(
+  '/api/scores/run-daily',
+  asyncHandler(async (req, res) => {
+    try {
+      // 1. Fetch all active tenants (skip deleted ones)
+      const tenantsList = await db
+        .select()
+        .from(tenants)
+        .where(sql`deleted_at IS NULL`);
+
+      const tenantIds = tenantsList.map(t => t.id);
+
+      // 2. Process each tenant
+      const results = [];
+      for (const tenantId of tenantIds) {
+        try {
+          const result = await saveTenantDailyScores(tenantId);
+          results.push(result);
+        } catch (err) {
+          console.error(`Failed for tenant ${tenantId}:`, err);
+          results.push({ tenantId, error: err });
+        }
+      }
+
+      res.status(200).json({ results });
+    } catch (err) {
+      console.error('Error running daily scores:', err);
+      res.status(500).json({ error: 'Failed to run daily scores' });
+    }
+  })
+);
+
+
 
 
   const httpServer = createServer(app);

@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { widgets, tenantWidgets, tenantScores } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
-import { getTenantAccessTokenFromDB } from 'server/helper';
+import { fetchSecureScores, getTenantAccessTokenFromDB } from 'server/helper';
 import { scoringDataFetchers } from './scoringDataFetcher';
 
 type ScoringConfig = {
@@ -105,28 +105,36 @@ export async function calculateTenantScore(tenantId: string, userId?: string) {
 }
 
 // Store daily snapshot
-export async function saveTenantScore(tenantId: string) {
+export async function saveTenantDailyScores(tenantId: string) {
+  // 1. Get Microsoft Secure Score
+  const secureScoreResponse = await fetchSecureScores(tenantId);
+  const secureScore = secureScoreResponse?.value?.[0]?.currentScore ?? null;
+
+  // 2. Calculate maturity score
   const { totalScore, maxScore } = await calculateTenantScore(tenantId);
 
+  // 3. Save to DB
   await db
     .insert(tenantScores)
     .values({
-    tenantId,
-    totalScore: Math.round(totalScore),
-    maxScore: Math.round(maxScore),
-    lastUpdated: new Date(),
-    breakdown: {}
-  })
+      tenantId,
+      totalScore: Math.round(totalScore),
+      maxScore: Math.round(maxScore),
+      microsoftSecureScore: secureScore ? Math.round(secureScore) : null,
+      lastUpdated: new Date(),
+      breakdown: {}
+    })
     .onConflictDoUpdate({
       target: [tenantScores.tenantId, tenantScores.scoreDate],
       set: {
         totalScore,
         maxScore,
+        microsoftSecureScore: secureScore,
         lastUpdated: new Date(),
-        breakdown: {},
+        breakdown: {}
       },
     });
 
-  return { totalScore, maxScore };
+  return { tenantId, totalScore, maxScore, microsoftSecureScore: secureScore };
 }
 
