@@ -1194,6 +1194,41 @@ app.get(
     }
   })
 );
+/**
+ * GET /api/score-history/:tenantId
+ * Fetch all daily scores for a tenant (most recent first)
+ */
+app.get(
+  '/api/score-history/:tenantId',
+  asyncHandler(async (req, res) => {
+    const { tenantId } = req.params;
+
+    try {
+      // Calculate cutoff date (3 months ago)
+       const cutoffDate = new Date();
+      cutoffDate.setMonth(cutoffDate.getMonth() - 3);
+
+      // Convert to YYYY-MM-DD string
+      const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+
+      const scores = await db
+        .select()
+        .from(tenantScores)
+        .where(
+          and(
+            eq(tenantScores.tenantId, tenantId),
+            gt(tenantScores.scoreDate, cutoffDateStr)
+          )
+        )
+        .orderBy(desc(tenantScores.scoreDate));
+
+      res.status(200).json(scores);
+    } catch (err) {
+      console.error('Error fetching tenant scores:', err);
+      res.status(500).json({ error: 'Failed to fetch tenant scores' });
+    }
+  })
+);
 
 app.post(
   '/api/scores/run-daily',

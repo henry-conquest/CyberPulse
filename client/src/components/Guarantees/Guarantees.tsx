@@ -2,33 +2,26 @@ import { useSelector } from "react-redux"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { ChevronDown, ChevronRight } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { navigate } from "wouter/use-browser-location"
 
 interface GuaranteesPanelProps {
-    tenantId: string
+  tenantId: string
 }
 
 const GuaranteesPanel = (props: GuaranteesPanelProps) => {
   const [open, setOpen] = useState(false)
-
-  const identityScores = useSelector((state: any) => state.scores.identityScores)
-  const dataScores = useSelector((state: any) => state.scores.dataScores)
-  const appsScores = useSelector((state: any) => state.scores.appScores)
-  const secureScores = useSelector((state: any) => state.cloudAndInfrastructure.secureScores)
+  const secureScores = useSelector((state: any) => state.devicesAndInfrastructure.secureScores)
   const maturityScore = useSelector((state: any) => state.scores.maturityScore)
-
-  const latestIdentity = identityScores?.[identityScores.length - 1]?.percentage ?? null
-  const latestData = dataScores?.[dataScores.length - 1]?.percentage ?? null
-  const latestApps = appsScores?.[appsScores.length - 1]?.percentage ?? null
   const latestSecure = secureScores?.[secureScores.length - 1]?.percentage ?? null
+
+  useEffect(() => {
+
+  }, [])
 
   const scores = [
     { label: "Secure Score", value: latestSecure },
     { label: "Maturity Rating", value: maturityScore },
-    { label: "Identity", value: latestIdentity },
-    { label: "Data", value: latestData },
-    { label: "Apps", value: latestApps },
   ]
 
   const getColor = (val: number | null) => {
@@ -62,19 +55,11 @@ const GuaranteesPanel = (props: GuaranteesPanelProps) => {
                 key={idx}
                 className="flex items-center justify-between cursor-pointer group hover:bg-gray-100 transition-colors p-2"
                 onClick={() => {
-                  switch(score.label) {
-                    case 'Secure Score' :
+                  switch (score.label) {
+                    case 'Secure Score':
                       navigate(`/secure-scores/${props.tenantId}`)
                       break
-                    case 'Data' :
-                      navigate(`/data-scores/${props.tenantId}`)
-                      break
-                    case 'Identity' :
-                      navigate(`/identity-scores/${props.tenantId}`)
-                      break
-                    case 'Apps' :
-                      navigate(`/app-scores/${props.tenantId}`)
-                    case 'Maturity Rating' :
+                    case 'Maturity Rating':
                       navigate(`/maturity-scores/${props.tenantId}`)
                   }
                 }}

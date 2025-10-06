@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { identitiesAndPeopleActions, endUserDevicesActions, cloudAndInfrastructureActions, manualWidgetsActions, scoresActions } from '@/store/store';
+import { identitiesAndPeopleActions, endUserDevicesActions, devicesAndInfrastructureActions, manualWidgetsActions, scoresActions } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
 import { BadgeAlert, Check } from 'lucide-react';
@@ -63,13 +63,13 @@ const Widget = (props: WidgetProps) => {
             dispatch(identitiesAndPeopleActions.setPhishResistantMFA(result))
             break
           case 'noEncryption' :
-            dispatch(endUserDevicesActions.setNoEncryption(result))
+            dispatch(devicesAndInfrastructureActions.setEncryption(result))
             break
           case 'compliancePolicies' :
-            dispatch(endUserDevicesActions.setCompliancePolicies(result))
+            dispatch(devicesAndInfrastructureActions.setCompliancePolicies(result))
             break
           case 'microsoftSecureScore' :
-            dispatch(cloudAndInfrastructureActions.setSecureScores(result))
+            dispatch(devicesAndInfrastructureActions.setSecureScores(result))
             break
           case 'identityScores' :
             dispatch(scoresActions.setIdentityScores(result))
