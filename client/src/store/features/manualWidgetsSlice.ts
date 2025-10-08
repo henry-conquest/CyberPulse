@@ -2,7 +2,7 @@ import { ManualWidgetsSliceModel } from '@/models/ManualWidgetsModel';
 import { createSlice } from '@reduxjs/toolkit';
 
 export const initialManualWidgetsState: ManualWidgetsSliceModel = {
-    manualWidgets: []
+  manualWidgets: [],
 };
 
 const manualWidgetsSlice = createSlice({
@@ -13,8 +13,8 @@ const manualWidgetsSlice = createSlice({
       state.manualWidgets = action.payload;
     },
     reset(state) {
-      state.manualWidgets = []
-    }
+      state.manualWidgets = [];
+    },
   },
 });
 

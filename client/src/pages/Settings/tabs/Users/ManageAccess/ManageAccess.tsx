@@ -15,7 +15,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   user: UserModel | null;
   tenants: any;
-  onSave: any
+  onSave: any;
 };
 
 const ManageAccessDialog = (props: Props) => {

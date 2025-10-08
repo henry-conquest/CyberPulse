@@ -28,22 +28,22 @@ export const useUsers = () => {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [isManageAccessDialogOpen, setIsManageAccessDialogOpen] = useState(false);
   const [selectedUserForAccess, setSelectedUserForAccess] = useState<UserModel | null>(null);
-  const [loading, setLoading] = useState(false)
-  const [invites, setInvites] = useState<Invite[]>([])
-  const [allUsers, setAllUsers] = useState([])
+  const [loading, setLoading] = useState(false);
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{ id: string; email: string } | null>(null);
 
   const fetchInvites = async () => {
-    const data = await getInvites()
-    const userData = await getUsers(setLoading)
-    setInvites(data.invites)
-    setAllUsers(userData)
-    setLoading(false)
-  }
+    const data = await getInvites();
+    const userData = await getUsers(setLoading);
+    setInvites(data.invites);
+    setAllUsers(userData);
+    setLoading(false);
+  };
   useEffect(() => {
-    fetchInvites()
-  }, [])
+    fetchInvites();
+  }, []);
 
   // Schema for invite user form
   const inviteUserSchema = z.object({
@@ -94,13 +94,13 @@ export const useUsers = () => {
       try {
         const response = await apiRequest('POST', '/api/admin/users/invite', data);
         return response.json();
-      } catch(error) {
-        console.log(error)
-        throw error
+      } catch (error) {
+        console.log(error);
+        throw error;
       }
     },
     onSuccess: () => {
-      fetchInvites()
+      fetchInvites();
       toast({
         title: 'Invitation sent',
         description: 'User has been invited successfully',
@@ -130,8 +130,8 @@ export const useUsers = () => {
       });
     },
     onSettled: () => {
-      setLoading(false)
-    }
+      setLoading(false);
+    },
   });
 
   // Update user role mutation
@@ -141,7 +141,7 @@ export const useUsers = () => {
       return response.json();
     },
     onSuccess: () => {
-      fetchInvites()
+      fetchInvites();
       toast({
         title: 'Role updated',
         description: 'User role has been updated successfully',
@@ -174,11 +174,11 @@ export const useUsers = () => {
   type DeleteUserPayload = { userId: string; userEmail: string };
   // Delete user mutation
   const deleteUserMutation = useMutation({
-    mutationFn: async ({userId, userEmail} : DeleteUserPayload) => {
+    mutationFn: async ({ userId, userEmail }: DeleteUserPayload) => {
       await apiRequest('DELETE', `/api/admin/users/${userId}/${userEmail}`);
     },
     onSuccess: () => {
-      fetchInvites()
+      fetchInvites();
       toast({
         title: 'User deleted',
         description: 'User has been deleted successfully',
@@ -231,7 +231,6 @@ export const useUsers = () => {
     setIsDeleteDialogOpen(true);
   };
 
-
   const openEditRoleDialog = (user: UserModel) => {
     setSelectedUser(user);
     updateRoleForm.reset({
@@ -256,7 +255,7 @@ export const useUsers = () => {
   const updateTenantAccessMutation = useMutation({
     mutationFn: async ({ userId, tenantIds }: { userId: string; tenantIds: number[] }) => {
       try {
-        setLoading(true)
+        setLoading(true);
         const response = await fetch(`/api/admin/users/${userId}/tenants`, {
           method: 'PUT',
           headers: {
@@ -303,7 +302,7 @@ export const useUsers = () => {
         variant: 'destructive',
       });
     },
-     onSettled: () => {
+    onSettled: () => {
       setLoading(false);
     },
   });
@@ -345,6 +344,6 @@ export const useUsers = () => {
     userToDelete,
     setUserToDelete,
     deleteUserMutation,
-    fetchInvites
+    fetchInvites,
   };
 };

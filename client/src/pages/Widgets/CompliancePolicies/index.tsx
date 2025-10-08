@@ -1,19 +1,19 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ErrorResponseMessage from "@/components/ui/ErrorResponseMessage";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getCompliancePolicies } from "@/service/EndUserDevicesService";
-import { endUserDevicesActions } from "@/store/store";
-import { format } from "date-fns";
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link, useParams } from "wouter";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ErrorResponseMessage from '@/components/ui/ErrorResponseMessage';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { getCompliancePolicies } from '@/service/EndUserDevicesService';
+import { endUserDevicesActions } from '@/store/store';
+import { format } from 'date-fns';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link, useParams } from 'wouter';
 
 const CompliancePoliciesDetails = () => {
   const complianceData = useSelector((state: any) => state.endUserDevices.compliancePolicies);
   const userId = useSelector((state: any) => state?.sessionInfo?.user?.id);
   const { tenantId } = useParams();
   const dispatch = useDispatch();
-  const [error, setError] = useState(false)
+  const [error, setError] = useState(false);
 
   const [loading, setLoading] = useState(true);
 
@@ -21,18 +21,18 @@ const CompliancePoliciesDetails = () => {
     const initialiseData = async () => {
       try {
         setLoading(true);
-        setError(false)
+        setError(false);
         if (userId && tenantId) {
           const params = {
-            userId, 
-            tenantId
-          }
+            userId,
+            tenantId,
+          };
           const data = await getCompliancePolicies(params);
           dispatch(endUserDevicesActions.setCompliancePolicies(data));
         }
       } catch (err) {
-        console.error("Failed to fetch device data", err);
-        setError(true)
+        console.error('Failed to fetch device data', err);
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -41,8 +41,8 @@ const CompliancePoliciesDetails = () => {
     initialiseData();
   }, [tenantId, userId]);
 
-  if(error && tenantId) {
-    return <ErrorResponseMessage tenantId={tenantId} text="Compliance Policies"/>
+  if (error && tenantId) {
+    return <ErrorResponseMessage tenantId={tenantId} text="Compliance Policies" />;
   }
 
   return (
@@ -54,14 +54,10 @@ const CompliancePoliciesDetails = () => {
         >
           ← Back
         </Link>
-        <span className="text-secondary-600">
-          Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}
-        </span>
+        <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
       </div>
 
-      <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">
-        Compliance Policies
-      </h1>
+      <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">Compliance Policies</h1>
 
       <Card className="ml-auto mr-auto mb-12 flex-col w-[90%]">
         <CardHeader>
@@ -83,11 +79,11 @@ const CompliancePoliciesDetails = () => {
               <TableBody>
                 {complianceData.value.map((policy: any) => (
                   <TableRow key={policy.id}>
-                    <TableCell>{policy.displayName || "Unnamed Policy"}</TableCell>
+                    <TableCell>{policy.displayName || 'Unnamed Policy'}</TableCell>
                     <TableCell className="text-center">
-                      {policy["@odata.type"]
-                        ? policy["@odata.type"].split(".").pop().replace("CompliancePolicy", "")
-                        : "Unknown"}
+                      {policy['@odata.type']
+                        ? policy['@odata.type'].split('.').pop().replace('CompliancePolicy', '')
+                        : 'Unknown'}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -96,7 +92,6 @@ const CompliancePoliciesDetails = () => {
           )}
         </CardContent>
       </Card>
-
     </div>
   );
 };

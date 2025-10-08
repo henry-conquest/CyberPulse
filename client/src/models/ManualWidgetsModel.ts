@@ -1,3 +1,3 @@
 export interface ManualWidgetsSliceModel {
-    manualWidgets: any
+  manualWidgets: any;
 }

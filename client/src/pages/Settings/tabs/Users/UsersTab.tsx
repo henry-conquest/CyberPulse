@@ -68,7 +68,7 @@ export default function Users() {
     userToDelete,
     deleteUserMutation,
     setUserToDelete,
-    fetchInvites
+    fetchInvites,
   } = useUsers();
 
   // Helper to get role badge
@@ -159,81 +159,81 @@ export default function Users() {
             </div>
           ) : filteredUsers.length > 0 ? (
             <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Organisations</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user: UserModel) => {
-                  return (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{getRoleBadge(user.role)}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {user.tenants?.length > 0 ? (
-                            user.tenants.map((tenant) => (
-                              <Badge key={tenant.id} variant="outline">
-                                {tenant.name}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-secondary-500 text-sm">None assigned</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{format(new Date(user.createdAt), 'MMM d, yyyy')}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => openEditRoleDialog(user)}>
-                              <UserCog className="h-4 w-4 mr-2" />
-                              Change Role
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={loggedInUser.id === user.id}
-                              onClick={() => {
-                                setSelectedUserForAccess(user);
-                                setIsManageAccessDialogOpen(true);
-                              }}
-                            >
-                              <Shield className="h-4 w-4 mr-2" />
-                              Manage Access
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Mail className="h-4 w-4 mr-2" />
-                              Send Message
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleDeleteUser(user.id, user.email)}
-                              disabled={loggedInUser.id === user?.id}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete User
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-            <InvitesTable fetchInvites={fetchInvites} allUsers={allUsers} invites={invites}/>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Organisations</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user: UserModel) => {
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{getRoleBadge(user.role)}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {user.tenants?.length > 0 ? (
+                              user.tenants.map((tenant) => (
+                                <Badge key={tenant.id} variant="outline">
+                                  {tenant.name}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-secondary-500 text-sm">None assigned</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{format(new Date(user.createdAt), 'MMM d, yyyy')}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => openEditRoleDialog(user)}>
+                                <UserCog className="h-4 w-4 mr-2" />
+                                Change Role
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                disabled={loggedInUser.id === user.id}
+                                onClick={() => {
+                                  setSelectedUserForAccess(user);
+                                  setIsManageAccessDialogOpen(true);
+                                }}
+                              >
+                                <Shield className="h-4 w-4 mr-2" />
+                                Manage Access
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Mail className="h-4 w-4 mr-2" />
+                                Send Message
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => handleDeleteUser(user.id, user.email)}
+                                disabled={loggedInUser.id === user?.id}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete User
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+              <InvitesTable fetchInvites={fetchInvites} allUsers={allUsers} invites={invites} />
             </>
           ) : (
             <div className="py-8 text-center">
@@ -377,14 +377,14 @@ export default function Users() {
 
       {isManageAccessDialogOpen && (
         <ManageAccessDialog
-        open={isManageAccessDialogOpen}
-        onOpenChange={setIsManageAccessDialogOpen}
-        user={selectedUserForAccess}
-        tenants={tenants}
-        onSave={async (userId: any, tenantIds: any) => {
-          setIsManageAccessDialogOpen(false);
-        await updateTenantAccessMutation.mutateAsync({ userId, tenantIds });
-      }}   
+          open={isManageAccessDialogOpen}
+          onOpenChange={setIsManageAccessDialogOpen}
+          user={selectedUserForAccess}
+          tenants={tenants}
+          onSave={async (userId: any, tenantIds: any) => {
+            setIsManageAccessDialogOpen(false);
+            await updateTenantAccessMutation.mutateAsync({ userId, tenantIds });
+          }}
         />
       )}
     </div>

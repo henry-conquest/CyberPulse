@@ -3,10 +3,10 @@ import { createSlice } from '@reduxjs/toolkit';
 
 export const initialEndUserDevicesState: EndUserDevicesSliceModel = {
   noEncryption: {
-      count: 0,
-      devices: [],
+    count: 0,
+    devices: [],
   },
-  compliancePolicies: null
+  compliancePolicies: null,
 };
 
 const endUserDevicesSlice = createSlice({
@@ -22,9 +22,9 @@ const endUserDevicesSlice = createSlice({
     reset(state) {
       state.noEncryption = {
         count: 0,
-        devices: []
-      }
-    }
+        devices: [],
+      };
+    },
   },
 });
 

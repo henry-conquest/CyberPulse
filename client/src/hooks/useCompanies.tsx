@@ -79,6 +79,6 @@ export const useCompanies = () => {
     setM365DialogOpen,
     deleteTenant,
     loading,
-    setLoading
+    setLoading,
   };
 };

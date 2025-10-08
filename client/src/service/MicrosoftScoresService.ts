@@ -1,24 +1,23 @@
 interface ParamsModel {
-    userId: string
-    tenantId: string
+  userId: string;
+  tenantId: string;
 }
 
 export const getSecureScores = async (params: ParamsModel) => {
-    try {
-        const res = await fetch(`/api/secure-scores/${params.userId}/${params.tenantId}`, {
-        credentials: 'include',
-        });
-        if(!res.ok) {
-            throw new Error('Failed to get secure scores')
-        }
-        const data = await res.json()
-        return data
-
-    } catch(err) {
-        console.log(err)
-        throw new Error('Failed to get secure scores')
+  try {
+    const res = await fetch(`/api/secure-scores/${params.userId}/${params.tenantId}`, {
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      throw new Error('Failed to get secure scores');
     }
-}
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.log(err);
+    throw new Error('Failed to get secure scores');
+  }
+};
 
 const fetchScores = async (url: string) => {
   const res = await fetch(url, { credentials: 'include' });

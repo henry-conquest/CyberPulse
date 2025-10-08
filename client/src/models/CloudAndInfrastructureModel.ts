@@ -5,9 +5,8 @@ export interface SecureScoreEntry {
   comparative: number;
 }
 
-
 export interface devicesAndInfrastructureSliceModel {
-    secureScores: SecureScoreEntry[]
-    encryptionCount: number
-    compliancePolicies: any
+  secureScores: SecureScoreEntry[];
+  encryptionCount: number;
+  compliancePolicies: any;
 }

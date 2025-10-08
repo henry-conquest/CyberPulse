@@ -1,10 +1,10 @@
-import { getSecureScores } from "@/service/DevicesAndInfrastructureService";
-import { devicesAndInfrastructureActions, scoresActions } from "@/store/store";
-import { format } from "date-fns";
-import { useEffect, useMemo, useState } from "react";
-import { Line } from "react-chartjs-2";
-import { useDispatch, useSelector } from "react-redux";
-import { Link, useParams } from "wouter";
+import { getSecureScores } from '@/service/DevicesAndInfrastructureService';
+import { devicesAndInfrastructureActions, scoresActions } from '@/store/store';
+import { format } from 'date-fns';
+import { useEffect, useMemo, useState } from 'react';
+import { Line } from 'react-chartjs-2';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link, useParams } from 'wouter';
 import 'chartjs-adapter-date-fns';
 import {
   TimeScale,
@@ -17,11 +17,11 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
 } from 'chart.js';
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import ErrorResponseMessage from "@/components/ui/ErrorResponseMessage";
-import { getAppScores, getDataScores, getIdentityScores, getMaturityScores } from "@/service/MicrosoftScoresService";
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import ErrorResponseMessage from '@/components/ui/ErrorResponseMessage';
+import { getAppScores, getDataScores, getIdentityScores, getMaturityScores } from '@/service/MicrosoftScoresService';
 
 ChartJS.register(
   LineElement,
@@ -37,39 +37,37 @@ ChartJS.register(
 );
 
 interface ScoreChartProps {
-  id: "secure" | "identity" | "app" | "data" | "maturity";
+  id: 'secure' | 'identity' | 'app' | 'data' | 'maturity';
   title: string;
 }
-
 
 const dataMap = {
   secure: {
     selector: (state: any) => state.devicesAndInfrastructure.secureScores,
     fetcher: getSecureScores,
-    setAction: devicesAndInfrastructureActions.setSecureScores
+    setAction: devicesAndInfrastructureActions.setSecureScores,
   },
   identity: {
     selector: (state: any) => state.scores.identityScores,
     fetcher: getIdentityScores,
-    setAction: scoresActions.setIdentityScores
+    setAction: scoresActions.setIdentityScores,
   },
   app: {
     selector: (state: any) => state.scores.appScores,
     fetcher: getAppScores,
-    setAction: scoresActions.setAppScores
+    setAction: scoresActions.setAppScores,
   },
   data: {
     selector: (state: any) => state.scores.dataScores,
     fetcher: getDataScores,
-    setAction: scoresActions.setDataScores
+    setAction: scoresActions.setDataScores,
   },
   maturity: {
     selector: (state: any) => state.scores.maturityHistory,
     fetcher: getMaturityScores,
-    setAction: scoresActions.setMaturityHistory
-  }
+    setAction: scoresActions.setMaturityHistory,
+  },
 } as const;
-
 
 const ScoreChart = ({ id, title }: ScoreChartProps) => {
   const { tenantId } = useParams();
@@ -83,7 +81,7 @@ const ScoreChart = ({ id, title }: ScoreChartProps) => {
   // pick the right data/fetcher for this id
   const { selector, fetcher, setAction } = dataMap[id];
   const scores = useSelector(selector);
-  const timeFrame = id !== 'maturity' ? 'Last 2 years' : 'Last 3 months'
+  const timeFrame = id !== 'maturity' ? 'Last 2 years' : 'Last 3 months';
 
   useEffect(() => {
     const initialiseData = async () => {
@@ -108,34 +106,29 @@ const ScoreChart = ({ id, title }: ScoreChartProps) => {
   }, [id, tenantId, userId]);
 
   const normalizedScores = useMemo(() => {
-  if (!scores?.length) return [];
+    if (!scores?.length) return [];
 
-  if (id === "maturity") {
-    // Convert maturity format -> standard format
-    return scores.map((s: any) => ({
-      date: s.scoreDate,
-      percentage: (s.totalScore / s.maxScore) * 100, // convert to %
-      comparative: null,
-    }));
-  }
+    if (id === 'maturity') {
+      // Convert maturity format -> standard format
+      return scores.map((s: any) => ({
+        date: s.scoreDate,
+        percentage: (s.totalScore / s.maxScore) * 100, // convert to %
+        comparative: null,
+      }));
+    }
 
-  return scores;
-}, [scores, id]);
+    return scores;
+  }, [scores, id]);
 
-
-const sortedData = useMemo(() => {
-  return normalizedScores.length
-    ? [...normalizedScores].sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      )
-    : [];
-}, [normalizedScores]);
-
-
+  const sortedData = useMemo(() => {
+    return normalizedScores.length
+      ? [...normalizedScores].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      : [];
+  }, [normalizedScores]);
 
   useEffect(() => {
     if (sortedData.length > 1) {
-      const labels = sortedData.map((d) => format(new Date(d.date), "yyyy-MM-dd"));
+      const labels = sortedData.map((d) => format(new Date(d.date), 'yyyy-MM-dd'));
       setLabels(labels);
     }
   }, [sortedData]);
@@ -143,44 +136,43 @@ const sortedData = useMemo(() => {
   const allScores = sortedData.map((d) => d.percentage);
   const allComparativeScores = sortedData.map((d) => d.comparative);
 
-const chartData = {
-  labels,
-  datasets: [
-    {
-      label: `${title} (%)`,
-      data: allScores,
-      borderColor: "rgba(54, 162, 235, 1)",
-      backgroundColor: "rgba(54, 162, 235, 0.2)",
-      tension: 0.3,
-    },
-    ...(id === "secure" // Only include comparative dataset for secure score
-      ? [
-          {
-            label: "Organisations of similar size (%)",
-            data: allComparativeScores,
-            borderColor: "rgba(255, 99, 132, 1)",
-            backgroundColor: "rgba(255, 99, 132, 0.2)",
-            tension: 0.3,
-          },
-        ]
-      : []),
-  ],
-};
-
+  const chartData = {
+    labels,
+    datasets: [
+      {
+        label: `${title} (%)`,
+        data: allScores,
+        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        tension: 0.3,
+      },
+      ...(id === 'secure' // Only include comparative dataset for secure score
+        ? [
+            {
+              label: 'Organisations of similar size (%)',
+              data: allComparativeScores,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              tension: 0.3,
+            },
+          ]
+        : []),
+    ],
+  };
 
   const options = {
     responsive: true,
     plugins: {
-      legend: { position: "top" as const },
-      title: { display: true, text: `${title} - ${timeFrame}` }
+      legend: { position: 'top' as const },
+      title: { display: true, text: `${title} - ${timeFrame}` },
     },
     scales: {
-      y: { min: 0, max: 100, title: { display: true, text: "Percentage (%)" } },
+      y: { min: 0, max: 100, title: { display: true, text: 'Percentage (%)' } },
       x: {
-        type: "time" as const,
-        time: { unit: "month", tooltipFormat: "PPP" },
-        title: { display: true, text: "Date" }
-      }
+        type: 'time' as const,
+        time: { unit: 'month', tooltipFormat: 'PPP' },
+        title: { display: true, text: 'Date' },
+      },
     },
   };
 
@@ -197,9 +189,7 @@ const chartData = {
         >
           ← Back
         </Link>
-        <span className="text-secondary-600">
-          Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}
-        </span>
+        <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
       </div>
 
       <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">{title}</h1>
@@ -216,6 +206,5 @@ const chartData = {
     </div>
   );
 };
-
 
 export default ScoreChart;

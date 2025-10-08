@@ -2,15 +2,15 @@ import { ScoresSliceModel } from '@/models/ScoresSliceModel';
 import { createSlice } from '@reduxjs/toolkit';
 
 export const initialScoresSliceState: ScoresSliceModel = {
-    identityScores: [],
-    dataScores: [],
-    appScores: [],
-    maturityScore: null,
-    widgetScores : {
-      cyberSecurityEnabled: 0
-    },
-    maturityHistory: [],
-    scoresHistory: []
+  identityScores: [],
+  dataScores: [],
+  appScores: [],
+  maturityScore: null,
+  widgetScores: {
+    cyberSecurityEnabled: 0,
+  },
+  maturityHistory: [],
+  scoresHistory: [],
 };
 
 const scoresSlice = createSlice({
@@ -27,25 +27,25 @@ const scoresSlice = createSlice({
       state.appScores = action.payload;
     },
     setCyberSecurityEnabledPoints(state, action) {
-      state.widgetScores.cyberSecurityEnabled = action.payload
+      state.widgetScores.cyberSecurityEnabled = action.payload;
     },
     setMaturityScore(state, action) {
-      state.maturityScore = action.payload
+      state.maturityScore = action.payload;
     },
     setMaturityHistory(state, action) {
-      state.maturityHistory = action.payload
+      state.maturityHistory = action.payload;
     },
     setScoresHistory(state, action) {
-      state.scoresHistory = action.payload
+      state.scoresHistory = action.payload;
     },
     reset(state) {
-      state.identityScores = []
-      state.dataScores = []
-      state.appScores = []
-      state.maturityScore = null
-      state.maturityHistory = []
-      state.scoresHistory = []
-    }
+      state.identityScores = [];
+      state.dataScores = [];
+      state.appScores = [];
+      state.maturityScore = null;
+      state.maturityHistory = [];
+      state.scoresHistory = [];
+    },
   },
 });
 
