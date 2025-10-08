@@ -1,44 +1,67 @@
-import { useSelector } from "react-redux"
-import { Card } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-import { ChevronDown, ChevronRight } from "lucide-react"
-import { useEffect, useState } from "react"
-import { navigate } from "wouter/use-browser-location"
+import { useSelector } from 'react-redux';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { navigate } from 'wouter/use-browser-location';
 
 interface GuaranteesPanelProps {
-  tenantId: string
+  tenantId: string;
+}
+
+interface ScoreObjectProps {
+  id: string;
+  tenantId: string;
+  scoreDate: string;
+  totalScore: string;
+  maxScore: string;
+  microsoftSecureScore: string;
+  totalScorePct: string;
+  microsoftSecureScorePct: string;
+  breakdown: any;
+  lastUpdated: string;
 }
 
 const GuaranteesPanel = (props: GuaranteesPanelProps) => {
-  const [open, setOpen] = useState(false)
-  const secureScores = useSelector((state: any) => state.devicesAndInfrastructure.secureScores)
-  const maturityScore = useSelector((state: any) => state.scores.maturityScore)
-  const latestSecure = secureScores?.[secureScores.length - 1]?.percentage ?? null
+  const [open, setOpen] = useState(false);
+  const scoreHistory = useSelector((state: any) => state.scores.scoresHistory);
+  const [maturityScoreAverage, setMaturityScoreAverage] = useState<number | null>(null);
+  const [microsoftScoreAverage, setMicrosoftScoreAverage] = useState<number | null>(null);
 
   useEffect(() => {
+    const allMaturityScores: number[] = [];
+    const allSecureScores: number[] = [];
+    if (scoreHistory)
+      scoreHistory.map((scoreObject: ScoreObjectProps) => {
+        allMaturityScores.push(+scoreObject.totalScorePct);
+        allSecureScores.push(+scoreObject.microsoftSecureScorePct);
+      });
 
-  }, [])
+    const maturityAvg = allMaturityScores.reduce((acc, val) => acc + val, 0) / allMaturityScores.length;
+    const secureAvg = allSecureScores.reduce((acc, val) => acc + val, 0) / allSecureScores.length;
+
+    // Update state
+    setMaturityScoreAverage(+maturityAvg.toFixed(2));
+    setMicrosoftScoreAverage(+secureAvg.toFixed(2));
+  }, [scoreHistory]);
 
   const scores = [
-    { label: "Secure Score", value: latestSecure },
-    { label: "Maturity Rating", value: maturityScore },
-  ]
+    { label: 'Secure Score', value: microsoftScoreAverage },
+    { label: 'Maturity Rating', value: maturityScoreAverage },
+  ];
 
   const getColor = (val: number | null) => {
-    if (val === null) return "bg-gray-400"
-    if (val >= 75) return "bg-green-500"
-    if (val >= 50) return "bg-orange-400"
-    return "bg-red-500"
-  }
+    if (val === null) return 'bg-gray-400';
+    if (val >= 75) return 'bg-green-500';
+    if (val >= 50) return 'bg-orange-400';
+    return 'bg-red-500';
+  };
 
   return (
     <div className="fixed top-20 right-6 z-50 w-72">
       <Card className="p-4 shadow-lg rounded-2xl border border-gray-200 bg-white">
         {/* Header row */}
-        <div
-          className="flex items-center justify-between cursor-pointer select-none"
-          onClick={() => setOpen(!open)}
-        >
+        <div className="flex items-center justify-between cursor-pointer select-none" onClick={() => setOpen(!open)}>
           <h2 className="text-lg font-semibold text-brand-teal">Guarantee Tracker</h2>
           {open ? (
             <ChevronDown className="w-5 h-5 text-gray-600" />
@@ -57,27 +80,18 @@ const GuaranteesPanel = (props: GuaranteesPanelProps) => {
                 onClick={() => {
                   switch (score.label) {
                     case 'Secure Score':
-                      navigate(`/secure-scores/${props.tenantId}`)
-                      break
+                      navigate(`/secure-scores/${props.tenantId}`);
+                      break;
                     case 'Maturity Rating':
-                      navigate(`/maturity-scores/${props.tenantId}`)
+                      navigate(`/maturity-scores/${props.tenantId}`);
                   }
                 }}
               >
-                <span className="text-sm font-medium text-gray-700">
-                  {score.label}
-                </span>
+                <span className="text-sm font-medium text-gray-700">{score.label}</span>
                 {score.value !== null ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-800">
-                      {score.value}%
-                    </span>
-                    <div
-                      className={cn(
-                        "w-3 h-3 rounded-full",
-                        getColor(score.value)
-                      )}
-                    />
+                    <span className="text-sm font-semibold text-gray-800">{score.value}%</span>
+                    <div className={cn('w-3 h-3 rounded-full', getColor(score.value))} />
                   </div>
                 ) : (
                   <span className="text-xs text-gray-400">Loading...</span>
@@ -88,7 +102,7 @@ const GuaranteesPanel = (props: GuaranteesPanelProps) => {
         )}
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default GuaranteesPanel
+export default GuaranteesPanel;
