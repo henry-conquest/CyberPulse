@@ -1,3 +1,5 @@
+import { calculateRiskySignIn } from "@/helpers/widgetHelpers";
+
 interface tenantIdParamModel {
     tenantId: string
 }
@@ -34,25 +36,8 @@ export const getRiskySignInPolicies = async (params: userAndTenantParamModel) =>
         }
 
         const data = await res.json();
-        const policies = data.value || [];
-
-        const allowedRiskLevels = ['high', 'medium', 'low'];
-
-        const matchingPolicy = policies.find((policy: any) => {
-            const state = policy.state === 'enabled' || policy.state === 'enabledForReportingButNotEnforced';
-            const signInRiskLevels = policy?.conditions?.signInRiskLevels || [];
-            const hasRiskLevel = signInRiskLevels.some((risk: any) =>
-                allowedRiskLevels.includes(risk.toLowerCase())
-            );
-            return state && hasRiskLevel;
-        });
-
-        const exists = Boolean(matchingPolicy);
-
-        return {
-            exists,
-            policies,
-        };
+        const formattedData = calculateRiskySignIn(data)
+        return formattedData
     } catch (err) {
         console.error('Error fetching risky sign-in policies', err);
         throw err;

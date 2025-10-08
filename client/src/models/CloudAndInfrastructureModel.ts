@@ -6,6 +6,8 @@ export interface SecureScoreEntry {
 }
 
 
-export interface CloudAndInfrastructureSliceModel {
+export interface devicesAndInfrastructureSliceModel {
     secureScores: SecureScoreEntry[]
+    encryptionCount: number
+    compliancePolicies: any
 }

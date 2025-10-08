@@ -1,8 +1,8 @@
 
-import { CloudAndInfrastructureSliceModel } from '@/models/CloudAndInfrastructureModel';
+import { devicesAndInfrastructureSliceModel } from '@/models/CloudAndInfrastructureModel';
 import { createSlice } from '@reduxjs/toolkit';
 
-export const initialCloudAndInfrastructureSlice: CloudAndInfrastructureSliceModel = {
+export const initialdevicesAndInfrastructureSlice: devicesAndInfrastructureSliceModel = {
   secureScores: [
     {
       month: '',
@@ -10,15 +10,23 @@ export const initialCloudAndInfrastructureSlice: CloudAndInfrastructureSliceMode
       percentage: 0,
       comparative: 0
     }
-  ]
+  ],
+  encryptionCount: 0,
+  compliancePolicies: null
 };
 
-const cloudAndInfrastructureSlice = createSlice({
-  name: 'cloudAndInfrastructureData',
-  initialState: initialCloudAndInfrastructureSlice,
+const devicesAndInfrastructureSlice = createSlice({
+  name: 'devicesAndInfrastructureData',
+  initialState: initialdevicesAndInfrastructureSlice,
   reducers: {
     setSecureScores(state, action) {
       state.secureScores = action.payload;
+    },
+    setEncryption(state, action) {
+      state.encryptionCount = action.payload
+    },
+    setCompliancePolicies(state, action) {
+      state.compliancePolicies = action.payload
     },
     reset(state) {
       state.secureScores = [
@@ -28,9 +36,11 @@ const cloudAndInfrastructureSlice = createSlice({
         percentage: 0,
         comparative: 0
       }
-      ]
+      ],
+      state.encryptionCount = 0,
+      state.compliancePolicies = null
     }
   }
 })
 
-export default cloudAndInfrastructureSlice;
+export default devicesAndInfrastructureSlice;

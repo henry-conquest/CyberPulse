@@ -1,5 +1,5 @@
-import { getSecureScores } from "@/service/CloudAndInfrastructureService";
-import { cloudAndInfrastructureActions, scoresActions } from "@/store/store";
+import { getSecureScores } from "@/service/DevicesAndInfrastructureService";
+import { devicesAndInfrastructureActions, scoresActions } from "@/store/store";
 import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { Line } from "react-chartjs-2";
@@ -44,9 +44,9 @@ interface ScoreChartProps {
 
 const dataMap = {
   secure: {
-    selector: (state: any) => state.cloudAndInfrastructure.secureScores,
+    selector: (state: any) => state.devicesAndInfrastructure.secureScores,
     fetcher: getSecureScores,
-    setAction: cloudAndInfrastructureActions.setSecureScores
+    setAction: devicesAndInfrastructureActions.setSecureScores
   },
   identity: {
     selector: (state: any) => state.scores.identityScores,

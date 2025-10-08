@@ -1,12 +1,13 @@
 import { getManualWidgetStatuses } from "@/service/ManualWidgetsService"
-import { getTenants } from "@/service/TenantService"
-import { manualWidgetsActions, sessionInfoActions } from "@/store/store"
+import { getTenants, getTenantScoreHistory } from "@/service/TenantService"
+import { manualWidgetsActions, scoresActions, sessionInfoActions } from "@/store/store"
 import { useEffect, useState } from "react"
 import { useDispatch } from "react-redux"
 
 export const useCompanyDetails = (tenantId: string) => {
   const [manWidgets, setManWidgets] = useState<any[]>([])
   const [manLoading, setManLoading] = useState<boolean>(true)
+  const [scoreHistory, setScoreHistory] = useState({})
   const dispatch = useDispatch()
   useEffect(() => {
       const getTenantData = async () => {
@@ -30,14 +31,25 @@ export const useCompanyDetails = (tenantId: string) => {
         setManLoading(false)
       }
     }
+    const fetchScoreHistory = async () => {
+      try {
+        const data = await getTenantScoreHistory(tenantId)
+        dispatch(scoresActions.setScoresHistory(data))
+        setScoreHistory(data)
+      } catch(err) {
+        console.log('problem getting score history');
+      }
+    }
 
     useEffect(() => {
       fetchManualWidgets()
+      fetchScoreHistory()
     }, [])
 
     return {
       manWidgets,
       manLoading,
-      fetchManualWidgets
+      fetchManualWidgets,
+      scoreHistory
     }
 }

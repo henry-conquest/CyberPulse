@@ -5,4 +5,5 @@ export interface ScoresSliceModel {
     widgetScores: any
     maturityScore: number | null
     maturityHistory: any
+    scoresHistory: any
 }

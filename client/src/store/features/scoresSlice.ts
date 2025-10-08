@@ -9,7 +9,8 @@ export const initialScoresSliceState: ScoresSliceModel = {
     widgetScores : {
       cyberSecurityEnabled: 0
     },
-    maturityHistory: []
+    maturityHistory: [],
+    scoresHistory: []
 };
 
 const scoresSlice = createSlice({
@@ -34,12 +35,16 @@ const scoresSlice = createSlice({
     setMaturityHistory(state, action) {
       state.maturityHistory = action.payload
     },
+    setScoresHistory(state, action) {
+      state.scoresHistory = action.payload
+    },
     reset(state) {
       state.identityScores = []
       state.dataScores = []
       state.appScores = []
       state.maturityScore = null
       state.maturityHistory = []
+      state.scoresHistory = []
     }
   },
 });
