@@ -2,7 +2,12 @@ import type { Express, Request, Response } from 'express';
 import { createServer, type Server } from 'http';
 import { storage } from './storage';
 import { setupAuth, isAuthenticated, isAuthorized } from './auth';
-import { evaluatePhishMethodsGrouped, fetchSecureScores, getTenantAccessTokenFromDB, transformCategoryScores } from './helper';
+import {
+  evaluatePhishMethodsGrouped,
+  fetchSecureScores,
+  getTenantAccessTokenFromDB,
+  transformCategoryScores,
+} from './helper';
 import { z } from 'zod';
 import { gt, and, desc, eq, sql } from 'drizzle-orm';
 import {
@@ -12,11 +17,7 @@ import {
   tenantScores,
   tenants,
 } from '@shared/schema';
-import {
-  generateState,
-  storeState,
-  getAuthorizationUrl,
-} from './microsoft-oauth';
+import { generateState, storeState, getAuthorizationUrl } from './microsoft-oauth';
 import { emailService } from './email';
 import crypto from 'crypto';
 import { ConfidentialClientApplication } from '@azure/msal-node';
@@ -173,9 +174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set expiry (e.g. 7 days from now)
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-      
       await emailService.sendInviteEmail(email, token, tenantId);
-      
+
       // Save invite to DB
       await storage.createUserInvite({
         email,
@@ -204,27 +204,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/invites', isAuthenticated, async (req, res) => {
     try {
-      const { email } = req.body
-      await storage.deleteInvitesByEmail(email)
+      const { email } = req.body;
+      await storage.deleteInvitesByEmail(email);
 
-      res.status(200).json({message: "Invite successfully deleted"})
+      res.status(200).json({ message: 'Invite successfully deleted' });
     } catch (err) {
-      res.status(500).json({message: "Failed to delete invite"})
-      throw err
+      res.status(500).json({ message: 'Failed to delete invite' });
+      throw err;
     }
-  })
+  });
 
   app.get('/api/invites', isAuthenticated, async (req, res) => {
-    try{
-      const invites = await storage.getInvites()
+    try {
+      const invites = await storage.getInvites();
 
-      res.status(200).json({invites})
-    }catch (error) {
+      res.status(200).json({ invites });
+    } catch (error) {
       res.status(500).json({
-        error: 'Failed to get invites'
-      })
+        error: 'Failed to get invites',
+      });
     }
-  })
+  });
 
   app.get('/api/m365-admins/:id', isAuthenticated, async (req, res) => {
     try {
@@ -270,21 +270,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const data = await response.json();
-      const adminRoles = data.value.filter((role: any) =>
-        role.displayName?.toLowerCase().includes('admin')
-      );
+      const adminRoles = data.value.filter((role: any) => role.displayName?.toLowerCase().includes('admin'));
 
       const adminMembers = [];
       for (const role of adminRoles) {
-        const roleResponse = await fetch(
-          `https://graph.microsoft.com/v1.0/directoryRoles/${role.id}/members`,
-          {
-            headers: {
-              Authorization: `Bearer ${access_token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        const roleResponse = await fetch(`https://graph.microsoft.com/v1.0/directoryRoles/${role.id}/members`, {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
         const members = await roleResponse.json();
         adminMembers.push({ role: role.displayName, members: members.value });
       }
@@ -298,80 +293,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sign-in-policies/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-    const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
-    if (!accessToken) {
-      return res.status(401).json({ error: 'Access token is missing' });
-    }
-    
-    const response = await fetch('https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
+      if (!accessToken) {
+        return res.status(401).json({ error: 'Access token is missing' });
       }
-    })
 
-    const data = await response.json()
-    res.status(200).json(data)
-    } catch(error) {
+      const response = await fetch('https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      res.status(200).json(data);
+    } catch (error) {
       res.status(500).json({
         error: 'Failed to fetch conditional access policies',
       });
     }
-  })
+  });
   app.get('/api/trusted-locations/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-    const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
+      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
 
-    if (!accessToken) {
-      return res.status(401).json({ error: 'Access token is missing' });
-    }
-    
-    const response = await fetch('https://graph.microsoft.com/v1.0/identity/conditionalAccess/namedLocations', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+      if (!accessToken) {
+        return res.status(401).json({ error: 'Access token is missing' });
       }
-    })
 
-    const data = await response.json();
+      const response = await fetch('https://graph.microsoft.com/v1.0/identity/conditionalAccess/namedLocations', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-    res.status(200).json(data);
-    } catch(error) {
+      const data = await response.json();
+
+      res.status(200).json(data);
+    } catch (error) {
       res.status(500).json({
         error: 'Failed to fetch named locations',
       });
     }
-  })
+  });
 
   app.get('/api/phish-resistant-mfa/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-    const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
+      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
 
-    if (!accessToken) {
-      return res.status(401).json({ error: 'Access token is missing' });
-    }
-    
-    const response = await fetch('https://graph.microsoft.com/v1.0/policies/authenticationMethodsPolicy', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+      if (!accessToken) {
+        return res.status(401).json({ error: 'Access token is missing' });
       }
-    })
 
-    const data = await response.json();
-    const transformedData = evaluatePhishMethodsGrouped(data)
+      const response = await fetch('https://graph.microsoft.com/v1.0/policies/authenticationMethodsPolicy', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-    res.status(200).json(transformedData); 
-    } catch(error) {
+      const data = await response.json();
+      const transformedData = evaluatePhishMethodsGrouped(data);
+
+      res.status(200).json(transformedData);
+    } catch (error) {
       res.status(500).json({
         error: 'Failed to fetch named phish resistant MFA',
       });
     }
-  })
+  });
 
   app.get('/api/encrypted-devices/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
+      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
 
       if (!accessToken) {
         return res.status(401).json({ error: 'Access token is missing' });
@@ -390,9 +385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await response.json();
 
-      const unencryptedDevices = result.value.filter(
-        (device: any) => device.isEncrypted === false
-      );
+      const unencryptedDevices = result.value.filter((device: any) => device.isEncrypted === false);
 
       const responseData = {
         count: unencryptedDevices.length,
@@ -404,10 +397,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           complianceState: device.complianceState,
           enrollmentType: device.enrollmentType,
           jailBroken: device.jailBroken,
-          lastSyncDateTime: device.lastSyncDateTime
-        }))
+          lastSyncDateTime: device.lastSyncDateTime,
+        })),
       };
-
 
       res.status(200).json(responseData);
     } catch (error) {
@@ -420,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/device-compliance-policies/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
+      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
 
       if (!accessToken) {
         return res.status(401).json({ error: 'Access token is missing' });
@@ -429,8 +421,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch('https://graph.microsoft.com/v1.0/deviceManagement/deviceCompliancePolicies', {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {
@@ -449,7 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Overall scores
   app.get('/api/secure-scores/:userId/:tenantId', isAuthenticated, async (req, res) => {
     try {
-      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId)
+      const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
 
       if (!accessToken) {
         return res.status(401).json({ error: 'Access token is missing' });
@@ -458,8 +450,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch('https://graph.microsoft.com/v1.0/security/secureScores?$top=500', {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {
@@ -475,7 +467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // approx 2 years in milliseconds
-      const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000; 
+      const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000;
       const now = Date.now();
 
       const allDailyScores: MonthlyScore[] = [];
@@ -487,9 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
         // get the different scores
-        const percentScore = entry.maxScore
-          ? (entry.currentScore / entry.maxScore) * 100
-          : 0;
+        const percentScore = entry.maxScore ? (entry.currentScore / entry.maxScore) * 100 : 0;
 
         const comparativeScore =
           entry.averageComparativeScores?.find((s: any) => s.basis === 'AllTenants')?.averageScore || 0;
@@ -503,12 +493,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // sort scores by time
-      const result = allDailyScores.sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      );
+      const result = allDailyScores.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       res.status(200).json(result);
-
     } catch (error) {
       console.error('Error fetching secure scores:', error);
       res.status(500).json({ error: 'Failed to fetch secure scores' });
@@ -550,9 +537,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to fetch apps scores' });
     }
   });
-
-
-
 
   app.post(
     '/api/auth/accept-invite',
@@ -678,44 +662,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   app.put(
-  '/api/admin/users/:userId/tenants',
-  isAuthenticated,
-  isAuthorized([UserRoles.ADMIN]),
-  asyncHandler(async (req, res) => {
-    const { userId } = req.params;
-    const { tenantIds } = req.body;
+    '/api/admin/users/:userId/tenants',
+    isAuthenticated,
+    isAuthorized([UserRoles.ADMIN]),
+    asyncHandler(async (req, res) => {
+      const { userId } = req.params;
+      const { tenantIds } = req.body;
 
-    // Replace user-tenant associations
-    await storage.setTenantsForUser(userId, tenantIds);
+      // Replace user-tenant associations
+      await storage.setTenantsForUser(userId, tenantIds);
 
-    // Log the action
-    await storage.createAuditLog({
-      id: crypto.randomUUID(),
-      userId: (req.user as any).id,
-      action: 'update_user_tenants',
-      details: `Updated tenants for user ${userId}: [${tenantIds.join(', ')}]`,
-    });
+      // Log the action
+      await storage.createAuditLog({
+        id: crypto.randomUUID(),
+        userId: (req.user as any).id,
+        action: 'update_user_tenants',
+        details: `Updated tenants for user ${userId}: [${tenantIds.join(', ')}]`,
+      });
 
-    res.status(200).json({ message: 'Tenant access updated successfully' });
-  })
-);
+      res.status(200).json({ message: 'Tenant access updated successfully' });
+    })
+  );
   app.delete(
-  '/api/admin/users/:userId/:userEmail',
-  isAuthenticated,
-  isAuthorized([UserRoles.ADMIN]),
-  asyncHandler(async (req, res) => {
-    const { userId, userEmail } = req.params;
-    // Delete all invites to this user and delete it from user_tenants and users tables
-    await storage.deleteInvitesByEmail(userEmail)
-    await storage.deleteUserFromUserTenants(userId);
-    const deletedUser = await storage.deleteUser(userId);
+    '/api/admin/users/:userId/:userEmail',
+    isAuthenticated,
+    isAuthorized([UserRoles.ADMIN]),
+    asyncHandler(async (req, res) => {
+      const { userId, userEmail } = req.params;
+      // Delete all invites to this user and delete it from user_tenants and users tables
+      await storage.deleteInvitesByEmail(userEmail);
+      await storage.deleteUserFromUserTenants(userId);
+      const deletedUser = await storage.deleteUser(userId);
 
-    if (!deletedUser) {
-      return res.status(404).json({ message: 'User not found' });
+      if (!deletedUser) {
+        return res.status(404).json({ message: 'User not found' });
       }
-    res.status(200).json({ message: 'User deleted successfully', user: deletedUser });  })
-);
-
+      res.status(200).json({ message: 'User deleted successfully', user: deletedUser });
+    })
+  );
 
   app.patch(
     '/api/admin/users/:userId/role',
@@ -764,12 +748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
-      const {
-        tenantId: tenId,
-        tenantName: tenName,
-        clientId,
-        clientSecret,
-      } = req.body;
+      const { tenantId: tenId, tenantName: tenName, clientId, clientSecret } = req.body;
 
       // 🔐 Step 1: Verify Microsoft 365 tenant
       try {
@@ -823,7 +802,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           tenant = await storage.createTenant(validatedData);
         }
-
 
         // 📝 Step 4: Create audit log
         await storage.createAuditLog({
@@ -1027,16 +1005,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
-      console.log('THIS IS THE BODY', req.body)
-      console.log('THIS IS THE PARAMS', req.params.id)
-      console.log('THIS IS THE USER', req.user)
+      console.log('THIS IS THE BODY', req.body);
+      console.log('THIS IS THE PARAMS', req.params.id);
+      console.log('THIS IS THE USER', req.user);
       const tenantId = req.params.id;
       const userId = (req.user as any).id;
 
       const validatedData = insertMicrosoft365ConnectionSchema.parse({
         ...req.body,
         userId,
-        id: crypto.randomUUID()
+        id: crypto.randomUUID(),
       });
 
       // Check if a connection already exists for this tenant
@@ -1076,42 +1054,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
   app.get(
-  '/api/tenants/:id/widgets',
-  isAuthenticated,
-  asyncHandler(async (req, res) => {
-    const tenantId = req.params.id;
+    '/api/tenants/:id/widgets',
+    isAuthenticated,
+    asyncHandler(async (req, res) => {
+      const tenantId = req.params.id;
 
-    // 1. Get tenant widgets (joined with widget metadata)
-    let tenantWidgets = await storage.getTenantWidgets(tenantId);
+      // 1. Get tenant widgets (joined with widget metadata)
+      let tenantWidgets = await storage.getTenantWidgets(tenantId);
 
-    // 2. Get all widgets that should be manual
-    const manualWidgets = await storage.getManualWidgets();
+      // 2. Get all widgets that should be manual
+      const manualWidgets = await storage.getManualWidgets();
 
-    // 3. Find which manual widgets are missing for this tenant
-    const tenantWidgetNames = tenantWidgets.map(w => w.widgetName);
-    const missing = manualWidgets.filter(w => !tenantWidgetNames.includes(w.key));
+      // 3. Find which manual widgets are missing for this tenant
+      const tenantWidgetNames = tenantWidgets.map((w) => w.widgetName);
+      const missing = manualWidgets.filter((w) => !tenantWidgetNames.includes(w.key));
 
-    if (missing.length > 0) {
-      console.log(`Seeding ${missing.length} missing manual widgets for tenant ${tenantId}`);
+      if (missing.length > 0) {
+        console.log(`Seeding ${missing.length} missing manual widgets for tenant ${tenantId}`);
 
-      const defaultTenantWidgets = missing.map(widget => ({
-        tenantId,
-        widgetId: widget.id,
-        isEnabled: false,
-        manuallyToggled: false,
-        forceManual: true,
-      }));
+        const defaultTenantWidgets = missing.map((widget) => ({
+          tenantId,
+          widgetId: widget.id,
+          isEnabled: false,
+          manuallyToggled: false,
+          forceManual: true,
+        }));
 
-      await storage.insertTenantWidgets(defaultTenantWidgets);
+        await storage.insertTenantWidgets(defaultTenantWidgets);
 
-      // Re-fetch with the new inserts
-      tenantWidgets = await storage.getTenantWidgets(tenantId);
-    }
+        // Re-fetch with the new inserts
+        tenantWidgets = await storage.getTenantWidgets(tenantId);
+      }
 
-    res.status(200).json(tenantWidgets);
-  })
-);
-
+      res.status(200).json(tenantWidgets);
+    })
+  );
 
   app.post(
     '/api/tenants/:tenantId/widgets/:widgetId/toggle',
@@ -1141,127 +1118,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   /**
- * POST /api/tenants/:tenantId/scores
- * Trigger a new score calculation for the tenant and store snapshot
- */
-app.post(
-  '/api/tenants/:tenantId/scores',
-  asyncHandler(async (req, res) => {
-    const { tenantId } = req.params;
+   * POST /api/tenants/:tenantId/scores
+   * Trigger a new score calculation for the tenant and store snapshot
+   */
+  app.post(
+    '/api/tenants/:tenantId/scores',
+    asyncHandler(async (req, res) => {
+      const { tenantId } = req.params;
 
-    try {
-      const { totalScore, maxScore } = await saveTenantDailyScores(tenantId);
-      res.status(200).json({ tenantId, totalScore, maxScore });
-    } catch (err) {
-      console.error('Error calculating tenant score:', err);
-      res.status(500).json({ error: 'Failed to calculate tenant score' });
-    }
-  })
-);
-
-/**
- * GET /api/tenants/:tenantId/scores
- * Fetch all daily scores for a tenant (most recent first)
- */
-app.get(
-  '/api/tenants/:tenantId/maturity-scores',
-  asyncHandler(async (req, res) => {
-    const { tenantId } = req.params;
-
-    try {
-      // Calculate cutoff date (3 months ago)
-       const cutoffDate = new Date();
-      cutoffDate.setMonth(cutoffDate.getMonth() - 3);
-
-      // Convert to YYYY-MM-DD string
-      const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
-
-      const scores = await db
-        .select()
-        .from(tenantScores)
-        .where(
-          and(
-            eq(tenantScores.tenantId, tenantId),
-            gt(tenantScores.scoreDate, cutoffDateStr)
-          )
-        )
-        .orderBy(desc(tenantScores.scoreDate));
-
-      res.status(200).json(scores);
-    } catch (err) {
-      console.error('Error fetching tenant scores:', err);
-      res.status(500).json({ error: 'Failed to fetch tenant scores' });
-    }
-  })
-);
-/**
- * GET /api/score-history/:tenantId
- * Fetch all daily scores for a tenant (most recent first)
- */
-app.get(
-  '/api/score-history/:tenantId',
-  asyncHandler(async (req, res) => {
-    const { tenantId } = req.params;
-
-    try {
-      // Calculate cutoff date (3 months ago)
-       const cutoffDate = new Date();
-      cutoffDate.setMonth(cutoffDate.getMonth() - 3);
-
-      // Convert to YYYY-MM-DD string
-      const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
-
-      const scores = await db
-        .select()
-        .from(tenantScores)
-        .where(
-          and(
-            eq(tenantScores.tenantId, tenantId),
-            gt(tenantScores.scoreDate, cutoffDateStr)
-          )
-        )
-        .orderBy(desc(tenantScores.scoreDate));
-
-      res.status(200).json(scores);
-    } catch (err) {
-      console.error('Error fetching tenant scores:', err);
-      res.status(500).json({ error: 'Failed to fetch tenant scores' });
-    }
-  })
-);
-
-app.post(
-  '/api/scores/run-daily',
-  asyncHandler(async (req, res) => {
-    try {
-      // Get all active tenants
-      const tenantsList = await db
-        .select()
-        .from(tenants)
-        .where(sql`deleted_at IS NULL`);
-
-      const results = [];
-
-      for (const tenant of tenantsList) {
-        try {
-          const result = await saveTenantDailyScores(tenant.id);
-          results.push(result);
-        } catch (err) {
-          console.error(`Failed to calculate score for tenant ${tenant.id}:`, err);
-          results.push({ tenantId: tenant.id, error: err });
-        }
+      try {
+        const { totalScore, maxScore } = await saveTenantDailyScores(tenantId);
+        res.status(200).json({ tenantId, totalScore, maxScore });
+      } catch (err) {
+        console.error('Error calculating tenant score:', err);
+        res.status(500).json({ error: 'Failed to calculate tenant score' });
       }
+    })
+  );
 
-      res.status(200).json({ results });
-    } catch (err) {
-      console.error('Error running daily scores:', err);
-      res.status(500).json({ error: 'Failed to run daily scores' });
-    }
-  })
-);
+  /**
+   * GET /api/tenants/:tenantId/scores
+   * Fetch all daily scores for a tenant (most recent first)
+   */
+  app.get(
+    '/api/tenants/:tenantId/maturity-scores',
+    asyncHandler(async (req, res) => {
+      const { tenantId } = req.params;
 
+      try {
+        // Calculate cutoff date (3 months ago)
+        const cutoffDate = new Date();
+        cutoffDate.setMonth(cutoffDate.getMonth() - 3);
 
+        // Convert to YYYY-MM-DD string
+        const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
 
+        const scores = await db
+          .select()
+          .from(tenantScores)
+          .where(and(eq(tenantScores.tenantId, tenantId), gt(tenantScores.scoreDate, cutoffDateStr)))
+          .orderBy(desc(tenantScores.scoreDate));
+
+        res.status(200).json(scores);
+      } catch (err) {
+        console.error('Error fetching tenant scores:', err);
+        res.status(500).json({ error: 'Failed to fetch tenant scores' });
+      }
+    })
+  );
+  /**
+   * GET /api/score-history/:tenantId
+   * Fetch all daily scores for a tenant (most recent first)
+   */
+  app.get(
+    '/api/score-history/:tenantId',
+    asyncHandler(async (req, res) => {
+      const { tenantId } = req.params;
+
+      try {
+        // Calculate cutoff date (3 months ago)
+        const cutoffDate = new Date();
+        cutoffDate.setMonth(cutoffDate.getMonth() - 3);
+
+        // Convert to YYYY-MM-DD string
+        const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+
+        const scores = await db
+          .select()
+          .from(tenantScores)
+          .where(and(eq(tenantScores.tenantId, tenantId), gt(tenantScores.scoreDate, cutoffDateStr)))
+          .orderBy(desc(tenantScores.scoreDate));
+
+        res.status(200).json(scores);
+      } catch (err) {
+        console.error('Error fetching tenant scores:', err);
+        res.status(500).json({ error: 'Failed to fetch tenant scores' });
+      }
+    })
+  );
+
+  app.post(
+    '/api/scores/run-daily',
+    asyncHandler(async (req, res) => {
+      try {
+        // Get all active tenants
+        const tenantsList = await db
+          .select()
+          .from(tenants)
+          .where(sql`deleted_at IS NULL`);
+
+        const results = [];
+
+        for (const tenant of tenantsList) {
+          try {
+            const result = await saveTenantDailyScores(tenant.id);
+            results.push(result);
+          } catch (err) {
+            console.error(`Failed to calculate score for tenant ${tenant.id}:`, err);
+            results.push({ tenantId: tenant.id, error: err });
+          }
+        }
+
+        res.status(200).json({ results });
+      } catch (err) {
+        console.error('Error running daily scores:', err);
+        res.status(500).json({ error: 'Failed to run daily scores' });
+      }
+    })
+  );
 
   const httpServer = createServer(app);
   return httpServer;

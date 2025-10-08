@@ -56,7 +56,7 @@ function Router() {
       <Route path="/" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/companies" component={() => <ProtectedRoute component={Companies} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
-      <Route path="/login-rejected" component={() => <ProtectedRoute component={LoginRejected}/>}/>
+      <Route path="/login-rejected" component={() => <ProtectedRoute component={LoginRejected} />} />
 
       <Route
         path="/tenants/:tenantId/details"
@@ -72,42 +72,34 @@ function Router() {
       <Route path="/sign-in-policies/:tenantId" component={() => <ProtectedRoute component={SignInPolicies} />} />
       <Route path="/phish-resistant-mfa/:tenantId" component={() => <ProtectedRoute component={PhishResistantMFA} />} />
       <Route path="/no-encryption/:tenantId" component={() => <ProtectedRoute component={NoEncryptionDetails} />} />
-      <Route path="/compliance-policies/:tenantId" component={() => <ProtectedRoute component={CompliancePoliciesDetails} />} />
-      <Route 
-        path="/secure-scores/:tenantId" 
-        component={() => (
-          <ProtectedRoute component={ScoreChart} id="secure" title="Microsoft 365 Secure Score" />
-        )}
+      <Route
+        path="/compliance-policies/:tenantId"
+        component={() => <ProtectedRoute component={CompliancePoliciesDetails} />}
+      />
+      <Route
+        path="/secure-scores/:tenantId"
+        component={() => <ProtectedRoute component={ScoreChart} id="secure" title="Microsoft 365 Secure Score" />}
       />
 
-      <Route 
-        path="/identity-scores/:tenantId" 
-        component={() => (
-          <ProtectedRoute component={ScoreChart} id="identity" title="Microsoft 365 Identity Score" />
-        )}
+      <Route
+        path="/identity-scores/:tenantId"
+        component={() => <ProtectedRoute component={ScoreChart} id="identity" title="Microsoft 365 Identity Score" />}
       />
 
-      <Route 
-        path="/app-scores/:tenantId" 
-        component={() => (
-          <ProtectedRoute component={ScoreChart} id="app" title="Microsoft 365 App Score" />
-        )}
+      <Route
+        path="/app-scores/:tenantId"
+        component={() => <ProtectedRoute component={ScoreChart} id="app" title="Microsoft 365 App Score" />}
       />
 
-      <Route 
-        path="/data-scores/:tenantId" 
-        component={() => (
-          <ProtectedRoute component={ScoreChart} id="data" title="Microsoft 365 Data Score" />
-        )}
-      />
-      
-      <Route 
-        path="/maturity-scores/:tenantId" 
-        component={() => (
-          <ProtectedRoute component={ScoreChart} id="maturity" title="Maturity Score" />
-        )}
+      <Route
+        path="/data-scores/:tenantId"
+        component={() => <ProtectedRoute component={ScoreChart} id="data" title="Microsoft 365 Data Score" />}
       />
 
+      <Route
+        path="/maturity-scores/:tenantId"
+        component={() => <ProtectedRoute component={ScoreChart} id="maturity" title="Maturity Score" />}
+      />
 
       {/* Fallback to 404 */}
       <Route component={NotFound} />

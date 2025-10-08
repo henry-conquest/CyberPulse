@@ -17,8 +17,7 @@ interface MFARecommendationsChartProps {
 const COLORS = ['#10b981', '#f59e0b'];
 
 const PhishResistantMFAChart = ({ data }: MFARecommendationsChartProps) => {
-  const recommendationsCount =
-    data.toEnable.length + data.toDisable.length + data.enhance.length;
+  const recommendationsCount = data.toEnable.length + data.toDisable.length + data.enhance.length;
   const correctCount = data.correct.length;
 
   const chartData = {
@@ -59,7 +58,6 @@ const PhishResistantMFAChart = ({ data }: MFARecommendationsChartProps) => {
     responsive: true,
     maintainAspectRatio: false,
   };
-
 
   return (
     <div className="relative w-32 h-32">

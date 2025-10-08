@@ -10,7 +10,7 @@ const ProgressCircle = ({ number }) => {
   const arcGap = (totalArcSpan - arcLength * arcCount) / (arcCount - 1);
   const startOffset = -120;
 
-  const arcColors = ["#FFD700", "#FF7F50", "#F4A6A6", "#4169E1"];
+  const arcColors = ['#FFD700', '#FF7F50', '#F4A6A6', '#4169E1'];
 
   const polarToCartesian = (cx, cy, r, angleInDegrees) => {
     const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
@@ -24,7 +24,7 @@ const ProgressCircle = ({ number }) => {
     const endAngle = startAngle + arcLength;
     const start = polarToCartesian(center, center, radius, endAngle);
     const end = polarToCartesian(center, center, radius, startAngle);
-    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
 
     return (
       <path
@@ -38,9 +38,7 @@ const ProgressCircle = ({ number }) => {
     );
   };
 
-  const arcStartAngles = Array.from({ length: arcCount }, (_, i) =>
-    startOffset + i * (arcLength + arcGap)
-  );
+  const arcStartAngles = Array.from({ length: arcCount }, (_, i) => startOffset + i * (arcLength + arcGap));
 
   return (
     <div className="flex flex-col items-center">
@@ -64,4 +62,4 @@ const ProgressCircle = ({ number }) => {
     </div>
   );
 };
-export default ProgressCircle
+export default ProgressCircle;

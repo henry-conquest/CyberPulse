@@ -1,10 +1,9 @@
-export type PhishResistanceLevel = true | false | "partial";
-
+export type PhishResistanceLevel = true | false | 'partial';
 
 export interface EvaluatedMethod {
   id: string;
   displayName: string;
-  state: "enabled" | "disabled";
+  state: 'enabled' | 'disabled';
   isPhishResistant: PhishResistanceLevel;
   recommendation: string;
 }
@@ -17,9 +16,8 @@ export interface GroupedMFAData {
 }
 
 export interface IdentitiesAndPeopleSliceModel {
-  knownLocations: any
-  m365Admins: any
-  signInPolicies: any
-  phishResistantMFA: GroupedMFAData
-
+  knownLocations: any;
+  m365Admins: any;
+  signInPolicies: any;
+  phishResistantMFA: GroupedMFAData;
 }

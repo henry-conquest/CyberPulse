@@ -1,59 +1,58 @@
-import ErrorResponseMessage from "@/components/ui/ErrorResponseMessage"
-import LoadingSpinner from "@/components/ui/LoadingSpinner"
-import { getKnownLocations } from "@/service/IdentitiesAndPeopleService"
-import { getTenants } from "@/service/TenantService"
-import { identitiesAndPeopleActions, sessionInfoActions } from "@/store/store"
-import { format } from "date-fns"
-import { useEffect, useState } from "react"
-import { useDispatch, useSelector } from "react-redux"
-import { Link, useParams } from "wouter"
+import ErrorResponseMessage from '@/components/ui/ErrorResponseMessage';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { getKnownLocations } from '@/service/IdentitiesAndPeopleService';
+import { getTenants } from '@/service/TenantService';
+import { identitiesAndPeopleActions, sessionInfoActions } from '@/store/store';
+import { format } from 'date-fns';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link, useParams } from 'wouter';
 
 const KnownLocations = () => {
-    const knownLocationData = useSelector((state: any) => state?.identitiesAndPeople?.knownLocations)
-    const userId = useSelector((state: any) => state?.sessionInfo?.user?.id)
-    const { tenantId } = useParams()
-    const dispatch = useDispatch()
-    const [hasError, setHasError] = useState(false);
+  const knownLocationData = useSelector((state: any) => state?.identitiesAndPeople?.knownLocations);
+  const userId = useSelector((state: any) => state?.sessionInfo?.user?.id);
+  const { tenantId } = useParams();
+  const dispatch = useDispatch();
+  const [hasError, setHasError] = useState(false);
 
-    useEffect(() => {
-      const initialiseData = async () => {
-        if (!knownLocationData && userId && tenantId) {
-          try {
-            const data = await getKnownLocations({ userId, tenantId });
-            if (!data) throw new Error("No data returned");
-            dispatch(identitiesAndPeopleActions.setKnownLocations(data));
-            setHasError(false);
-          } catch (error) {
-            console.error("Failed to fetch known locations", error);
-            setHasError(true);
-          }
+  useEffect(() => {
+    const initialiseData = async () => {
+      if (!knownLocationData && userId && tenantId) {
+        try {
+          const data = await getKnownLocations({ userId, tenantId });
+          if (!data) throw new Error('No data returned');
+          dispatch(identitiesAndPeopleActions.setKnownLocations(data));
+          setHasError(false);
+        } catch (error) {
+          console.error('Failed to fetch known locations', error);
+          setHasError(true);
         }
-      };
-      initialiseData();
-    }, [tenantId, knownLocationData, userId, dispatch]);
+      }
+    };
+    initialiseData();
+  }, [tenantId, knownLocationData, userId, dispatch]);
 
-    if (hasError && tenantId) {
-      return (
-        <ErrorResponseMessage tenantId={tenantId} text="Trusted Locations"/>
-      );
-    }
+  if (hasError && tenantId) {
+    return <ErrorResponseMessage tenantId={tenantId} text="Trusted Locations" />;
+  }
 
-    if(!knownLocationData) {
-      return (
-        <LoadingSpinner />
-      )
-    }
+  if (!knownLocationData) {
+    return <LoadingSpinner />;
+  }
 
-    return (
-        <>
-        <div className="flex justify-between align-center ml-6 mr-6 mt-4">
-        <Link to={`/tenants/${tenantId}/details`} className="inline-flex items-center text-sm text-brand-teal hover:underline">
+  return (
+    <>
+      <div className="flex justify-between align-center ml-6 mr-6 mt-4">
+        <Link
+          to={`/tenants/${tenantId}/details`}
+          className="inline-flex items-center text-sm text-brand-teal hover:underline"
+        >
           ← Back
         </Link>
         <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
-        </div>
-        <h1 className="text-brand-teal text-2xl font-bold mt-6 ml-6">Microsoft 365 Trusted Locations</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+      </div>
+      <h1 className="text-brand-teal text-2xl font-bold mt-6 ml-6">Microsoft 365 Trusted Locations</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
         {knownLocationData?.value?.map((location: any) => (
           <div
             key={location.id}
@@ -62,9 +61,7 @@ const KnownLocations = () => {
             <h2 className="text-xl font-semibold text-brand-green">{location.displayName}</h2>
 
             <span className="inline-block text-xs uppercase bg-gray-100 text-gray-700 px-2 py-1 rounded-full w-max">
-              {location["@odata.type"].includes("countryNamedLocation")
-                ? "Country-Based"
-                : "IP-Based"}
+              {location['@odata.type'].includes('countryNamedLocation') ? 'Country-Based' : 'IP-Based'}
             </span>
 
             {location.countriesAndRegions && (
@@ -89,15 +86,11 @@ const KnownLocations = () => {
               </div>
             )}
 
-            {"isTrusted" in location && (
+            {'isTrusted' in location && (
               <div>
                 <p className="text-sm font-medium text-gray-600">Trusted:</p>
-                <span
-                  className={`text-sm font-semibold ${
-                    location.isTrusted ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {location.isTrusted ? "Yes" : "No"}
+                <span className={`text-sm font-semibold ${location.isTrusted ? 'text-green-600' : 'text-red-600'}`}>
+                  {location.isTrusted ? 'Yes' : 'No'}
                 </span>
               </div>
             )}
@@ -109,9 +102,8 @@ const KnownLocations = () => {
           </div>
         ))}
       </div>
+    </>
+  );
+};
 
-        </>
-    )
-}
-
-export default KnownLocations
+export default KnownLocations;

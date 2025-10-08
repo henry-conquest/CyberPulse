@@ -3,7 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 export const initialSessionInfoSlice = {
   user: null,
   selectedClient: null,
-  tenants: []
+  tenants: [],
 };
 
 const sessionInfoSlice = createSlice({

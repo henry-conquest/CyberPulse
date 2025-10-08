@@ -28,25 +28,31 @@ export const schema = yup.object().shape({
 
 const CreateCompanyForm = (props: any) => {
   const { createDialogOpen, setCreateDialogOpen, setM365DialogOpen, setLoading, queryClient, isIntegrationTab } = props;
-  const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    reset,
+  } = useForm({
     resolver: yupResolver(schema),
   });
 
   // clear form errors when the modal is hidden
   useEffect(() => {
-    if(!createDialogOpen) reset()
-  }, [createDialogOpen])
+    if (!createDialogOpen) reset();
+  }, [createDialogOpen]);
 
   const [loadingLocal, setLoadingLocal] = useState(false);
 
   const handleConnect = async (formData: any) => {
     try {
       setLoading(true);
-      setLoadingLocal(true)
+      setLoadingLocal(true);
       await connectToM365(formData);
       await createTenant(formData);
-      
-      toast({ title: "Success", description: "Tenant connected and created." });
+
+      toast({ title: 'Success', description: 'Tenant connected and created.' });
       await queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
 
       setCreateDialogOpen(false);
@@ -59,7 +65,7 @@ const CreateCompanyForm = (props: any) => {
       });
     } finally {
       setLoading(false);
-      setLoadingLocal(false)
+      setLoadingLocal(false);
     }
   };
 
@@ -67,28 +73,22 @@ const CreateCompanyForm = (props: any) => {
     <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
       <DialogTrigger asChild>
         {isIntegrationTab ? (
-        <Button
-        variant="outline"
-        size="sm"
-        type="button"
-      >
-        <ExternalLink className="h-3 w-3 mr-1" />
-        Connect Another Tenant
-      </Button>
-      ) : (
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Tenant
-        </Button>
-      )}
+          <Button variant="outline" size="sm" type="button">
+            <ExternalLink className="h-3 w-3 mr-1" />
+            Connect Another Tenant
+          </Button>
+        ) : (
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Tenant
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Connect New Tenant</DialogTitle>
-          <DialogDescription>
-            Add a new tenant to monitor and manage its cybersecurity.
-          </DialogDescription>
+          <DialogDescription>Add a new tenant to monitor and manage its cybersecurity.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(handleConnect)}>
@@ -105,7 +105,7 @@ const CreateCompanyForm = (props: any) => {
           ))}
 
           <DialogFooter className="mt-4">
-            <Button type='button' variant="outline" onClick={() => setCreateDialogOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={loadingLocal}>
@@ -121,16 +121,12 @@ const CreateCompanyForm = (props: any) => {
                       strokeWidth="4"
                       fill="none"
                     />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                    />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                   </svg>
                   Connecting...
                 </div>
               ) : (
-                "Connect"
+                'Connect'
               )}
             </Button>
           </DialogFooter>

@@ -6,7 +6,7 @@ export interface AnalystComment {
 
 export interface PreviousComment {
   date: string;
-  note: string
+  note: string;
 }
 
 export interface AnalystCommentsProps {

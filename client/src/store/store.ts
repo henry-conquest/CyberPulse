@@ -13,7 +13,7 @@ export const store = configureStore({
     endUserDevices: endUserDevicesSlice.reducer,
     devicesAndInfrastructure: devicesAndInfrastructureSlice.reducer,
     manualWidgets: manualWidgetsSlice.reducer,
-    scores: scoresSlice.reducer
+    scores: scoresSlice.reducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
 });
@@ -22,7 +22,7 @@ export default store;
 
 export const sessionInfoActions = sessionInfoSlice.actions;
 export const identitiesAndPeopleActions = identitiesAndPeopleSlice.actions;
-export const endUserDevicesActions = endUserDevicesSlice.actions
-export const devicesAndInfrastructureActions = devicesAndInfrastructureSlice.actions
-export const manualWidgetsActions = manualWidgetsSlice.actions
-export const scoresActions = scoresSlice.actions
+export const endUserDevicesActions = endUserDevicesSlice.actions;
+export const devicesAndInfrastructureActions = devicesAndInfrastructureSlice.actions;
+export const manualWidgetsActions = manualWidgetsSlice.actions;
+export const scoresActions = scoresSlice.actions;

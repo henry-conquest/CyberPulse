@@ -14,5 +14,5 @@ export interface EndUserDevicesSliceModel {
     count: number;
     devices: UnencryptedDevice[];
   };
-  compliancePolicies: any
+  compliancePolicies: any;
 }
