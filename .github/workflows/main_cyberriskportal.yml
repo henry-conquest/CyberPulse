@@ -29,12 +29,11 @@ jobs:
           npm run build --if-present
           npm run test --if-present
 
-      # 4 Upload artifact for deployment job
-      - name: Upload artifact for deploy
+      - name: Upload dist folder
         uses: actions/upload-artifact@v4
         with:
-          name: node-app
-          path: .
+          name: dist
+          path: dist
 
   deploy:
     runs-on: ubuntu-latest
@@ -45,11 +44,11 @@ jobs:
 
     steps:
       # 1️⃣ Download artifact
-      - name: Download artifact from build job
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: node-app
-      
+          name: dist
+          path: dist
       # 2️⃣ Login to Azure
       - name: Login to Azure
         uses: azure/login@v2
@@ -64,4 +63,4 @@ jobs:
         with:
           app-name: 'CyberRiskPortal'
           slot-name: 'Production'
-          package: .
+          package: dist
