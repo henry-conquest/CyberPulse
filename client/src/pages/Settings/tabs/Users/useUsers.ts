@@ -7,21 +7,22 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useSelector } from 'react-redux';
 import { UserModel } from '@/models/UserModel';
-import { getInvites, getUsers } from '@/service/Settings';
+import { getUsers } from '@/service/Settings';
 
-type Invite = {
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: 'admin' | 'user';
-  tenantId: string;
-};
+// Schema for create user form
+const createUserSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  firstName: z.string().min(1, 'Please enter a valid first name').min(1),
+  lastName: z.string().min(1, 'Please enter a valid last name'),
+  role: z.enum(['admin', 'user']),
+  tenantId: z.string().min(1, 'Please select a tenant'),
+});
 
 export const useUsers = () => {
   const loggedInUser = useSelector((state: any) => state.sessionInfo.user);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
   const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserModel | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,29 +30,23 @@ export const useUsers = () => {
   const [isManageAccessDialogOpen, setIsManageAccessDialogOpen] = useState(false);
   const [selectedUserForAccess, setSelectedUserForAccess] = useState<UserModel | null>(null);
   const [loading, setLoading] = useState(false);
-  const [invites, setInvites] = useState<Invite[]>([]);
-  const [allUsers, setAllUsers] = useState([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{ id: string; email: string } | null>(null);
 
-  const fetchInvites = async () => {
-    const data = await getInvites();
-    const userData = await getUsers(setLoading);
-    setInvites(data.invites);
-    setAllUsers(userData);
-    setLoading(false);
-  };
-  useEffect(() => {
-    fetchInvites();
-  }, []);
+  const { data: users = [], isLoading } = useQuery({
+    queryKey: ['/api/admin/users'],
+    queryFn: () => getUsers(setLoading),
+  });
 
-  // Schema for invite user form
-  const inviteUserSchema = z.object({
-    email: z.string().email('Please enter a valid email address'),
-    firstName: z.string().min(1, 'Please enter a valid first name').min(1),
-    lastName: z.string().min(1, 'Please enter a valid last name'),
-    role: z.enum(['admin', 'user']),
-    tenantId: z.string().min(1, 'Please select a tenant'),
+  const filteredUsers = users.filter((user: UserModel) => {
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const matchesSearch =
+      searchQuery.trim() === '' ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.firstName && user.firstName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.lastName && user.lastName.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    return matchesRole && matchesSearch;
   });
 
   // Schema for updating user role
@@ -60,8 +55,8 @@ export const useUsers = () => {
   });
 
   // Forms
-  const inviteForm = useForm<z.infer<typeof inviteUserSchema>>({
-    resolver: zodResolver(inviteUserSchema),
+  const createUserForm = useForm<z.infer<typeof createUserSchema>>({
+    resolver: zodResolver(createUserSchema),
     defaultValues: {
       email: '',
       firstName: '',
@@ -78,21 +73,16 @@ export const useUsers = () => {
     },
   });
 
-  // Fetch users
-  const { data: users, isLoading }: any = useQuery({
-    queryKey: ['/api/admin/users'],
-  });
-
   // Fetch tenants
   const { data: tenants }: any = useQuery({
     queryKey: ['/api/tenants'],
   });
 
-  // Invite user mutation
-  const inviteUserMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof inviteUserSchema>) => {
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof createUserSchema>) => {
       try {
-        const response = await apiRequest('POST', '/api/admin/users/invite', data);
+        const response = await apiRequest('POST', '/api/admin/users/create', data);
         return response.json();
       } catch (error) {
         console.log(error);
@@ -100,17 +90,17 @@ export const useUsers = () => {
       }
     },
     onSuccess: () => {
-      fetchInvites();
+      getUsers(setLoading);
       toast({
-        title: 'Invitation sent',
-        description: 'User has been invited successfully',
+        title: 'User created',
+        description: 'User has been created successfully',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
-      setIsInviteDialogOpen(false);
-      inviteForm.reset();
+      setIsCreateUserDialogOpen(false);
+      createUserForm.reset();
     },
     onError: (error) => {
-      let message = 'Failed to invite user';
+      let message = 'Failed to create user';
 
       if (error instanceof Error) {
         try {
@@ -141,7 +131,6 @@ export const useUsers = () => {
       return response.json();
     },
     onSuccess: () => {
-      fetchInvites();
       toast({
         title: 'Role updated',
         description: 'User role has been updated successfully',
@@ -178,7 +167,6 @@ export const useUsers = () => {
       await apiRequest('DELETE', `/api/admin/users/${userId}/${userEmail}`);
     },
     onSuccess: () => {
-      fetchInvites();
       toast({
         title: 'User deleted',
         description: 'User has been deleted successfully',
@@ -208,8 +196,8 @@ export const useUsers = () => {
   });
 
   // Form handlers
-  const handleInviteUser = (data: z.infer<typeof inviteUserSchema>) => {
-    inviteUserMutation.mutate(data);
+  const handleCreateUser = (data: z.infer<typeof createUserSchema>) => {
+    createUserMutation.mutate(data);
   };
 
   const handleUpdateRole = (data: z.infer<typeof updateRoleSchema>) => {
@@ -238,20 +226,6 @@ export const useUsers = () => {
     });
     setIsEditRoleDialogOpen(true);
   };
-
-  // Filter and search users
-  const filteredUsers = users
-    ? allUsers.filter((user: UserModel) => {
-        const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-        const matchesSearch =
-          searchQuery.trim() === '' ||
-          user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (user.firstName && user.firstName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (user.lastName && user.lastName.toLowerCase().includes(searchQuery.toLowerCase()));
-
-        return matchesRole && matchesSearch;
-      })
-    : [];
   const updateTenantAccessMutation = useMutation({
     mutationFn: async ({ userId, tenantIds }: { userId: string; tenantIds: number[] }) => {
       try {
@@ -311,19 +285,19 @@ export const useUsers = () => {
     filteredUsers,
     openEditRoleDialog,
     handleDeleteUser,
-    handleInviteUser,
+    handleCreateUser,
     handleUpdateRole,
-    inviteForm,
-    inviteUserMutation,
-    inviteUserSchema,
+    createUserForm,
+    createUserMutation,
+    createUserSchema,
     tenants,
     isLoading,
     updateRoleForm,
     setRoleFilter,
     setIsEditRoleDialogOpen,
-    setIsInviteDialogOpen,
+    setIsCreateUserDialogOpen,
     isEditRoleDialogOpen,
-    isInviteDialogOpen,
+    isCreateUserDialogOpen,
     selectedUser,
     searchQuery,
     setSearchQuery,
@@ -337,13 +311,11 @@ export const useUsers = () => {
     updateTenantAccessMutation,
     loading,
     setLoading,
-    invites,
-    allUsers,
     isDeleteDialogOpen,
     setIsDeleteDialogOpen,
     userToDelete,
     setUserToDelete,
     deleteUserMutation,
-    fetchInvites,
+    users,
   };
 };

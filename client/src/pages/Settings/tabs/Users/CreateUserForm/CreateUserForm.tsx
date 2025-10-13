@@ -4,13 +4,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-const InviteForm = (props: any) => {
-  const { inviteForm, handleInviteUser, inviteUserMutation, tenants, setIsInviteDialogOpen } = props;
+const CreateUserForm = (props: any) => {
+  const { createUserForm, handleCreateUser, createUserMutation, tenants, setIsCreateUserDialogOpen } = props;
   return (
-    <Form {...inviteForm}>
-      <form onSubmit={inviteForm.handleSubmit(handleInviteUser)} className="space-y-4">
+    <Form {...createUserForm}>
+      <form onSubmit={createUserForm.handleSubmit(handleCreateUser)} className="space-y-4">
         <FormField
-          control={inviteForm.control}
+          control={createUserForm.control}
           name="email"
           render={({ field }) => (
             <FormItem>
@@ -18,13 +18,12 @@ const InviteForm = (props: any) => {
               <FormControl>
                 <Input {...field} placeholder="user@example.com" type="email" />
               </FormControl>
-              <FormDescription>An invitation will be sent to this email address.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
         <FormField
-          control={inviteForm.control}
+          control={createUserForm.control}
           name="firstName"
           render={({ field }) => (
             <FormItem>
@@ -38,7 +37,7 @@ const InviteForm = (props: any) => {
           )}
         />
         <FormField
-          control={inviteForm.control}
+          control={createUserForm.control}
           name="lastName"
           render={({ field }) => (
             <FormItem>
@@ -53,7 +52,7 @@ const InviteForm = (props: any) => {
         />
 
         <FormField
-          control={inviteForm.control}
+          control={createUserForm.control}
           name="role"
           render={({ field }) => (
             <FormItem>
@@ -76,7 +75,7 @@ const InviteForm = (props: any) => {
         />
 
         <FormField
-          control={inviteForm.control}
+          control={createUserForm.control}
           name="tenantId"
           render={({ field }) => (
             <FormItem>
@@ -102,11 +101,11 @@ const InviteForm = (props: any) => {
         />
 
         <DialogFooter>
-          <Button type="button" onClick={() => setIsInviteDialogOpen(false)}>
+          <Button type="button" onClick={() => setIsCreateUserDialogOpen(false)}>
             Cancel
           </Button>
-          <Button type="submit" disabled={inviteUserMutation.isPending}>
-            {inviteUserMutation.isPending ? 'Sending...' : 'Send Invitation'}
+          <Button type="submit" disabled={createUserMutation.isPending}>
+            {createUserMutation.isPending ? 'Creating...' : 'Create User'}
           </Button>
         </DialogFooter>
       </form>
@@ -114,4 +113,4 @@ const InviteForm = (props: any) => {
   );
 };
 
-export default InviteForm;
+export default CreateUserForm;

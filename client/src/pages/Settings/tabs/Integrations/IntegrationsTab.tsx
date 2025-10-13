@@ -201,19 +201,6 @@ const IntegrationsTab = () => {
             </Alert>
           )}
         </div>
-
-        {/* Future integrations can be added here */}
-        <div className="rounded-lg border border-dashed p-4 bg-secondary-50">
-          <div className="flex items-center justify-center py-4">
-            <div className="text-center">
-              <h3 className="text-lg font-medium mb-2">More integrations coming soon</h3>
-              <p className="text-sm text-secondary-500 max-w-md mx-auto">
-                We're working on additional integrations to enhance your security monitoring capabilities. Stay tuned
-                for updates!
-              </p>
-            </div>
-          </div>
-        </div>
       </CardContent>
       <CardFooter className="border-t pt-6">
         <Alert>
