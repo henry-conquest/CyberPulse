@@ -193,5 +193,5 @@ export const generatePdf = async (props: PDFProps) => {
   currentY = doc.lastAutoTable.finalY + 10;
 
   // ---------------- Save PDF ----------------
-  doc.save(`${tenantName}-Cfyber-Risk-Executive_Report.pdf`);
+  doc.save(`${tenantName}-Cyber-Risk-Executive_Report.pdf`);
 };

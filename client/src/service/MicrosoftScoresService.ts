@@ -1,11 +1,10 @@
 interface ParamsModel {
-  userId: string;
   tenantId: string;
 }
 
 export const getSecureScores = async (params: ParamsModel) => {
   try {
-    const res = await fetch(`/api/secure-scores/${params.userId}/${params.tenantId}`, {
+    const res = await fetch(`/api/secure-scores/${params.tenantId}`, {
       credentials: 'include',
     });
     if (!res.ok) {
@@ -27,15 +26,15 @@ const fetchScores = async (url: string) => {
 };
 
 export const getIdentityScores = async (params: ParamsModel) => {
-  return fetchScores(`/api/secure-scores/identity/${params.userId}/${params.tenantId}`);
+  return fetchScores(`/api/secure-scores/identity/${params.tenantId}`);
 };
 
 export const getDataScores = async (params: ParamsModel) => {
-  return fetchScores(`/api/secure-scores/data/${params.userId}/${params.tenantId}`);
+  return fetchScores(`/api/secure-scores/data/${params.tenantId}`);
 };
 
 export const getAppScores = async (params: ParamsModel) => {
-  return fetchScores(`/api/secure-scores/apps/${params.userId}/${params.tenantId}`);
+  return fetchScores(`/api/secure-scores/apps/${params.tenantId}`);
 };
 
 export const getMaturityScores = async (params: ParamsModel) => {

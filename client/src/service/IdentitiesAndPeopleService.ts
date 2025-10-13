@@ -25,9 +25,9 @@ export const get365Admins = async (params: tenantIdParamModel) => {
   }
 };
 
-export const getRiskySignInPolicies = async (params: userAndTenantParamModel) => {
+export const getRiskySignInPolicies = async (params: tenantIdParamModel) => {
   try {
-    const res = await fetch(`/api/sign-in-policies/${params.userId}/${params.tenantId}`, {
+    const res = await fetch(`/api/sign-in-policies/${params.tenantId}`, {
       credentials: 'include',
     });
 
@@ -46,7 +46,7 @@ export const getRiskySignInPolicies = async (params: userAndTenantParamModel) =>
 
 export const getKnownLocations = async (params: userAndTenantParamModel) => {
   try {
-    const res = await fetch(`/api/trusted-locations/${params.userId}/${params.tenantId}`, {
+    const res = await fetch(`/api/trusted-locations/${params.tenantId}`, {
       credentials: 'include',
     });
     if (!res.ok) {
@@ -59,9 +59,9 @@ export const getKnownLocations = async (params: userAndTenantParamModel) => {
   }
 };
 
-export const getPhishResistantMFA = async (params: userAndTenantParamModel) => {
+export const getPhishResistantMFA = async (params: tenantIdParamModel) => {
   try {
-    const res = await fetch(`/api/phish-resistant-mfa/${params.userId}/${params.tenantId}`, {
+    const res = await fetch(`/api/phish-resistant-mfa/${params.tenantId}`, {
       credentials: 'include',
     });
     if (!res.ok) {

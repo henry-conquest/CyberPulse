@@ -31,7 +31,7 @@ import {
   type InsertTenantWidget,
   InsertIntegration,
   Integration,
-  integrations
+  integrations,
 } from 'shared/schema';
 import { db } from './db';
 import { eq, and, inArray, desc, asc, sql, like, or, isNull } from 'drizzle-orm';
@@ -108,8 +108,6 @@ export interface IStorage {
   getIntegrationsByTenantId(tenantId: string): Promise<Integration[]>;
   getIntegration(tenantId: string, type: string): Promise<Integration | undefined>;
   updateIntegration(id: string, data: Partial<InsertIntegration>): Promise<Integration>;
-
-
 }
 
 export class DatabaseStorage implements IStorage {
@@ -148,13 +146,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(id: string): Promise<User | undefined> {
-    const [user] = await db
-      .delete(users)
-      .where(eq(users.id, id))
-      .returning();
+    const [user] = await db.delete(users).where(eq(users.id, id)).returning();
     return user;
   }
-
 
   // Invite operations
   async getInvites(): Promise<Invite[]> {
@@ -178,8 +172,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getInviteByEmail(email: string) {
-  return db.select().from(invites).where(eq(invites.email, email)).limit(1).then(res => res[0]);
-}
+    return db
+      .select()
+      .from(invites)
+      .where(eq(invites.email, email))
+      .limit(1)
+      .then((res) => res[0]);
+  }
 
   // Check if user is already added to a tenant
   async checkUserTenantExists(userId: string, tenantId: string) {
@@ -190,7 +189,6 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
     return result.length > 0;
   }
-
 
   async addUserToTenant({ userId, tenantId }: { userId: string; tenantId: string }) {
     await db.insert(userTenants).values({
@@ -210,9 +208,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteInvitesByEmail(email: string): Promise<void> {
-  await db.delete(invites).where(eq(invites.email, email));
-}
-
+    await db.delete(invites).where(eq(invites.email, email));
+  }
 
   // Token operations
   // Create or update token
@@ -236,17 +233,11 @@ export class DatabaseStorage implements IStorage {
       });
   }
 
-
   async getMicrosoftTokenByUserIdAndTenantId(userId: string, tenantId: string): Promise<MicrosoftToken | undefined> {
     const [result] = await db
       .select()
       .from(microsoftTokens)
-      .where(
-        and(
-          eq(microsoftTokens.userId, userId),
-          eq(microsoftTokens.tenantId, tenantId)
-        )
-      );
+      .where(and(eq(microsoftTokens.userId, userId), eq(microsoftTokens.tenantId, tenantId)));
     return result;
   }
 
@@ -256,13 +247,12 @@ export class DatabaseStorage implements IStorage {
     return newTenant;
   }
 
-  async restoreTenant(id: string,): Promise<void> {
-  await db
-    .update(tenants)
-    .set({ deletedAt: null }) // you can update name if needed
-    .where(eq(tenants.id, id));
-}
-
+  async restoreTenant(id: string): Promise<void> {
+    await db
+      .update(tenants)
+      .set({ deletedAt: null }) // you can update name if needed
+      .where(eq(tenants.id, id));
+  }
 
   async getTenant(id: string): Promise<Tenant | undefined> {
     const [tenant] = await db.select().from(tenants).where(eq(tenants.id, id));
@@ -289,7 +279,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedTenant;
   }
-
 
   async setTenantsForUser(userId: string, tenantIds: string[]): Promise<void> {
     // 1. Remove existing assignments
@@ -329,12 +318,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUserFromUserTenants(userId: string): Promise<any> {
-  const [user] = await db
-        .delete(userTenants)
-        .where(eq(userTenants.userId, userId))
-        .returning();
-  return user;
-}
+    const [user] = await db.delete(userTenants).where(eq(userTenants.userId, userId)).returning();
+    return user;
+  }
 
   async getUsersForTenant(tenantId: string): Promise<User[]> {
     const userRecords = await db
@@ -374,9 +360,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMicrosoft365ConnectionsByUserId(userId: string): Promise<Microsoft365Connection[]> {
-    // Since the database table doesn't have a user_id column, we'll return all connections for now
-    // In production, this would need a proper join or additional column in the database
-    return await this.getMicrosoft365Connections();
+    // 1️⃣ Get the user (to check role)
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+
+    // 2️⃣ If admin, allow all tenants’ connections
+    if (isAdmin) {
+      return await db.select().from(microsoft365Connections).orderBy(desc(microsoft365Connections.createdAt));
+    }
+
+    // 3️⃣ Get the tenant IDs this user belongs to
+    const tenantLinks = await db
+      .select({ tenantId: userTenants.tenantId })
+      .from(userTenants)
+      .where(eq(userTenants.userId, userId));
+
+    const tenantIds = tenantLinks.map((t) => t.tenantId);
+
+    // 4️⃣ If no tenants, return empty list
+    if (tenantIds.length === 0) return [];
+
+    // 5️⃣ Only return Microsoft 365 connections for those tenants
+    const connections = await db
+      .select()
+      .from(microsoft365Connections)
+      .where(inArray(microsoft365Connections.tenantId, tenantIds))
+      .orderBy(desc(microsoft365Connections.createdAt));
+
+    return connections;
   }
 
   async updateMicrosoft365Connection(
@@ -434,7 +445,7 @@ export class DatabaseStorage implements IStorage {
 
     // Query with join when company is associated
     const joinQuery = db
-    // @ts-ignore
+      // @ts-ignore
       .select({
         ...microsoft365OAuthConnections,
         companyName: tenants.name,
@@ -469,7 +480,7 @@ export class DatabaseStorage implements IStorage {
 
     // Query with join when company is associated
     const joinQuery = db
-    // @ts-ignore
+      // @ts-ignore
       .select({
         ...microsoft365OAuthConnections,
         companyName: tenants.name,
@@ -545,21 +556,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   // TenantWidgets
- async getTenantWidgets(tenantId: string) {
-  const result = await db
-    .select({
-      tenantId: tenantWidgets.tenantId,
-      widgetId: tenantWidgets.widgetId,
-      isEnabled: tenantWidgets.isEnabled,
-      lastUpdated: tenantWidgets.lastUpdated,
-      widgetName: widgets.key,
-    })
-    .from(tenantWidgets)
-    .innerJoin(widgets, eq(tenantWidgets.widgetId, widgets.id))
-    .where(eq(tenantWidgets.tenantId, tenantId));
+  async getTenantWidgets(tenantId: string) {
+    const result = await db
+      .select({
+        tenantId: tenantWidgets.tenantId,
+        widgetId: tenantWidgets.widgetId,
+        isEnabled: tenantWidgets.isEnabled,
+        lastUpdated: tenantWidgets.lastUpdated,
+        widgetName: widgets.key,
+      })
+      .from(tenantWidgets)
+      .innerJoin(widgets, eq(tenantWidgets.widgetId, widgets.id))
+      .where(eq(tenantWidgets.tenantId, tenantId));
 
-  return result;
-}
+    return result;
+  }
 
   async upsertTenantWidget(widget: InsertTenantWidget): Promise<TenantWidget> {
     const [result] = await db
@@ -579,22 +590,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Get only manual widgets
-   getManualWidgets = async () => {
-    return await db
-      .select()
-      .from(widgets)
-      .where(eq(widgets.manual, true));
+  getManualWidgets = async () => {
+    return await db.select().from(widgets).where(eq(widgets.manual, true));
   };
 
   // Bulk insert
-   insertTenantWidgets = async (entries: any[]) => {
+  insertTenantWidgets = async (entries: any[]) => {
     return await db.insert(tenantWidgets).values(entries).onConflictDoNothing();
   };
 
   async updateTenantWidgetStatus({
-  tenantId,
-  widgetId,
-  isEnabled,
+    tenantId,
+    widgetId,
+    isEnabled,
   }: {
     tenantId: string;
     widgetId: string;
@@ -607,12 +615,7 @@ export class DatabaseStorage implements IStorage {
         manuallyToggled: true,
         lastUpdated: new Date(),
       })
-      .where(
-        and(
-          eq(tenantWidgets.tenantId, tenantId),
-          eq(tenantWidgets.widgetId, widgetId)
-        )
-      );
+      .where(and(eq(tenantWidgets.tenantId, tenantId), eq(tenantWidgets.widgetId, widgetId)));
   }
 
   // --- Integrations ---
@@ -623,20 +626,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getIntegrationsByTenantId(tenantId: string): Promise<Integration[]> {
-    return await db
-      .select()
-      .from(integrations)
-      .where(eq(integrations.tenantId, tenantId));
+    return await db.select().from(integrations).where(eq(integrations.tenantId, tenantId));
   }
 
   async getIntegration(tenantId: string, type: string): Promise<Integration | undefined> {
     const [integration] = await db
       .select()
       .from(integrations)
-      .where(and(
-        eq(integrations.tenantId, tenantId),
-        eq(integrations.type, type)
-      ));
+      .where(and(eq(integrations.tenantId, tenantId), eq(integrations.type, type)));
     return integration;
   }
 
@@ -651,8 +648,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated;
   }
-
-
 }
 
 export const storage = new DatabaseStorage();

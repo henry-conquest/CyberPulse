@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from 'express';
 import { createServer, type Server } from 'http';
 import { storage } from './storage';
-import { setupAuth, isAuthenticated, isAuthorized } from './auth';
+import { setupAuth, isAuthenticated, isAuthorized, requireTenantAccess } from './auth';
 import {
   evaluatePhishMethodsGrouped,
   fetchSecureScores,
@@ -17,7 +17,6 @@ import {
   tenantScores,
   tenants,
 } from '@shared/schema';
-import { generateState, storeState, getAuthorizationUrl } from './microsoft-oauth';
 import { emailService } from './email';
 import crypto from 'crypto';
 import { ConfidentialClientApplication } from '@azure/msal-node';
@@ -47,7 +46,7 @@ const asyncHandler = (fn: (req: Request, res: Response) => Promise<any>) => {
     } catch (error) {
       console.error(error);
       res.status(500).json({
-        message: error instanceof Error ? error.message : 'Internal Server Error',
+        message: 'Internal Server Error',
       });
     }
   };
@@ -59,19 +58,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    // console.log('🔍 Session ID:', req.sessionID);
-    // console.log('🔍 Session contents:', req.session);
-    // console.log('🔍 Is Authenticated:', req.isAuthenticated());
     console.log('🔍 User:', req.user);
     try {
       const userId = req.user?.id;
-      // console.log('🔍 userId:', userId);
-
       const user = await storage.getUser(userId);
-      // console.log('🔍 user from DB:', user);
-
       const tenants = await storage.getTenantsByUserId(userId);
-      // console.log('🔍 tenants from DB:', tenants);
 
       res.json({
         ...user,
@@ -83,68 +74,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Microsoft 365 OAuth authorization
-  app.get(
-    '/api/auth/microsoft365/authorize',
-    isAuthenticated,
-    asyncHandler(async (req: any, res) => {
-      const userId = req.user.id;
-
-      console.log('OAuth authorization endpoint called');
-      console.log('- User ID:', userId);
-
-      // Get credentials and company ID from request query parameters (not cookies)
-      const clientId = (req.query.clientId as string) || undefined;
-      const clientSecret = (req.query.clientSecret as string) || undefined;
-      const redirectUri = (req.query.redirectUri as string) || undefined;
-      const companyId = (req.query.companyId as string) || undefined;
-
-      console.log('Request parameters:');
-      console.log('- Client ID provided:', !!clientId);
-      console.log('- Client Secret provided:', !!clientSecret);
-      console.log('- Redirect URI provided:', !!redirectUri);
-      console.log('- Company ID provided:', !!companyId, companyId || '');
-
-      // Validate required parameters
-      if (!clientId || !clientSecret) {
-        console.error('Missing required OAuth parameters');
-        return res.status(400).json({
-          error: true,
-          message: 'Missing required OAuth credentials. Please provide both Client ID and Client Secret.',
-        });
-      }
-
-      try {
-        // Generate and store state value to prevent CSRF
-        console.log('Generating OAuth state parameter');
-        const state = generateState();
-        storeState(state, userId, clientId, clientSecret, redirectUri, companyId);
-
-        // Get the authorization URL
-        console.log('Getting authorization URL');
-        const authUrl = getAuthorizationUrl(state, clientId, redirectUri);
-
-        console.log('Authorization URL generated successfully');
-        res.json({ authUrl });
-      } catch (error) {
-        console.error('Error generating OAuth authorization URL:', error);
-
-        let errorMessage = 'Failed to generate authorization URL';
-        if (error instanceof Error) {
-          errorMessage = error.message;
-        }
-
-        res.status(500).json({
-          error: true,
-          message: errorMessage,
-        });
-      }
-    })
-  );
-
   app.post(
     '/api/admin/users/invite',
     isAuthenticated,
+    isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req: Request, res: Response) => {
       const inviteSchema = z.object({
         email: z.string().email(),
@@ -161,6 +94,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { email, firstName, lastName, role, tenantId } = parsed.data;
+      const user = req.user as any;
+
+      const userTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = userTenants.map((t) => t.id);
+
+      // If user is not a super-admin, enforce tenant restriction
+      if (user.role !== UserRoles.ADMIN && !allowedTenantIds.includes(tenantId)) {
+        return res.status(403).json({ message: 'Forbidden: you cannot invite users to this tenant' });
+      }
 
       // Check for existing user
       const existingUser = await storage.getUserByEmail(email);
@@ -202,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
-  app.delete('/api/invites', isAuthenticated, async (req, res) => {
+  app.delete('/api/invites', isAuthenticated, isAuthorized([UserRoles.ADMIN]), async (req, res) => {
     try {
       const { email } = req.body;
       await storage.deleteInvitesByEmail(email);
@@ -214,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/invites', isAuthenticated, async (req, res) => {
+  app.get('/api/invites', isAuthenticated, isAuthorized([UserRoles.ADMIN]), async (req, res) => {
     try {
       const invites = await storage.getInvites();
 
@@ -228,6 +170,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/m365-admins/:id', isAuthenticated, async (req, res) => {
     try {
+      const tenantId = req.params.id;
+      const user = req.user as any;
+      // --- Tenant scoping ---
+      const userTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = userTenants.map((t) => t.id);
+
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
       const connection = await storage.getMicrosoft365ConnectionByTenantId(req.params.id);
       if (!connection) {
         return res.status(404).json({ error: 'No Microsoft 365 connection found for this tenant' });
@@ -291,8 +242,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/sign-in-policies/:userId/:tenantId', isAuthenticated, async (req, res) => {
+  app.get('/api/sign-in-policies/:tenantId', isAuthenticated, async (req, res) => {
     try {
+      const user = req.user as any;
+      const tenantId = req.params.tenantId;
+
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
       const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
       if (!accessToken) {
         return res.status(401).json({ error: 'Access token is missing' });
@@ -313,8 +273,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  app.get('/api/trusted-locations/:userId/:tenantId', isAuthenticated, async (req, res) => {
+  app.get('/api/trusted-locations/:tenantId', isAuthenticated, async (req, res) => {
     try {
+      const user = req.user as any;
+      const tenantId = req.params.tenantId;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
       const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
 
       if (!accessToken) {
@@ -338,8 +306,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/phish-resistant-mfa/:userId/:tenantId', isAuthenticated, async (req, res) => {
+  app.get('/api/phish-resistant-mfa/:tenantId', isAuthenticated, async (req, res) => {
     try {
+      const user = req.user as any;
+      const tenantId = req.params.tenantId;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
       const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
 
       if (!accessToken) {
@@ -364,8 +340,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/encrypted-devices/:userId/:tenantId', isAuthenticated, async (req, res) => {
+  app.get('/api/encrypted-devices/:tenantId', isAuthenticated, async (req, res) => {
     try {
+      const user = req.user as any;
+      const tenantId = req.params.tenantId;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
       const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
 
       if (!accessToken) {
@@ -410,8 +394,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/device-compliance-policies/:userId/:tenantId', isAuthenticated, async (req, res) => {
+  app.get('/api/device-compliance-policies/:tenantId', isAuthenticated, async (req, res) => {
     try {
+      const user = req.user as any;
+      const tenantId = req.params.tenantId;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
       const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
 
       if (!accessToken) {
@@ -439,8 +431,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Overall scores
-  app.get('/api/secure-scores/:userId/:tenantId', isAuthenticated, async (req, res) => {
+  app.get('/api/secure-scores/:tenantId', isAuthenticated, async (req, res) => {
     try {
+      const user = req.user as any;
+      const tenantId = req.params.tenantId;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
       const accessToken = await getTenantAccessTokenFromDB(req.params.tenantId);
 
       if (!accessToken) {
@@ -503,8 +503,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Identity scores
-  app.get('/api/secure-scores/identity/:userId/:tenantId', isAuthenticated, async (req, res) => {
+  app.get('/api/secure-scores/identity/:tenantId', isAuthenticated, async (req, res) => {
     try {
+      const user = req.user as any;
+      const tenantId = req.params.tenantId;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
       const data = await fetchSecureScores(req.params.tenantId);
       const result = transformCategoryScores(data, 'Identity');
       res.status(200).json(result);
@@ -515,8 +523,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Data scores
-  app.get('/api/secure-scores/data/:userId/:tenantId', isAuthenticated, async (req, res) => {
+  app.get('/api/secure-scores/data/:tenantId', isAuthenticated, async (req, res) => {
     try {
+      const user = req.user as any;
+      const tenantId = req.params.tenantId;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
       const data = await fetchSecureScores(req.params.tenantId);
       const result = transformCategoryScores(data, 'Data');
       res.status(200).json(result);
@@ -527,8 +543,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Apps scores
-  app.get('/api/secure-scores/apps/:userId/:tenantId', isAuthenticated, async (req, res) => {
+  app.get('/api/secure-scores/apps/:tenantId', isAuthenticated, async (req, res) => {
     try {
+      const user = req.user as any;
+      const tenantId = req.params.tenantId;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
       const data = await fetchSecureScores(req.params.tenantId);
       const result = transformCategoryScores(data, 'Apps');
       res.status(200).json(result);
@@ -589,7 +613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't return sensitive information
         const safeConnections = connections.map((conn) => {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { clientSecret, ...safeConn } = conn;
+          const { clientSecret, tenantDomain, tenantId, userId, clientId, ...safeConn } = conn;
           return safeConn;
         });
 
@@ -598,7 +622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error fetching Microsoft 365 connections:', error);
         res.status(500).json({
           message: 'Failed to fetch Microsoft 365 connections',
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: 'Unknown error',
         });
       }
     })
@@ -608,6 +632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete(
     '/api/connections/microsoft365/:id',
     isAuthenticated,
+    isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req: any, res) => {
       const userId = req.user.id;
       const connectionId = req.params.id;
@@ -639,7 +664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error deleting Microsoft 365 connection:', error);
         res.status(500).json({
           message: 'Failed to delete Microsoft 365 connection',
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: 'Unknown error',
         });
       }
     })
@@ -1005,9 +1030,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
-      console.log('THIS IS THE BODY', req.body);
-      console.log('THIS IS THE PARAMS', req.params.id);
-      console.log('THIS IS THE USER', req.user);
       const tenantId = req.params.id;
       const userId = (req.user as any).id;
 
@@ -1057,7 +1079,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     '/api/tenants/:id/widgets',
     isAuthenticated,
     asyncHandler(async (req, res) => {
-      const tenantId = req.params.id;
+      const user = req.user as any;
+      const tenantId = req.params.tenantId;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
 
       // 1. Get tenant widgets (joined with widget metadata)
       let tenantWidgets = await storage.getTenantWidgets(tenantId);
@@ -1125,6 +1154,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     '/api/tenants/:tenantId/scores',
     asyncHandler(async (req, res) => {
       const { tenantId } = req.params;
+      const user = req.user as any;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
 
       try {
         const { totalScore, maxScore } = await saveTenantDailyScores(tenantId);
@@ -1143,7 +1179,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get(
     '/api/tenants/:tenantId/maturity-scores',
     asyncHandler(async (req, res) => {
-      const { tenantId } = req.params;
+      const user = req.user as any;
+      const tenantId = req.params.tenantId;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
 
       try {
         // Calculate cutoff date (3 months ago)
@@ -1174,6 +1217,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     '/api/score-history/:tenantId',
     asyncHandler(async (req, res) => {
       const { tenantId } = req.params;
+      const user = req.user as any;
+      // --- Tenant scoping ---
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      const allowedTenantIds = allowedTenants.map((t) => t.id);
+      if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
+      }
 
       try {
         // Calculate cutoff date (3 months ago)
@@ -1200,6 +1250,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     '/api/scores/run-daily',
     asyncHandler(async (req, res) => {
+      const secret = req.headers['x-cron-secret'];
+
+      if (secret !== process.env.SCORES_CRON_SECRET) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
       try {
         // Get all active tenants
         const tenantsList = await db
