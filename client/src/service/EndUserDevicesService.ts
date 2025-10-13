@@ -2,10 +2,13 @@ interface userAndTenantParamModel {
   tenantId: string;
   userId: string;
 }
+interface tenantParamModel {
+  tenantId: string;
+}
 
-export const getEncryptedDeviceInfo = async (params: userAndTenantParamModel) => {
+export const getEncryptedDeviceInfo = async (params: tenantParamModel) => {
   try {
-    const res = await fetch(`/api/encrypted-devices/${params.userId}/${params.tenantId}`, {
+    const res = await fetch(`/api/encrypted-devices/${params.tenantId}`, {
       credentials: 'include',
     });
     if (!res.ok) {
@@ -19,9 +22,9 @@ export const getEncryptedDeviceInfo = async (params: userAndTenantParamModel) =>
   }
 };
 
-export const getCompliancePolicies = async (params: userAndTenantParamModel) => {
+export const getCompliancePolicies = async (params: tenantParamModel) => {
   try {
-    const res = await fetch(`/api/device-compliance-policies/${params.userId}/${params.tenantId}`, {
+    const res = await fetch(`/api/device-compliance-policies/${params.tenantId}`, {
       credentials: 'include',
     });
     if (!res.ok) {

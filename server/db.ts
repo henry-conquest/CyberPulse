@@ -12,17 +12,19 @@ if (!process.env.DATABASE_URL) {
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }, // Azure requires SSL
+  keepAlive: true,
 });
 export const db = drizzle(pool, { schema });
 
-pool.connect()
-  .then(client => {
-    console.log("✅ Successfully connected to DB");
+pool
+  .connect()
+  .then((client) => {
+    console.log('✅ Successfully connected to DB');
     client.release();
   })
-  .catch(err => {
-    console.error("❌ Failed to connect to DB");
-    console.error("Error code:", err.code);
-    console.error("Error message:", err.message);
-    console.error("Error stack:", err.stack);
+  .catch((err) => {
+    console.error('❌ Failed to connect to DB');
+    console.error('Error code:', err.code);
+    console.error('Error message:', err.message);
+    console.error('Error stack:', err.stack);
   });

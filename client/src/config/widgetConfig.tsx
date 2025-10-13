@@ -190,42 +190,6 @@ export const endUserDevicesWidgets = [
   // },
 ];
 
-// export const devicesAndInfrastructureWidgets = [
-//     {
-//         id: 'microsoftSecureScore',
-//         title: 'Microsoft Secure Score',
-//         hideButton: false,
-//         render: (data: any) => {
-//         if (!data) {
-//         return <div className="text-red-500">Failed to get data</div>;
-//         }
-//         // Sort ascending by date just to be sure
-//         const sortedData = [...data]?.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-//         // Take the last entry
-//         const latestEntry = sortedData[sortedData.length - 1];
-
-//         // Extract the percentage
-//         const latestPercentage = latestEntry.percentage;
-//         return <RiskScoreChart score={latestPercentage}/>
-//         },
-//         apiCall: getSecureScores,
-//         onButtonClick: (tenantId: string) => navigate(`/secure-scores/${tenantId}`)
-//     },
-
-//     // {
-//     //     id: 'gdapAccess',
-//     //     title: 'GDAP Access',
-//     //     hideButton: false,
-//     //     content: <h1 className="text-brand-teal font-bold font-montserrat text-5xl">3</h1>
-//     // },
-//     //  {
-//     //     id: 'applicationWhitelisting',
-//     //     title: 'Application Whitelisting',
-//     //     hideButton: false,
-//     //     content: <div className="bg-red-500 rounded-full p-4"><BadgeAlert className="text-white" size={32}/></div>
-//     // }
-// ]
 export const dataWidgets = [
   {
     id: 'sensitivityLabeling',

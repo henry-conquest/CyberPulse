@@ -51,7 +51,6 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
               break;
             case 'riskySignInPolicies':
               apiParams = {
-                userId: user.id,
                 tenantId,
               };
               onClickParam = tenantId;
@@ -65,7 +64,6 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
               break;
             case 'phishResistantMFA':
               apiParams = {
-                userId: user.id,
                 tenantId,
               };
               onClickParam = tenantId;
@@ -116,14 +114,12 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
           switch (widget.id) {
             case 'noEncryption':
               apiParams = {
-                userId: user.id,
                 tenantId,
               };
               onClickParam = tenantId;
               break;
             case 'compliancePolicies':
               apiParams = {
-                userId: user.id,
                 tenantId,
               };
               onClickParam = tenantId;

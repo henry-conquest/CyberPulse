@@ -92,13 +92,13 @@ export default function Settings() {
           />
         </TabsContent>
         {/* Notifications Tab */}
-        <TabsContent value="notifications">
+        {/* <TabsContent value="notifications">
           <NotificationsTab
             form={notificationForm}
             onSubmit={onNotificationsSubmit}
             isSubmitting={updateNotificationsMutation.isPending}
           />
-        </TabsContent>
+        </TabsContent> */}
 
         {/* Security Tab */}
         <TabsContent value="security">

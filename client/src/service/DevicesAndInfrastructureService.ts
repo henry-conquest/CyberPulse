@@ -5,7 +5,7 @@ interface ParamsModel {
 
 export const getSecureScores = async (params: ParamsModel) => {
   try {
-    const res = await fetch(`/api/secure-scores/${params.userId}/${params.tenantId}`, {
+    const res = await fetch(`/api/secure-scores/${params.tenantId}`, {
       credentials: 'include',
     });
     if (!res.ok) {

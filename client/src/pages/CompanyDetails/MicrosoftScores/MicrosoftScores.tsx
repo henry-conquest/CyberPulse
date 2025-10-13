@@ -1,7 +1,5 @@
 import Widget from '@/components/ui/Widget';
 import { scoresWidgets } from '@/config/widgetConfig';
-import { format } from 'date-fns';
-import { useSelector } from 'react-redux';
 
 interface MicrosoftScoresProps {
   tenantId: string;
@@ -9,9 +7,7 @@ interface MicrosoftScoresProps {
 
 const MicrosoftScores = (props: MicrosoftScoresProps) => {
   const { tenantId } = props;
-  const user = useSelector((state: any) => state.sessionInfo.user);
   const apiParams = {
-    userId: user.id,
     tenantId,
   };
   return (
