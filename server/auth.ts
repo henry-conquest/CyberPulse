@@ -16,7 +16,7 @@ const getOIDCConfig = memoize(
     userInfoURL: `https://graph.microsoft.com/oidc/userinfo`,
     clientID: process.env.CLIENT_ID!,
     clientSecret: process.env.CLIENT_SECRET!,
-    callbackURL: process.env.REPLIT_REDIRECT_URI!,
+    callbackURL: process.env.LOCAL_REDIRECT_URI!,
     scope: ['openid', 'profile', 'email', 'offline_access', 'User.Read'],
   }),
   { maxAge: 3600 * 1000 }
@@ -67,7 +67,7 @@ export async function setupAuth(app: Express) {
         tokenURL: `https://login.microsoftonline.com/common/oauth2/v2.0/token`,
         clientID: process.env.CLIENT_ID!,
         clientSecret: process.env.CLIENT_SECRET!,
-        callbackURL: process.env.REPLIT_REDIRECT_URI!,
+        callbackURL: process.env.LOCAL_REDIRECT_URI!,
         scope: [
           'openid',
           'profile',
@@ -171,6 +171,7 @@ export async function setupAuth(app: Express) {
           if (invite && !invite.accepted) {
             await storage.markInviteAccepted(invite.id);
           }
+          const dbUser = await storage.getUser(userInfo.id);
 
           const user = {
             id: userInfo.id,
@@ -179,6 +180,7 @@ export async function setupAuth(app: Express) {
             firstName: userInfo.givenName,
             lastName: userInfo.surname,
             tenantId,
+            role: dbUser?.role || 'user',
             access_token: accessToken,
             refresh_token: refreshToken,
             expires_at: Math.floor(Date.now() / 1000) + (params.expires_in ?? 3599),
@@ -232,7 +234,6 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
-    console.log('is auth: ', req.isAuthenticated());
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
@@ -298,7 +299,6 @@ export const isAuthorized = (allowedRoles: string[]): RequestHandler => {
 
 export const requireTenantAccess: RequestHandler = async (req, res, next) => {
   try {
-    console.log(req.params);
     const tenantId = req.params.tenantId || req.params.id;
     const user = req.user as any;
 

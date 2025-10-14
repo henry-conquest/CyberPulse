@@ -110,11 +110,7 @@ export const endUserDevicesWidgets = [
     id: 'managedDetectionResponse',
     title: 'Managed Detection Response',
     hideButton: true,
-    content: (
-      <div className="bg-red-500 rounded-full p-4">
-        <BadgeAlert className="text-white" size={32} />
-      </div>
-    ),
+    manual: true,
   },
   {
     id: 'noEncryption',
