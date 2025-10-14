@@ -78,7 +78,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             icon={isAdmin ? <BriefcaseBusiness className="h-5 w-5" /> : <Home className="h-5 w-5" />}
             isActive={location === '/' || location === '/companies'}
           >
-            {isAdmin ? 'TESTING TESTING TESTING' : 'Home'}
+            {isAdmin ? 'Clients' : 'Home'}
           </NavItem>
 
           {/* <NavItem

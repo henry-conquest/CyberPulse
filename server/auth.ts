@@ -234,7 +234,6 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
-    console.log('is auth: ', req.isAuthenticated());
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
@@ -300,7 +299,6 @@ export const isAuthorized = (allowedRoles: string[]): RequestHandler => {
 
 export const requireTenantAccess: RequestHandler = async (req, res, next) => {
   try {
-    console.log(req.params);
     const tenantId = req.params.tenantId || req.params.id;
     const user = req.user as any;
 

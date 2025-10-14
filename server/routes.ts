@@ -58,7 +58,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    console.log('🔍 User:', req.user);
     try {
       const userId = req.user?.id;
       const user = await storage.getUser(userId);
@@ -175,7 +174,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // --- Tenant scoping ---
       const userTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = userTenants.map((t) => t.id);
-      console.log('user role!!!!!!', user);
       if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
         return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
       }
@@ -1126,12 +1124,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     asyncHandler(async (req, res) => {
       const user = req.user as any;
-      const tenantId = req.params.tenantId;
+      const tenantId = req.params.id;
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = allowedTenants.map((t) => t.id);
-      console.log('allowed ids', allowedTenantIds);
-      console.log('user role', user.role);
       if (!allowedTenantIds.includes(tenantId) && user.role !== UserRoles.ADMIN) {
         return res.status(403).json({ message: 'Forbidden: you do not have access to this tenant' });
       }
@@ -1141,12 +1137,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 2. Get all widgets that should be manual
       const manualWidgets = await storage.getManualWidgets();
-      console.log('these are the manual widgets', manualWidgets);
 
       // 3. Find which manual widgets are missing for this tenant
       const tenantWidgetNames = tenantWidgets.map((w) => w.widgetName);
       const missing = manualWidgets.filter((w) => !tenantWidgetNames.includes(w.key));
-      console.log('missing stuff', missing);
       if (missing.length > 0) {
         console.log(`Seeding ${missing.length} missing manual widgets for tenant ${tenantId}`);
 
