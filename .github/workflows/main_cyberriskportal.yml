@@ -1,10 +1,15 @@
-name: Build and deploy Node.js app to Azure Web App - CyberRiskPortal
+name: Build and Deploy Node.js app to Azure Web App - CyberRiskPortal
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+
+env:
+  NODE_VERSION: '20.x'
+  AZURE_WEBAPP_NAME: 'CyberRiskPortal' # your Azure Web App name
+  AZURE_SLOT_NAME: 'Production' # deployment slot (default Production)
 
 jobs:
   build:
@@ -14,26 +19,29 @@ jobs:
 
     steps:
       # 1️⃣ Checkout code
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # 2️⃣ Set up Node.js
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
+      # 2️⃣ Setup Node.js
+      - name: Use Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: ${{ env.NODE_VERSION }}
 
-      # 3️⃣ Install dependencies and build main app
-      - name: Install and build main app
+      # 3️⃣ Clean and build project
+      - name: Install dependencies and build
         run: |
-          npm install
+          rm -rf dist
+          npm ci
           npm run build --if-present
           npm run test --if-present
 
-      - name: Upload dist folder
+      # 4️⃣ Upload entire project (includes dist/, package.json, etc.)
+      - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist
+          name: node-app
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
@@ -43,14 +51,15 @@ jobs:
       contents: read
 
     steps:
-      # 1️⃣ Download artifact
-      - name: Download artifact
+      # 1️⃣ Download artifact from build job
+      - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: dist
-          path: dist
-      # 2️⃣ Login to Azure
-      - name: Login to Azure
+          name: node-app
+          path: .
+
+      # 2️⃣ Login to Azure using federated credentials
+      - name: Azure login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D47E8D630CEF4ADCA881E5229878BC0A }}
@@ -61,6 +70,10 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'CyberRiskPortal'
-          slot-name: 'Production'
-          package: dist
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: ${{ env.AZURE_SLOT_NAME }}
+          package: .
+
+      # 4️⃣ Logout
+      - name: Logout of Azure
+        run: az logout
