@@ -1,6 +1,6 @@
 export const getManualWidgetStatuses = async (tenantId: string) => {
   try {
-    const response = await fetch(`/api/tenants/${tenantId}/widgets`);
+    const response = await fetch(`/api/tenants/${tenantId}/widgets`, { credentials: 'include' });
     if (response.ok) {
       return response.json();
     }
@@ -13,6 +13,7 @@ export const updateManualWidget = async (tenantId: string, widgetId: string, new
   try {
     await fetch(`/api/tenants/${tenantId}/widgets/${widgetId}/toggle`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
