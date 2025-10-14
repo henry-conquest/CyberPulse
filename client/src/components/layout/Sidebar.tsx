@@ -53,16 +53,16 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         <div className="mb-6">
           <div className="flex items-center mb-3">
             <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-lg overflow-hidden">
-            {user?.profileImageUrl ? (
-              <img
-                src={user.profileImageUrl}
-                alt={`${user.firstName || user.email}'s profile`}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              user?.firstName?.[0] || user?.email?.[0] || 'U'
-            )}
-          </div>
+              {user?.profileImageUrl ? (
+                <img
+                  src={user.profileImageUrl}
+                  alt={`${user.firstName || user.email}'s profile`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                user?.firstName?.[0] || user?.email?.[0] || 'U'
+              )}
+            </div>
             <div className="ml-3">
               <p className="text-base font-medium">{user?.firstName || user?.email?.split('@')[0] || 'User'}</p>
               <p className="text-xs text-white/70">{isAdmin ? 'Admin' : 'Customer'}</p>
@@ -78,7 +78,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             icon={isAdmin ? <BriefcaseBusiness className="h-5 w-5" /> : <Home className="h-5 w-5" />}
             isActive={location === '/' || location === '/companies'}
           >
-            {isAdmin ? 'Clients' : 'Home'}
+            {isAdmin ? 'TESTING TESTING TESTING' : 'Home'}
           </NavItem>
 
           {/* <NavItem
