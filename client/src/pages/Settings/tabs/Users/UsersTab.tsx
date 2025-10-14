@@ -28,28 +28,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, MoreVertical, UserPlus, UserCog, Shield, Trash2, Mail, Filter } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUsers } from './useUsers';
-import InviteForm from './InviteForm/InviteForm';
+import CreateUserForm from './CreateUserForm/CreateUserForm';
 import ManageAccessDialog from './ManageAccess/ManageAccess';
-import InvitesTable from './Tables/InvitesTable';
+// import InvitesTable from './Tables/InvitesTable';
 
 export default function Users() {
   const {
     filteredUsers,
     openEditRoleDialog,
     handleDeleteUser,
-    handleInviteUser,
+    handleCreateUser,
     handleUpdateRole,
-    inviteForm,
-    inviteUserMutation,
+    createUserForm,
+    createUserMutation,
     tenants,
-    isLoading,
-    allUsers,
     updateRoleForm,
     setRoleFilter,
     setIsEditRoleDialogOpen,
-    setIsInviteDialogOpen,
+    setIsCreateUserDialogOpen,
     isEditRoleDialogOpen,
-    isInviteDialogOpen,
+    isCreateUserDialogOpen,
     selectedUser,
     searchQuery,
     setSearchQuery,
@@ -61,14 +59,13 @@ export default function Users() {
     selectedUserForAccess,
     setSelectedUserForAccess,
     updateTenantAccessMutation,
-    loading,
-    invites,
     isDeleteDialogOpen,
     setIsDeleteDialogOpen,
     userToDelete,
     deleteUserMutation,
     setUserToDelete,
-    fetchInvites,
+    users,
+    isLoading,
   } = useUsers();
 
   // Helper to get role badge
@@ -91,11 +88,11 @@ export default function Users() {
           <p className="text-secondary-500">Manage user accounts and permissions</p>
         </div>
         <div className="mt-4 md:mt-0">
-          <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+          <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="h-4 w-4 mr-2" />
-                Invite User
+                Create User
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -106,12 +103,12 @@ export default function Users() {
                 </DialogDescription>
               </DialogHeader>
 
-              <InviteForm
-                inviteForm={inviteForm}
-                handleInviteUser={handleInviteUser}
-                inviteUserMutation={inviteUserMutation}
+              <CreateUserForm
+                createUserForm={createUserForm}
+                handleCreateUser={handleCreateUser}
+                createUserMutation={createUserMutation}
                 tenants={tenants}
-                setIsInviteDialogOpen={setIsInviteDialogOpen}
+                setIsCreateUserDialogOpen={setIsCreateUserDialogOpen}
               />
             </DialogContent>
           </Dialog>
@@ -152,7 +149,7 @@ export default function Users() {
           <CardDescription>Manage accounts and access permissions for all users</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading || loading ? (
+          {isLoading ? (
             <div className="py-8 text-center">
               <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
               <p className="mt-4 text-secondary-500">Loading users...</p>
@@ -212,10 +209,6 @@ export default function Users() {
                                 <Shield className="h-4 w-4 mr-2" />
                                 Manage Access
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Mail className="h-4 w-4 mr-2" />
-                                Send Message
-                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
@@ -233,14 +226,14 @@ export default function Users() {
                   })}
                 </TableBody>
               </Table>
-              <InvitesTable fetchInvites={fetchInvites} allUsers={allUsers} invites={invites} />
+              {/* <InvitesTable fetchInvites={fetchInvites} allUsers={allUsers} invites={invites} /> */}
             </>
           ) : (
             <div className="py-8 text-center">
               <UserCog className="h-12 w-12 text-secondary-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">No Users Found</h3>
               <p className="text-secondary-500 mb-4">
-                {allUsers?.length === 0 ? 'No users have been added yet.' : 'No users match your search criteria.'}
+                {users?.length === 0 ? 'No users have been added yet.' : 'No users match your search criteria.'}
               </p>
             </div>
           )}

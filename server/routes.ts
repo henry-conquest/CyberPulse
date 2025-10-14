@@ -601,6 +601,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
+  app.post(
+    '/api/admin/users/create',
+    isAuthenticated,
+    isAuthorized([UserRoles.ADMIN]),
+    asyncHandler(async (req: Request, res: Response) => {
+      const { email, firstName, lastName, role, tenantId } = req.body;
+
+      if (!email || !firstName || !lastName || !role || !tenantId) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
+      // Check for existing user
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: 'User with this email already exists' });
+      }
+
+      // Create the user
+      const user = await storage.upsertUser({
+        id: crypto.randomUUID(),
+        email,
+        firstName,
+        lastName,
+        role,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // Link to tenant
+      await storage.addUserToTenant({
+        userId: user.id,
+        tenantId,
+      });
+
+      // Audit log
+      await storage.createAuditLog({
+        id: crypto.randomUUID(),
+        userId: (req.user as any).id,
+        action: 'create_user',
+        details: `Created user ${email} in tenant ${tenantId} with role ${role}`,
+      });
+
+      res.status(201).json({ message: 'User account created successfully', user });
+    })
+  );
+
   app.get(
     '/api/connections/microsoft365',
     isAuthenticated,

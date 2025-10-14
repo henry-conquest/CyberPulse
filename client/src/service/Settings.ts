@@ -66,7 +66,7 @@ export const deleteInvites = async (email: string) => {
   }
 };
 
-export const getUsers = async (setLoading: any) => {
+export const getUsers = async (setLoading?: any) => {
   try {
     setLoading(true);
     const res = await fetch(`/api/admin/users`, {
