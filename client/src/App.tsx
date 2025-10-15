@@ -19,6 +19,7 @@ import M365Admins from './pages/Widgets/M365Admins';
 import SignInPolicies from './pages/Widgets/SignInPolicies';
 import ScoreChart from './pages/Widgets/SecureScores';
 import LoginRejected from './pages/LoginRejected/LoginRejected';
+import ThreeMonthScoreChart from './components/ThreeMonthScoreChart/ThreeMonthScoreChart';
 
 function ProtectedRoute({
   component: Component,
@@ -99,6 +100,14 @@ function Router() {
       <Route
         path="/maturity-scores/:tenantId"
         component={() => <ProtectedRoute component={ScoreChart} id="maturity" title="Maturity Score" />}
+      />
+      <Route
+        path="/guarantees/maturity-scores/:tenantId"
+        component={() => <ProtectedRoute component={ThreeMonthScoreChart} id="maturity" title="Maturity Score" />}
+      />
+      <Route
+        path="guarantees/secure-scores/:tenantId"
+        component={() => <ProtectedRoute component={ThreeMonthScoreChart} id="secure" title="Secure Score" />}
       />
 
       {/* Fallback to 404 */}

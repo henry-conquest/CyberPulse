@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { scoresActions } from '@/store/store';
 import { navigate } from 'wouter/use-browser-location';
 import { generatePdf } from '@/helpers/generatePdf';
+import { generateTenderInsurerPack } from '@/helpers/generateTenderInsurerPdf';
 
 interface CompanySecureScoreProps {
   tenantId: string;
@@ -23,6 +24,8 @@ const CompanySecureScore = ({ tenantId }: CompanySecureScoreProps) => {
   const manualWidgets = useSelector((state: any) => state.manualWidgets);
   const scoreData = useSelector((state: any) => state.scores.maturityScore);
   const scoreHistory = useSelector((state: any) => state.scores.scoresHistory);
+  const secureScores = useSelector((state: any) => state.devicesAndInfrastructure.secureScores);
+  const secureScore = secureScores?.[secureScores.length - 1]?.percentage ?? null;
 
   useEffect(() => {
     const fetchScore = async () => {
@@ -43,6 +46,18 @@ const CompanySecureScore = ({ tenantId }: CompanySecureScoreProps) => {
     fetchScore();
   }, [tenantId, manualWidgets]);
 
+  const formattedScore = Math.round((score / maxScore) * 100);
+
+  const getRiskMessage = () => {
+    if (formattedScore < 50) {
+      return 'Your business is at high risk and immediate attention is required.';
+    } else if (formattedScore < 75) {
+      return 'Your business is at moderate risk, attention is required.';
+    } else {
+      return 'Your business has taken good steps towards being secure, keep it up!';
+    }
+  };
+
   return (
     <div className="border border-brand-teal p-5 rounded flex items-center mb-20 pb-0">
       <div data-testid="risk-score-container" className="basis-1/5">
@@ -61,10 +76,7 @@ const CompanySecureScore = ({ tenantId }: CompanySecureScoreProps) => {
           </Button>
         </div>
         <div data-testid="secure-score-middle" className="font-montserrat mb-6">
-          {/* <p className="text-brand-green">{loading ? "Loading..." : `${Math.round((score / maxScore) * 100)}%`}</p> */}
-          <p className="text-brand-teal font-bold">
-            Your business has taken some steps to protect against Cyber Threats but more could be done.
-          </p>
+          <p className="text-brand-teal font-bold">{getRiskMessage()}</p>
         </div>
         <div data-testid="secure-score-bottom" className="flex justify-around font-montserrat">
           <Button
@@ -72,10 +84,8 @@ const CompanySecureScore = ({ tenantId }: CompanySecureScoreProps) => {
             onClick={() =>
               generatePdf({
                 tenantName: selectedTenant.name,
-                identitiesAndPeopleData,
-                devicesAndInfrastructureData,
-                manualWidgets,
                 scoreData,
+                secureScore,
                 scoreHistory,
               })
             }
@@ -83,7 +93,20 @@ const CompanySecureScore = ({ tenantId }: CompanySecureScoreProps) => {
           >
             Download Executive Report
           </Button>
-          <Button className="bg-brand-teal hover:bg-brand-teal/90">Download Tender / Insurer Pack</Button>
+          <Button
+            disabled={loading}
+            onClick={() =>
+              generateTenderInsurerPack({
+                tenantName: selectedTenant.name,
+                identitiesAndPeopleData,
+                devicesAndInfrastructureData,
+                manualWidgets,
+              })
+            }
+            className="bg-brand-teal hover:bg-brand-teal/90"
+          >
+            Download Tender / Insurer Pack
+          </Button>
         </div>
       </div>
     </div>

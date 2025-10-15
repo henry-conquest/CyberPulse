@@ -7,9 +7,13 @@ interface ScoreRecord {
   lastUpdated: string;
 }
 
-export const computeIdentitiesAndPeopleScore = (identitiesData: any, manualWidgets: any) => {
+export const computeIdentitiesAndPeopleScore = (
+  identitiesData: any,
+  manualWidgets: any,
+  filterImplementedOnly = false
+) => {
   let tickCount = 0;
-  const widgetBreakdown: { name: string; tick: boolean }[] = [];
+  let widgetBreakdown: { name: string; tick: boolean }[] = [];
 
   // Phish Resistant MFA
   const toEnableCount = identitiesData.phishResistantMFA?.toEnable?.length ?? 0;
@@ -45,12 +49,21 @@ export const computeIdentitiesAndPeopleScore = (identitiesData: any, manualWidge
   widgetBreakdown.push({ name: 'Cyber Security Training', tick: !!cyberSecurityEnabled });
   widgetBreakdown.push({ name: 'Identity Threat Detection', tick: !!identityThreatDetectionEnabled });
 
+  // Filter out non-implemented widgets if requested
+  if (filterImplementedOnly) {
+    widgetBreakdown = widgetBreakdown.filter((w) => w.tick);
+  }
+
   return { tickCount, widgetBreakdown };
 };
 
-export const computeDevicesAndInfrastructureScore = (devicesAndInfrastructureData: any, manualWidgets: any) => {
+export const computeDevicesAndInfrastructureScore = (
+  devicesAndInfrastructureData: any,
+  manualWidgets: any,
+  filterImplementedOnly = false
+) => {
   let tickCount = 0;
-  const widgetBreakdown: { name: string; tick: boolean }[] = [];
+  let widgetBreakdown: { name: string; tick: boolean }[] = [];
 
   // Missing Device Encryption
   const encryptionCount = devicesAndInfrastructureData.encryptionCount?.count;
@@ -67,12 +80,14 @@ export const computeDevicesAndInfrastructureScore = (devicesAndInfrastructureDat
   const defenderDeployedEnabled = manualWidgets.manualWidgets.find(
     (w) => w.widgetName === 'defenderDeployed'
   )?.isEnabled;
+  const mdrEnabled = manualWidgets.manualWidgets.find((w) => w.widgetName === 'managedDetectionResponse')?.isEnabled;
   const devicesHardenedEnabled = manualWidgets.manualWidgets.find((w) => w.widgetName === 'devicesHardened')?.isEnabled;
   const firewallConfiguredEnabled = manualWidgets.manualWidgets.find(
     (w) => w.widgetName === 'firewallConfigured'
   )?.isEnabled;
   const serversHardenedEnabled = manualWidgets.manualWidgets.find((w) => w.widgetName === 'serversHardened')?.isEnabled;
   if (defenderDeployedEnabled) tickCount++;
+  if (mdrEnabled) tickCount++;
   if (devicesHardenedEnabled) tickCount++;
   if (firewallConfiguredEnabled) tickCount++;
   if (serversHardenedEnabled) tickCount++;
@@ -80,18 +95,23 @@ export const computeDevicesAndInfrastructureScore = (devicesAndInfrastructureDat
   widgetBreakdown.push({ name: 'Devices Hardened', tick: !!devicesHardenedEnabled });
   widgetBreakdown.push({ name: 'Firewall Configured', tick: !!firewallConfiguredEnabled });
   widgetBreakdown.push({ name: 'Servers Hardened', tick: !!serversHardenedEnabled });
+  widgetBreakdown.push({ name: 'Managed Detection Response', tick: !!mdrEnabled });
 
   //TODO widgets that are not yet configured
-  widgetBreakdown.push({ name: 'Managed Detection Response', tick: false });
   widgetBreakdown.push({ name: 'Patch Compliance', tick: false });
   widgetBreakdown.push({ name: 'Unsupported Devices', tick: false });
+
+  // Filter out non-implemented widgets if requested
+  if (filterImplementedOnly) {
+    widgetBreakdown = widgetBreakdown.filter((w) => w.tick);
+  }
 
   return { tickCount, widgetBreakdown };
 };
 
-export const computeDataScore = (manualWidgets: any) => {
+export const computeDataScore = (manualWidgets: any, filterImplementedOnly = false) => {
   let tickCount = 0;
-  const widgetBreakdown: { name: string; tick: boolean }[] = [];
+  let widgetBreakdown: { name: string; tick: boolean }[] = [];
 
   // Manual Widgets
   const sensitivityLabelingEnabled = manualWidgets.manualWidgets.find(
@@ -121,6 +141,11 @@ export const computeDataScore = (manualWidgets: any) => {
   widgetBreakdown.push({ name: 'Server Backups', tick: !!serverBackupsEnabled });
   widgetBreakdown.push({ name: 'Backup Testing', tick: !!serverBackupsEnabled });
   widgetBreakdown.push({ name: 'Cloud App Protection', tick: !!serverBackupsEnabled });
+
+  // Filter out non-implemented widgets if requested
+  if (filterImplementedOnly) {
+    widgetBreakdown = widgetBreakdown.filter((w) => w.tick);
+  }
 
   return { tickCount, widgetBreakdown };
 };
@@ -169,7 +194,7 @@ interface MaturityPoint {
 
 interface SecurePoint {
   lastUpdated: string;
-  microsoftSecureScorePct: string;
+  microsoftSecureScorePct?: string;
 }
 
 export function splitScoreData(data: ScoreRecord[]): { maturityResult: MaturityPoint[]; secureResult: SecurePoint[] } {
