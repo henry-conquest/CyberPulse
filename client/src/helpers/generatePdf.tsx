@@ -3,63 +3,76 @@ import html2canvas from 'html2canvas';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { MaturityChart } from '@/components/PDF/MaturityChart';
-import autoTable from 'jspdf-autotable';
-import {
-  computeIdentitiesAndPeopleScore,
-  computeDevicesAndInfrastructureScore,
-  computeDataScore,
-  getLastThreeMonthsData,
-  splitScoreData,
-} from './pdfHelper';
+import logoImg from '../assets/logo.png';
+import { getLastThreeMonthsData, splitScoreData } from './pdfHelper';
 
 interface PDFProps {
   tenantName: string;
-  identitiesAndPeopleData: any;
-  devicesAndInfrastructureData: any;
-  manualWidgets: any[];
   scoreData: number;
+  secureScore: number;
   scoreHistory: any;
 }
 
 export const generatePdf = async (props: PDFProps) => {
-  const { tenantName, identitiesAndPeopleData, devicesAndInfrastructureData, manualWidgets, scoreData, scoreHistory } =
-    props;
-
-  const { tickCount: identitiesAndPeopleTickCount, widgetBreakdown } = computeIdentitiesAndPeopleScore(
-    identitiesAndPeopleData,
-    manualWidgets
-  );
-
-  const { tickCount: devicesAndInfrastructureTickCount, widgetBreakdown: devicesAndInfrastructureWidgetBreakdown } =
-    computeDevicesAndInfrastructureScore(devicesAndInfrastructureData, manualWidgets);
-
-  const { tickCount: dataTickCount, widgetBreakdown: dataWidgetBreakdown } = computeDataScore(manualWidgets);
-
+  const { tenantName, scoreData, secureScore, scoreHistory } = props;
   const doc = new jsPDF() as any;
+  const today = new Date();
+  const formattedDate = today.toISOString().split('T')[0]; // e.g. "2025-10-15"
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
 
   // ---------------- Header ----------------
+  const imgWidth = 75;
+  const imgHeight = 25;
+  const logoX = (pageWidth - imgWidth) / 2;
+
+  doc.addImage(logoImg, 'PNG', logoX, 10, imgWidth, imgHeight);
+
+  // Date in top-right corner
+  doc.setFontSize(10);
+  doc.setTextColor('#666666');
+  doc.text(formattedDate, pageWidth - 20, 20, { align: 'right' });
+
+  // Title
   doc.setFontSize(20);
   doc.setTextColor('#006666');
-  doc.text(tenantName, 14, 20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Cyber Risk - Executive Report', pageWidth / 2, 45, { align: 'center' });
 
+  // Tenant name under title
   doc.setFontSize(16);
   doc.setTextColor('#000000');
-  doc.text('Cyber Security Maturity Rating', 14, 30);
+  doc.setFont('helvetica', 'normal');
+  doc.text(tenantName, pageWidth / 2, 55, { align: 'center' });
 
-  doc.setFontSize(14);
-  doc.text(`Current Month Maturity Rating: ${scoreData}%`, 14, 45);
+  // Divider
+  doc.setDrawColor(0, 102, 102);
+  doc.setLineWidth(0.5);
+  doc.line(20, 60, pageWidth - 20, 60);
 
-  let currentY = 55;
+  // ---------------- Scores ----------------
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor('#006666');
+  doc.text('Current Maturity Rating', pageWidth / 4, 75, { align: 'center' });
+  doc.text('Current Secure Score', (pageWidth / 4) * 3, 75, { align: 'center' });
 
-  // ---------------- Prepare chart data ----------------
+  doc.setFontSize(28);
+  doc.setTextColor('#000000');
+  doc.text(`${scoreData}%`, pageWidth / 4, 90, { align: 'center' });
+  doc.text(`${secureScore}%`, (pageWidth / 4) * 3, 90, { align: 'center' });
+
+  let currentY = 110;
+
+  // ---------------- Chart Data ----------------
   const last3Months = getLastThreeMonthsData(scoreHistory);
   const { maturityResult, secureResult } = splitScoreData(last3Months);
 
   const maturityLabels = maturityResult
-    .slice() // copy array to avoid mutating original
+    .slice()
     .reverse()
     .map((d) => new Date(d.lastUpdated).toLocaleString('default', { month: 'short', year: 'numeric' }));
-
   const maturityData = maturityResult
     .slice()
     .reverse()
@@ -69,16 +82,19 @@ export const generatePdf = async (props: PDFProps) => {
     .slice()
     .reverse()
     .map((d) => new Date(d.lastUpdated).toLocaleString('default', { month: 'short', year: 'numeric' }));
-
   const secureData = secureResult
     .slice()
     .reverse()
     .map((d) => parseFloat(d.microsoftSecureScorePct));
 
-  // ---------------- Render Maturity Chart ----------------
+  const chartWidth = 180;
+  const chartHeight = 85;
+  const chartSpacing = 20;
+
+  // ---------------- Maturity Chart ----------------
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('Maturity Score Trend:', 14, currentY);
+  doc.text('Maturity Score Trend', 14, currentY);
   currentY += 7;
 
   const maturityContainer = document.createElement('div');
@@ -90,20 +106,25 @@ export const generatePdf = async (props: PDFProps) => {
   maturityRoot.render(<MaturityChart data={maturityData} labels={maturityLabels} />);
   await new Promise((resolve) => setTimeout(resolve, 100));
 
-  const maturityCanvas = await html2canvas(maturityContainer, { scale: 2 });
+  const maturityCanvas = await html2canvas(maturityContainer, { scale: 3 });
   const maturityImage = maturityCanvas.toDataURL('image/png');
-  const chartWidth = 180;
 
-  doc.addImage(maturityImage, 'PNG', 14, currentY, chartWidth, 100);
-  currentY += 100 + 10;
+  doc.addImage(maturityImage, 'PNG', 14, currentY, chartWidth, chartHeight);
+  currentY += chartHeight + chartSpacing;
 
   maturityRoot.unmount();
   document.body.removeChild(maturityContainer);
 
-  // ---------------- Render Secure Chart ----------------
+  // ---------------- Secure Score Chart ----------------
+  // Add a new page if we’re too close to the bottom
+  if (currentY + chartHeight + 20 > pageHeight) {
+    doc.addPage();
+    currentY = 20;
+  }
+
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('Secure Score Trend:', 14, currentY);
+  doc.text('Secure Score Trend', 14, currentY);
   currentY += 7;
 
   const secureContainer = document.createElement('div');
@@ -115,83 +136,14 @@ export const generatePdf = async (props: PDFProps) => {
   secureRoot.render(<MaturityChart data={secureData} labels={secureLabels} />);
   await new Promise((resolve) => setTimeout(resolve, 100));
 
-  const secureCanvas = await html2canvas(secureContainer, { scale: 2 });
+  const secureCanvas = await html2canvas(secureContainer, { scale: 3 });
   const secureImage = secureCanvas.toDataURL('image/png');
 
-  doc.addImage(secureImage, 'PNG', 14, currentY, chartWidth, 100);
-  currentY += 100 + 50;
+  doc.addImage(secureImage, 'PNG', 14, currentY, chartWidth, chartHeight);
 
   secureRoot.unmount();
   document.body.removeChild(secureContainer);
-  // ---------------- Recommendations Table ----------------
-  doc.addPage();
-  currentY = 20; // reset to top margin
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Recommendations Implemented', 14, currentY);
-  currentY += 10;
-
-  autoTable(doc, {
-    startY: currentY,
-    head: [['Section', 'Implemented', 'Total', 'Percentage']],
-    body: [
-      [
-        'Identities & People',
-        identitiesAndPeopleTickCount.toString(),
-        '5',
-        `${((identitiesAndPeopleTickCount / 5) * 100).toFixed(0)}%`,
-      ],
-      [
-        'Devices & Infrastructure',
-        devicesAndInfrastructureTickCount.toString(),
-        '9',
-        `${((devicesAndInfrastructureTickCount / 9) * 100).toFixed(0)}%`,
-      ],
-      ['Devices', dataTickCount.toString(), '6', `${((dataTickCount / 6) * 100).toFixed(0)}%`],
-    ],
-    theme: 'grid',
-  });
-  currentY = doc.lastAutoTable.finalY + 10;
-
-  // ---------------- Identities & People Breakdown ----------------
-  doc.setFont('helvetica', 'bold');
-  doc.text('Identities & People Breakdown', 14, currentY);
-  currentY += 5;
-
-  autoTable(doc, {
-    startY: currentY,
-    head: [['Widget', 'Implemented']],
-    body: widgetBreakdown.map((w) => [w.name, w.tick ? 'Yes' : 'No']),
-    theme: 'grid',
-  });
-  currentY = doc.lastAutoTable.finalY + 10;
-
-  // ---------------- Devices & Infrastructure Breakdown ----------------
-  doc.setFont('helvetica', 'bold');
-  doc.text('Devices & Infrastructure Breakdown', 14, currentY);
-  currentY += 5;
-
-  autoTable(doc, {
-    startY: currentY,
-    head: [['Widget', 'Implemented']],
-    body: devicesAndInfrastructureWidgetBreakdown.map((w) => [w.name, w.tick ? 'Yes' : 'No']),
-    theme: 'grid',
-  });
-  currentY = doc.lastAutoTable.finalY + 10;
-
-  // ---------------- Data Breakdown ----------------
-  doc.setFont('helvetica', 'bold');
-  doc.text('Data Breakdown', 14, currentY);
-  currentY += 5;
-
-  autoTable(doc, {
-    startY: currentY,
-    head: [['Widget', 'Implemented']],
-    body: dataWidgetBreakdown.map((w) => [w.name, w.tick ? 'Yes' : 'No']),
-    theme: 'grid',
-  });
-  currentY = doc.lastAutoTable.finalY + 10;
 
   // ---------------- Save PDF ----------------
-  doc.save(`${tenantName}-Cyber-Risk-Executive_Report.pdf`);
+  doc.save(`${tenantName}-Cyber-Risk-Executive_Report-${formattedDate}.pdf`);
 };
