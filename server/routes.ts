@@ -16,6 +16,8 @@ import {
   UserRoles,
   tenantScores,
   tenants,
+  widgets,
+  tenantWidgets,
 } from '@shared/schema';
 import { emailService } from './email';
 import crypto from 'crypto';
@@ -1212,6 +1214,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error calculating tenant score:', err);
         res.status(500).json({ error: 'Failed to calculate tenant score' });
       }
+    })
+  );
+
+  app.patch(
+    '/api/tenants/:tenantId/widgets/:widgetKey',
+    isAuthenticated,
+    asyncHandler(async (req, res) => {
+      const { tenantId, widgetKey } = req.params;
+      const { customValue } = req.body;
+      const user = req.user as any;
+
+      // Only admins should be allowed to change widget scoring
+      if (user.role !== UserRoles.ADMIN) {
+        return res.status(403).json({ message: 'Forbidden: Admins only' });
+      }
+
+      // 1️⃣ Get the widget ID by key
+      const [widget] = await db.select().from(widgets).where(eq(widgets.key, widgetKey));
+      if (!widget) {
+        return res.status(404).json({ message: 'Widget not found' });
+      }
+
+      // 2️⃣ Upsert the tenantWidgets row
+      const [existingTenantWidget] = await db
+        .select()
+        .from(tenantWidgets)
+        .where(and(eq(tenantWidgets.tenantId, tenantId), eq(tenantWidgets.widgetId, widget.id)));
+
+      if (existingTenantWidget) {
+        // Update existing row
+        await db
+          .update(tenantWidgets)
+          .set({
+            customValue,
+            lastUpdated: new Date(),
+          })
+          .where(eq(tenantWidgets.id, existingTenantWidget.id));
+      } else {
+        // Insert new row
+        await db.insert(tenantWidgets).values({
+          id: crypto.randomUUID(),
+          tenantId,
+          widgetId: widget.id,
+          customValue,
+          lastUpdated: new Date(),
+        });
+      }
+
+      res.json({ success: true, tenantId, widgetKey, customValue });
+    })
+  );
+
+  app.get(
+    '/api/tenants/:tenantId/widget/:key',
+    asyncHandler(async (req, res) => {
+      const { tenantId, key } = req.params;
+      const user = req.user as any;
+
+      // Check access
+      const allowedTenants = await storage.getTenantsByUserId(user.id);
+      if (!allowedTenants.some((t) => t.id === tenantId) && user.role !== 'ADMIN') {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      // Get the widget by key
+      const [widget] = await db
+        .select({
+          widgetId: widgets.id,
+          key: widgets.key,
+          name: widgets.name,
+          description: widgets.description,
+          scoringType: widgets.scoringType,
+          pointsAvailable: widgets.pointsAvailable,
+        })
+        .from(widgets)
+        .where(eq(widgets.key, key));
+
+      if (!widget) {
+        return res.status(404).json({ message: 'Widget not found' });
+      }
+
+      // Get the tenant-specific row
+      const [tenantWidget] = await db
+        .select()
+        .from(tenantWidgets)
+        .where(and(eq(tenantWidgets.tenantId, tenantId), eq(tenantWidgets.widgetId, widget.widgetId)));
+
+      // Merge tenant-specific info
+      const result = {
+        ...widget,
+        isEnabled: tenantWidget?.isEnabled ?? false,
+        manuallyToggled: tenantWidget?.manuallyToggled ?? false,
+        forceManual: tenantWidget?.forceManual ?? false,
+        lastUpdated: tenantWidget?.lastUpdated,
+        customValue: tenantWidget?.customValue ?? null,
+      };
+
+      res.json(result);
     })
   );
 

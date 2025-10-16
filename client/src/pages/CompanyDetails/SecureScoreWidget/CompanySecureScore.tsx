@@ -25,6 +25,7 @@ const CompanySecureScore = ({ tenantId }: CompanySecureScoreProps) => {
   const scoreData = useSelector((state: any) => state.scores.maturityScore);
   const scoreHistory = useSelector((state: any) => state.scores.scoresHistory);
   const secureScores = useSelector((state: any) => state.devicesAndInfrastructure.secureScores);
+  const customScore = useSelector((state: any) => state.scores.customScores);
   const secureScore = secureScores?.[secureScores.length - 1]?.percentage ?? null;
 
   useEffect(() => {
@@ -101,6 +102,7 @@ const CompanySecureScore = ({ tenantId }: CompanySecureScoreProps) => {
                 identitiesAndPeopleData,
                 devicesAndInfrastructureData,
                 manualWidgets,
+                customScore,
               })
             }
             className="bg-brand-teal hover:bg-brand-teal/90"

@@ -16,24 +16,14 @@ type ScoringConfig = {
 };
 
 // Calculate points for a single widget given its value + config
-function calculateWidgetScore(
-  scoringType: string,
-  config: ScoringConfig,
-  widgetValue: any
-): number {
+function calculateWidgetScore(scoringType: string, config: ScoringConfig, widgetValue: any): number {
   switch (scoringType) {
     case 'yesno':
-      return widgetValue === true ? config.yesValue ?? 0 : config.noValue ?? 0;
+      return widgetValue === true ? (config.yesValue ?? 0) : (config.noValue ?? 0);
 
     case 'range':
-      if (
-        typeof widgetValue === 'number' &&
-        config.min !== undefined &&
-        config.max !== undefined
-      ) {
-        return widgetValue >= config.min && widgetValue <= config.max
-          ? config.points ?? 0
-          : config.fallback ?? 0;
+      if (typeof widgetValue === 'number' && config.min !== undefined && config.max !== undefined) {
+        return widgetValue >= config.min && widgetValue <= config.max ? (config.points ?? 0) : (config.fallback ?? 0);
       }
       return 0;
 
@@ -60,33 +50,35 @@ function calculateWidgetScore(
 export async function calculateTenantScore(tenantId: string, userId?: string) {
   const allWidgets = await db.select().from(widgets);
 
-  const manualMappings = await db
-    .select()
-    .from(tenantWidgets)
-    .where(eq(tenantWidgets.tenantId, tenantId));
-
-  const manualLookup = new Map(
-    manualMappings.map(w => [w.widgetId, w])
-  );
+  const manualMappings = await db.select().from(tenantWidgets).where(eq(tenantWidgets.tenantId, tenantId));
+  const manualLookup = new Map(manualMappings.map((w) => [w.widgetId, w]));
 
   const accessToken = await getTenantAccessTokenFromDB(tenantId);
   if (!accessToken) {
-    throw new Error("Missing Microsoft Graph access token");
+    throw new Error('Missing Microsoft Graph access token');
   }
 
   let totalScore = 0;
   let maxScore = 0;
 
   for (const widget of allWidgets) {
+    if (widget.key === 'patchCompliance') {
+      console.log(`⏭️ Skipping ${widget.key} (not active yet)`);
+      continue;
+    }
     const config = widget.scoringConfig as any;
     let value: any;
 
     if (widget.manual) {
-      // lookup tenantWidgets row
       const tenantWidget = manualLookup.get(widget.id);
-      value = tenantWidget?.isEnabled ?? false;
+
+      // Special case: unsupportedDevices
+      if (widget.key === 'unsupportedDevices') {
+        value = tenantWidget?.customValue ?? 100; // default 100 if not set
+      } else {
+        value = tenantWidget?.isEnabled ?? false;
+      }
     } else {
-      // API widget: use fetcher + accessToken
       const fetcher = scoringDataFetchers[widget.key];
       if (fetcher) {
         value = await fetcher({ tenantId, userId, accessToken });
@@ -96,11 +88,20 @@ export async function calculateTenantScore(tenantId: string, userId?: string) {
       }
     }
 
-    const score = Math.round(calculateWidgetScore(widget.scoringType, config, value));
+    let score: number;
+
+    if (widget.key === 'unsupportedDevices') {
+      // 1 point per 10%, max 10 points
+      score = Math.min(Math.floor((value ?? 100) / 10), 10);
+    } else {
+      score = Math.round(calculateWidgetScore(widget.scoringType, config, value));
+    }
+
     totalScore += score;
-    maxScore += widget.pointsAvailable ?? 0;
+    maxScore += widget.pointsAvailable ?? (widget.key === 'unsupportedDevices' ? 10 : 0);
   }
-  console.log('total and max score', totalScore, maxScore)
+
+  console.log('total and max score', totalScore, maxScore);
   return { totalScore, maxScore };
 }
 
@@ -129,21 +130,10 @@ export async function saveTenantDailyScores(tenantId: string) {
   const totalScorePct = maxScore ? parseFloat(((totalScore / maxScore) * 100).toFixed(2)) : 0;
 
   // 3️⃣ Upsert into DB
-await db
-  .insert(tenantScores)
-  .values({
-    tenantId,
-    totalScore: totalScore.toString(),
-    maxScore: maxScore.toString(),
-    microsoftSecureScore: microsoftSecureScore.toString(),
-    totalScorePct: totalScorePct.toString(),
-    microsoftSecureScorePct: microsoftSecureScorePct.toString(),
-    lastUpdated: new Date(),
-    breakdown: {},
-  })
-  .onConflictDoUpdate({
-    target: [tenantScores.tenantId, tenantScores.scoreDate],
-    set: {
+  await db
+    .insert(tenantScores)
+    .values({
+      tenantId,
       totalScore: totalScore.toString(),
       maxScore: maxScore.toString(),
       microsoftSecureScore: microsoftSecureScore.toString(),
@@ -151,9 +141,19 @@ await db
       microsoftSecureScorePct: microsoftSecureScorePct.toString(),
       lastUpdated: new Date(),
       breakdown: {},
-    },
-  });
-
+    })
+    .onConflictDoUpdate({
+      target: [tenantScores.tenantId, tenantScores.scoreDate],
+      set: {
+        totalScore: totalScore.toString(),
+        maxScore: maxScore.toString(),
+        microsoftSecureScore: microsoftSecureScore.toString(),
+        totalScorePct: totalScorePct.toString(),
+        microsoftSecureScorePct: microsoftSecureScorePct.toString(),
+        lastUpdated: new Date(),
+        breakdown: {},
+      },
+    });
 
   return {
     tenantId,
@@ -161,8 +161,6 @@ await db
     maxScore,
     totalScorePct,
     microsoftSecureScore,
-    microsoftSecureScorePct
+    microsoftSecureScorePct,
   };
 }
-
-

@@ -8,10 +8,11 @@ interface PDFProps {
   identitiesAndPeopleData: any;
   devicesAndInfrastructureData: any;
   manualWidgets: any;
+  customScore?: any;
 }
 
 export const generateTenderInsurerPack = async (props: PDFProps) => {
-  const { tenantName, identitiesAndPeopleData, devicesAndInfrastructureData, manualWidgets } = props;
+  const { tenantName, identitiesAndPeopleData, devicesAndInfrastructureData, manualWidgets, customScore } = props;
 
   const { tickCount: identitiesAndPeopleTickCount, widgetBreakdown } = computeIdentitiesAndPeopleScore(
     identitiesAndPeopleData,
@@ -20,7 +21,7 @@ export const generateTenderInsurerPack = async (props: PDFProps) => {
   );
 
   const { tickCount: devicesAndInfrastructureTickCount, widgetBreakdown: devicesAndInfrastructureWidgetBreakdown } =
-    computeDevicesAndInfrastructureScore(devicesAndInfrastructureData, manualWidgets, true);
+    computeDevicesAndInfrastructureScore(devicesAndInfrastructureData, manualWidgets, customScore, true);
 
   const { tickCount: dataTickCount, widgetBreakdown: dataWidgetBreakdown } = computeDataScore(manualWidgets, true);
   const doc = new jsPDF() as any;

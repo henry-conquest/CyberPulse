@@ -154,17 +154,20 @@ export const endUserDevicesWidgets = [
     hideButton: true,
     manual: true,
   },
-  {
-    id: 'patchCompliance',
-    title: 'Patch Compliance',
-    hideButton: false,
-    content: <RiskScoreChart score={99} />,
-  },
+  // {
+  //   id: 'patchCompliance',
+  //   title: 'Patch Compliance',
+  //   hideButton: false,
+  //   content: <RiskScoreChart score={99} />,
+  // },
   {
     id: 'unsupportedDevices',
-    title: 'Unsupported Devices',
+    title: 'Supported Devices',
     hideButton: false,
-    content: <RiskScoreChart score={100} />,
+    manual: false,
+    apiCall: null,
+    render: (data: any) => <RiskScoreChart score={data ?? 100} />,
+    buttonText: 'Edit',
   },
   {
     id: 'firewallConfigured',
