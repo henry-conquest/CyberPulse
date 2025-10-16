@@ -38,6 +38,8 @@ ChartJS.register(
 interface ThreeMonthScoreChartProps {
   id: 'secure' | 'maturity';
   title: string;
+  totalScorePct?: string;
+  microsoftSecureScorePct?: string;
 }
 
 const ThreeMonthScoreChart = ({ id, title }: ThreeMonthScoreChartProps) => {
@@ -78,9 +80,7 @@ const ThreeMonthScoreChart = ({ id, title }: ThreeMonthScoreChartProps) => {
 
       console.log('sorted', sorted);
 
-      setLabels(
-        sorted.map((d) => format(new Date(d.lastUpdated), 'yyyy-MM-01')) // force start of month
-      );
+      setLabels(sorted.map((d) => format(new Date(d.lastUpdated), 'yyyy-MM-01')));
 
       return sorted.map((d) => d.totalScorePct || d.microsoftSecureScorePct);
     } catch (err) {

@@ -23,3 +23,14 @@ export const updateManualWidget = async (tenantId: string, widgetId: string, new
     if (error) throw new Error('Failed to update manual widget: ', error);
   }
 };
+
+import axios from 'axios';
+
+export const updateWidgetScore = async (widgetKey: string, customValue: number, tenantId: string) => {
+  const response = await axios.patch(`/api/tenants/${tenantId}/widgets/${widgetKey}`, { customValue });
+  return response.data;
+};
+export const getWidget = async (key: string, tenantId: string) => {
+  const response = await axios.get(`/api/tenants/${tenantId}/widget/${key}`);
+  return response.data;
+};

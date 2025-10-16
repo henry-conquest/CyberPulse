@@ -69,12 +69,12 @@ const updates = [
     scoringType: 'yesno',
     scoringConfig: { yesValue: 10, noValue: 0 },
   },
-  {
-    key: 'patchCompliance',
-    pointsAvailable: 20,
-    scoringType: 'percentage',
-    scoringConfig: { scale: 0.1, maxPoints: 20 },
-  },
+  // {
+  //   key: 'patchCompliance',
+  //   pointsAvailable: 20,
+  //   scoringType: 'percentage',
+  //   scoringConfig: { scale: 0.1, maxPoints: 20 },
+  // },
   {
     key: 'unsupportedDevices',
     pointsAvailable: 10,

@@ -572,6 +572,10 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async getWidgetByKey(key: string): Promise<Widget[]> {
+    return await db.select().from(widgets).where(eq(widgets.key, key));
+  }
+
   async upsertTenantWidget(widget: InsertTenantWidget): Promise<TenantWidget> {
     const [result] = await db
       .insert(tenantWidgets)

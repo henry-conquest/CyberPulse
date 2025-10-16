@@ -6,6 +6,7 @@ export const initialScoresSliceState: ScoresSliceModel = {
   dataScores: [],
   appScores: [],
   maturityScore: null,
+  customScores: null,
   widgetScores: {
     cyberSecurityEnabled: 0,
   },
@@ -37,6 +38,9 @@ const scoresSlice = createSlice({
     },
     setScoresHistory(state, action) {
       state.scoresHistory = action.payload;
+    },
+    setCustomScores(state, action) {
+      state.customScores = action.payload;
     },
     reset(state) {
       state.identityScores = [];

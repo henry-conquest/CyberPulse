@@ -10,7 +10,8 @@ import {
 import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
 import { BadgeAlert, Check } from 'lucide-react';
-import { updateManualWidget } from '@/service/ManualWidgetsService';
+import { getWidget, updateManualWidget, updateWidgetScore } from '@/service/ManualWidgetsService';
+import RiskScoreChart from '@/pages/CompanyDetails/RiskScoreChart/RiskScoreChart';
 
 interface WidgetProps {
   id: string;
@@ -54,9 +55,11 @@ const Widget = (props: WidgetProps) => {
   } = props;
 
   const [data, setData] = useState<any>(null);
+  const [score, setScore] = useState(0);
   const [toggleUpdating, setToggleUpdating] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(!!apiCall);
   const dispatch = useDispatch();
+  const [editing, setEditing] = useState<boolean>(false);
 
   const handleToggleChange = async (val: boolean) => {
     if (tenantId && widgetId) {
@@ -66,6 +69,17 @@ const Widget = (props: WidgetProps) => {
       setToggleUpdating(false);
     }
   };
+
+  const fetchUnsupportedDevices = async () => {
+    const result = await getWidget(id, tenantId);
+    setScore(result.customValue);
+    dispatch(scoresActions.setCustomScores(result.customValue));
+  };
+  useEffect(() => {
+    if (id === 'unsupportedDevices') {
+      fetchUnsupportedDevices();
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -115,12 +129,32 @@ const Widget = (props: WidgetProps) => {
     };
     fetchData();
   }, [apiCall]);
-
   const handleClick = async () => {
+    if (id === 'unsupportedDevices' && isAdmin) {
+      const input = prompt('Enter new score (1–100):', score?.toString() ?? '100');
+      if (input === null) return; // user cancelled
+
+      const val = parseInt(input, 10);
+      if (isNaN(val) || val < 1 || val > 100) {
+        alert('Please enter a number between 1 and 100.');
+        return;
+      }
+
+      setScore(val);
+
+      try {
+        await updateWidgetScore(id, val, tenantId);
+        console.log(`✅ Updated widget ${id} with custom value ${val}`);
+      } catch (err) {
+        console.error('❌ Failed to update widget score:', err);
+      }
+
+      return;
+    }
+
     if (onButtonClick && onClickParam) {
       onButtonClick(onClickParam);
-    }
-    if (onButtonClick && !onClickParam) {
+    } else if (onButtonClick) {
       onButtonClick();
     }
   };
@@ -134,30 +168,31 @@ const Widget = (props: WidgetProps) => {
       <h2 className="text-brand-green text-lg font-bold mb-2 text-center whitespace-nowrap">
         {title} {manualToggle && isAdmin && <p className="text-xs text-gray-500">(Manual)</p>}
       </h2>
-
-      {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center w-full">
-        {loading && (
-          <div className="w-6 h-6 border-2 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
-        )}
-        {manualToggle && manualLoading && (
-          <div className="w-6 h-6 border-2 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
-        )}
-
-        {!loading && (render ? render(data) : children)}
-
-        {manualToggle &&
-          !manualLoading &&
-          (implemented ? (
-            <div className="bg-brand-green rounded-full p-4">
-              <Check className="text-white" size={32} />
-            </div>
-          ) : (
-            <div className="bg-red-500 rounded-full p-4">
-              <BadgeAlert className="text-white" size={32} />
-            </div>
-          ))}
-      </div>
+      {/* Manual toggle stuff */}
+      {manualToggle && manualLoading && (
+        <div className="w-6 h-6 border-2 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
+      )}
+      {manualToggle &&
+        !manualLoading &&
+        (implemented ? (
+          <div className="bg-brand-green rounded-full p-4">
+            <Check className="text-white" size={32} />
+          </div>
+        ) : (
+          <div className="bg-red-500 rounded-full p-4">
+            <BadgeAlert className="text-white" size={32} />
+          </div>
+        ))}
+      {/* Not manual toggle widgets */}
+      {loading ? (
+        <div className="w-6 h-6 border-2 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
+      ) : id === 'unsupportedDevices' ? (
+        <RiskScoreChart score={score ?? 100} />
+      ) : render ? (
+        render(data)
+      ) : (
+        children
+      )}
 
       {/* Manual Toggle */}
       {manualToggle && !loading && isAdmin && (
@@ -168,7 +203,7 @@ const Widget = (props: WidgetProps) => {
       )}
 
       {/* Optional Button */}
-      {!hideButton && (
+      {!hideButton && (!id || id !== 'unsupportedDevices' || isAdmin) && (
         <div className="mt-4 h-10 w-full">
           <Button className="bg-brand-teal w-full h-10 hover:bg-brand-teal/90" onClick={handleClick}>
             {buttonText}

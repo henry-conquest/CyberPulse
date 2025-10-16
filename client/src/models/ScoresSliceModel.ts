@@ -6,4 +6,5 @@ export interface ScoresSliceModel {
   maturityScore: number | null;
   maturityHistory: any;
   scoresHistory: any;
+  customScores: any;
 }

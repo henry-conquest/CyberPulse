@@ -60,6 +60,7 @@ export const computeIdentitiesAndPeopleScore = (
 export const computeDevicesAndInfrastructureScore = (
   devicesAndInfrastructureData: any,
   manualWidgets: any,
+  customScore: any,
   filterImplementedOnly = false
 ) => {
   let tickCount = 0;
@@ -91,15 +92,16 @@ export const computeDevicesAndInfrastructureScore = (
   if (devicesHardenedEnabled) tickCount++;
   if (firewallConfiguredEnabled) tickCount++;
   if (serversHardenedEnabled) tickCount++;
+  if (customScore > 50) tickCount++;
   widgetBreakdown.push({ name: 'Defender Deployed', tick: !!defenderDeployedEnabled });
   widgetBreakdown.push({ name: 'Devices Hardened', tick: !!devicesHardenedEnabled });
   widgetBreakdown.push({ name: 'Firewall Configured', tick: !!firewallConfiguredEnabled });
   widgetBreakdown.push({ name: 'Servers Hardened', tick: !!serversHardenedEnabled });
   widgetBreakdown.push({ name: 'Managed Detection Response', tick: !!mdrEnabled });
+  widgetBreakdown.push({ name: 'Supported Devices', tick: customScore > 50 });
 
   //TODO widgets that are not yet configured
   widgetBreakdown.push({ name: 'Patch Compliance', tick: false });
-  widgetBreakdown.push({ name: 'Unsupported Devices', tick: false });
 
   // Filter out non-implemented widgets if requested
   if (filterImplementedOnly) {

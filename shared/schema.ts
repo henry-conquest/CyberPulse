@@ -62,10 +62,8 @@ export const userTenants = pgTable(
   'user_tenants',
   {
     id: varchar('id').primaryKey(),
-    userId: varchar('user_id')
-      .notNull(),
-    tenantId: varchar('tenant_id')
-      .notNull(),
+    userId: varchar('user_id').notNull(),
+    tenantId: varchar('tenant_id').notNull(),
     createdAt: timestamp('created_at').defaultNow(),
   },
   (table) => {
@@ -141,7 +139,7 @@ export const microsoftTokens = pgTable(
 
 export const widgets = pgTable('widgets', {
   id: uuid('id').defaultRandom().primaryKey(),
-  key: varchar('key', { length: 100 }).notNull().unique(), 
+  key: varchar('key', { length: 100 }).notNull().unique(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
   defaultEnabled: boolean('default_enabled').default(true),
@@ -152,56 +150,74 @@ export const widgets = pgTable('widgets', {
   scoringConfig: jsonb('scoring_config').default('{}').notNull(),
 });
 
+export const tenantWidgets = pgTable(
+  'tenant_widgets',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: varchar('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    widgetId: uuid('widget_id')
+      .notNull()
+      .references(() => widgets.id),
+    isEnabled: boolean('is_enabled').default(false),
+    manuallyToggled: boolean('manually_toggled').default(false),
+    forceManual: boolean('force_manual').default(false),
+    lastUpdated: timestamp('last_updated').defaultNow(),
+    customValue: uuid('custom_value').default(''),
+  },
+  (table) => ({
+    uniqueTenantWidget: unique().on(table.tenantId, table.widgetId),
+  })
+);
 
-export const tenantWidgets = pgTable('tenant_widgets', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  tenantId: varchar('tenant_id').notNull().references(() => tenants.id),
-  widgetId: uuid('widget_id').notNull().references(() => widgets.id),
-  isEnabled: boolean('is_enabled').default(false),
-  manuallyToggled: boolean('manually_toggled').default(false),
-  forceManual: boolean('force_manual').default(false),
-  lastUpdated: timestamp('last_updated').defaultNow(),
-}, (table) => ({
-  uniqueTenantWidget: unique().on(table.tenantId, table.widgetId),
-}));
+export const tenantScores = pgTable(
+  'tenant_scores',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: varchar('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    scoreDate: date('score_date').defaultNow(),
 
-export const tenantScores = pgTable('tenant_scores', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  tenantId: varchar('tenant_id').notNull().references(() => tenants.id),
-  scoreDate: date('score_date').defaultNow(),
+    // Raw scores
+    totalScore: numeric('total_score').notNull(),
+    maxScore: numeric('max_score').notNull().default('300'),
+    microsoftSecureScore: numeric('ms_secure_score'),
 
-  // Raw scores
-  totalScore: numeric('total_score').notNull(),
-  maxScore: numeric('max_score').notNull().default('300'),
-  microsoftSecureScore: numeric('ms_secure_score'),
+    // Percentage columns
+    totalScorePct: numeric('total_score_pct').notNull().default('0'),
+    microsoftSecureScorePct: numeric('ms_secure_score_pct').notNull().default('0'),
 
-  // Percentage columns
-  totalScorePct: numeric('total_score_pct').notNull().default('0'),
-  microsoftSecureScorePct: numeric('ms_secure_score_pct').notNull().default('0'),
-
-  breakdown: jsonb('breakdown').notNull(),
-  lastUpdated: timestamp('last_updated').defaultNow(),
-}, (table) => ({
-  uniqueTenantDay: unique().on(table.tenantId, table.scoreDate),
-}));
-
+    breakdown: jsonb('breakdown').notNull(),
+    lastUpdated: timestamp('last_updated').defaultNow(),
+  },
+  (table) => ({
+    uniqueTenantDay: unique().on(table.tenantId, table.scoreDate),
+  })
+);
 
 // Integrations
 
-export const integrations = pgTable('integrations', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  tenantId: varchar('tenant_id').notNull().references(() => tenants.id),
-  type: varchar('type', { length: 100 }).notNull(), // e.g., 'microsoft365', 'ninja'
-  status: varchar('status', { length: 50 }).default('connected'), // 'connected' | 'disconnected' | 'error'
-  connectedAt: timestamp('connected_at').defaultNow(),
-  disconnectedAt: timestamp('disconnected_at'),
-  metadata: jsonb('metadata'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => ({
-  uniqueIntegration: unique().on(table.tenantId, table.type),
-}));
-
+export const integrations = pgTable(
+  'integrations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tenantId: varchar('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    type: varchar('type', { length: 100 }).notNull(), // e.g., 'microsoft365', 'ninja'
+    status: varchar('status', { length: 50 }).default('connected'), // 'connected' | 'disconnected' | 'error'
+    connectedAt: timestamp('connected_at').defaultNow(),
+    disconnectedAt: timestamp('disconnected_at'),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  },
+  (table) => ({
+    uniqueIntegration: unique().on(table.tenantId, table.type),
+  })
+);
 
 // Audit logs
 export const auditLogs = pgTable('audit_logs', {
