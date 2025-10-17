@@ -195,12 +195,14 @@ const Widget = (props: WidgetProps) => {
       )}
 
       {/* Manual Toggle */}
-      {manualToggle && !loading && isAdmin && (
-        <div className="flex items-center justify-between w-full mt-2 text-sm">
-          <span>Implemented</span>
-          <Switch disabled={toggleUpdating} checked={implemented} onCheckedChange={handleToggleChange} />
-        </div>
-      )}
+      <div className="flex items-center justify-between w-full mt-2 text-sm">
+        {manualToggle && !loading && isAdmin && (
+          <>
+            <span>Implemented</span>
+            <Switch disabled={toggleUpdating} checked={implemented} onCheckedChange={handleToggleChange} />
+          </>
+        )}
+      </div>
 
       {/* Optional Button */}
       {!hideButton && (!id || id !== 'unsupportedDevices' || isAdmin) && (
