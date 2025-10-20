@@ -11,17 +11,22 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { user, isLoading } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
-  const [domain, setDomain] = React.useState('');
+  const [email, setEmail] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const isValidDomain = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(domain);
+  // Simple email validation
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValidDomain) return;
+    if (!isValidEmail) return;
 
     setIsSubmitting(true);
-    // Redirect user to the backend with their domain as query param
+
+    // Extract domain from email
+    const domain = email.split('@')[1];
+
+    // Redirect to backend login route
     window.location.href = `/api/login?domain=${encodeURIComponent(domain)}`;
   };
 
@@ -42,18 +47,18 @@ export default function Layout({ children }: LayoutProps) {
 
         <form onSubmit={handleLogin} className="flex flex-col items-center space-y-4 w-[20rem]">
           <input
-            type="text"
-            placeholder="Enter your email domain"
-            value={domain}
-            onChange={(e) => setDomain(e.target.value.trim())}
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value.trim())}
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-center focus:border-brand-teal focus:ring-2 focus:ring-brand-teal focus:outline-none"
           />
 
           <button
             type="submit"
-            disabled={!isValidDomain || isSubmitting}
+            disabled={!isValidEmail || isSubmitting}
             className={`inline-flex items-center justify-center rounded-md px-4 py-2 text-white font-montserrat transition-colors w-full ${
-              isValidDomain && !isSubmitting ? 'bg-brand-teal hover:bg-brand-teal/90' : 'bg-gray-400 cursor-not-allowed'
+              isValidEmail && !isSubmitting ? 'bg-brand-teal hover:bg-brand-teal/90' : 'bg-gray-400 cursor-not-allowed'
             }`}
           >
             {isSubmitting ? 'Redirecting...' : 'Login with Microsoft'}
