@@ -63,7 +63,7 @@ export async function setupAuth(app: Express) {
               });
               if (!graphRes.ok) throw new Error('Failed to fetch Microsoft profile');
               const userInfo = await graphRes.json();
-              const email = userInfo.mail || userInfo.userPrincipalName;
+              const email = userInfo.mail.toLowerCase() || userInfo.userPrincipalName.toLowerCase();
 
               // 2️⃣ Check if user exists in DB by email
               const dbUser = await storage.getUserByEmail(email);
