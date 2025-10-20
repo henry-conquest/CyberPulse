@@ -1,27 +1,14 @@
-import { Strategy as OIDCStrategy, VerifyCallback } from 'passport-openidconnect';
-import type { Express, RequestHandler } from 'express';
-import memoize from 'memoizee';
 import { Strategy as OAuth2Strategy } from 'passport-oauth2';
 import passport from 'passport';
 import session from 'express-session';
 import connectPg from 'connect-pg-simple';
+import type { Express, RequestHandler } from 'express';
 import { storage } from './storage';
 import { parseJwt } from './helper';
 
-const getOIDCConfig = memoize(
-  () => ({
-    issuer: `https://login.microsoftonline.com/common/v2.0`,
-    authorizationURL: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize`,
-    tokenURL: `https://login.microsoftonline.com/common/oauth2/v2.0/token`,
-    userInfoURL: `https://graph.microsoft.com/oidc/userinfo`,
-    clientID: process.env.CLIENT_ID!,
-    clientSecret: process.env.CLIENT_SECRET!,
-    callbackURL: process.env.REPLIT_REDIRECT_URI!,
-    scope: ['openid', 'profile', 'email', 'offline_access', 'User.Read'],
-  }),
-  { maxAge: 3600 * 1000 }
-);
-
+// -------------------
+// Session setup
+// -------------------
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
@@ -29,11 +16,7 @@ export function getSession() {
     secret: process.env.SESSION_SECRET!,
     resave: false,
     saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: sessionTtl,
-    },
+    cookie: { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: sessionTtl },
     store: new pgStore({
       conString: process.env.DATABASE_URL,
       createTableIfMissing: false,
@@ -43,282 +26,169 @@ export function getSession() {
   });
 }
 
-async function upsertUser(claims: any) {
-  await storage.upsertUser({
-    id: claims.id,
-    email: claims.email,
-    firstName: claims.given_name,
-    lastName: claims.family_name,
-    profileImageUrl: claims.picture || null,
-  });
-}
-
+// -------------------
+// Setup auth with dynamic per-tenant login
+// -------------------
 export async function setupAuth(app: Express) {
   app.set('trust proxy', 1);
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
 
-  passport.use(
-    'azure',
-    new OAuth2Strategy(
-      {
-        authorizationURL: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize`,
-        tokenURL: `https://login.microsoftonline.com/common/oauth2/v2.0/token`,
-        clientID: process.env.CLIENT_ID!,
-        clientSecret: process.env.CLIENT_SECRET!,
-        callbackURL: process.env.REPLIT_REDIRECT_URI!,
-        scope: [
-          'openid',
-          'profile',
-          'email',
-          'offline_access',
-          'User.Read',
-          'Directory.Read.All',
-          'Policy.Read.All',
-          'DeviceManagementConfiguration.Read.All',
-          'DeviceManagementManagedDevices.Read.All',
-          'IdentityRiskEvent.Read.All',
-          'IdentityRiskyUser.Read.All',
-          'SecurityEvents.Read.All',
-        ].join(' '),
-      },
-      async (accessToken, refreshToken, params, profile, done) => {
-        try {
-          const graphRes = await fetch('https://graph.microsoft.com/v1.0/me', {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          });
+  // Dynamic login route
+  app.get('/api/login', async (req, res, next) => {
+    const domain = req.query.domain as string;
+    if (!domain) return res.status(400).send('Missing domain');
 
-          if (!graphRes.ok) {
-            console.error('❌ Failed to fetch Microsoft Graph profile:', await graphRes.text());
-            return done(new Error('Failed to fetch Microsoft Graph profile'));
-          }
+    const tenantApp = await storage.getMicrosoft365ConnectionByDomain(domain);
+    if (!tenantApp) return res.redirect(`/login-rejected?message=Unknown tenant domain`);
 
-          const photoRes = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
+    const strategyName = `azure-${domain}`;
+    if (!passport._strategies[strategyName]) {
+      passport.use(
+        strategyName,
+        new OAuth2Strategy(
+          {
+            authorizationURL: `https://login.microsoftonline.com/common/oauth2/v2.0/authorize`,
+            tokenURL: `https://login.microsoftonline.com/common/oauth2/v2.0/token`,
+            clientID: tenantApp.clientId,
+            clientSecret: tenantApp.clientSecret,
+            callbackURL: process.env.REPLIT_REDIRECT_URI!,
+          },
+          async (accessToken, refreshToken, params, profile, done) => {
+            try {
+              // 1️⃣ Fetch Microsoft Graph profile
+              const graphRes = await fetch('https://graph.microsoft.com/v1.0/me', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+              });
+              if (!graphRes.ok) throw new Error('Failed to fetch profile');
+              const userInfo = await graphRes.json();
+              const email = userInfo.mail || userInfo.userPrincipalName;
 
-          let profileImageUrl = null;
+              // 2️⃣ Check if user exists in DB
+              const dbUser = await storage.getUserByEmail(email);
+              if (!dbUser) {
+                console.warn(`🚫 User ${email} not found in DB`);
+                return done(null, false, { message: 'User not allowed to log in' });
+              }
 
-          if (photoRes.ok) {
-            const buffer = await photoRes.arrayBuffer();
-            const base64 = Buffer.from(buffer).toString('base64');
-            profileImageUrl = `data:image/jpeg;base64,${base64}`;
-          } else {
-            console.log('No profile photo available or error fetching photo');
-          }
+              // 3️⃣ Check if user is assigned to enterprise app
+              try {
+                const assignmentsRes = await fetch(`https://graph.microsoft.com/v1.0/me/appRoleAssignments`, {
+                  headers: { Authorization: `Bearer ${accessToken}` },
+                });
+                if (!assignmentsRes.ok) {
+                  console.error('❌ Failed to fetch appRoleAssignments:', await assignmentsRes.text());
+                  return done(new Error('Failed to verify app assignment'));
+                }
 
-          const userInfo = await graphRes.json();
-          const microsoftTenantId = parseJwt(params.id_token).tid;
-          const email = userInfo.mail || userInfo.userPrincipalName;
+                const assignments = await assignmentsRes.json();
+                const assigned = assignments.value.some(
+                  (a: any) => a.resourceId === process.env.ENTERPRISE_APP_OBJECT_ID
+                );
+                if (!assigned) {
+                  console.warn(`🚫 User ${email} is not assigned to Enterprise App`);
+                  return done(null, false, { message: 'User not assigned to this application' });
+                }
+              } catch (err) {
+                return done(err as Error);
+              }
 
-          if (!microsoftTenantId || !email) {
-            return done(new Error('Missing tenant ID or email'));
-          }
+              // 4️⃣ Upsert or update user in DB
+              await storage.upsertUser({
+                id: userInfo.id,
+                email,
+                firstName: userInfo.givenName,
+                lastName: userInfo.surname,
+              });
 
-          try {
-            const assignmentsRes = await fetch(`https://graph.microsoft.com/v1.0/me/appRoleAssignments`, {
-              headers: { Authorization: `Bearer ${accessToken}` },
-            });
+              // 5️⃣ Return user object
+              const user = {
+                id: userInfo.id,
+                email,
+                name: userInfo.displayName,
+                tenantId: tenantApp.tenantId,
+                access_token: accessToken,
+                refresh_token: refreshToken,
+                role: dbUser.role,
+              };
 
-            if (!assignmentsRes.ok) {
-              console.error('❌ Failed to fetch appRoleAssignments:', await assignmentsRes.text());
-              return done(new Error('Failed to verify app assignment'));
+              return done(null, user);
+            } catch (err) {
+              return done(err as Error);
             }
-
-            const assignments = await assignmentsRes.json();
-            console.log('ASSIGNMENTS HERE ->>>>', JSON.stringify(assignments, null, 2));
-            const assigned = assignments.value.some((a: any) => a.resourceId === process.env.ENTERPRISE_APP_OBJECT_ID);
-
-            if (!assigned) {
-              console.warn(`🚫 User ${email} is not assigned to Enterprise App`);
-              return done(null, false, { message: 'User not assigned to this application' });
-            }
-          } catch (err) {
-            return done(err as Error);
           }
-
-          // Check if this user was invited
-          const invite = await storage.getInviteByEmail(email);
-          const tenantId = invite?.tenantId || microsoftTenantId;
-
-          // Save Microsoft token under the invite tenantId
-          await storage.upsertMicrosoftToken({
-            userId: userInfo.id,
-            tenantId,
-            accessToken,
-            refreshToken,
-            expiresAt: new Date(Date.now() + (params.expires_in ?? 3599) * 1000),
-          });
-
-          // Create or update user record
-          await storage.upsertUser({
-            id: userInfo.id,
-            email,
-            firstName: userInfo.givenName,
-            lastName: userInfo.surname,
-            profileImageUrl,
-          });
-
-          // Assign user to the invite tenant
-          const alreadyAssigned = await storage.checkUserTenantExists(userInfo.id, tenantId);
-          if (!alreadyAssigned) {
-            await storage.addUserToTenant({ userId: userInfo.id, tenantId });
-          }
-
-          // Mark invite as accepted
-          if (invite && !invite.accepted) {
-            await storage.markInviteAccepted(invite.id);
-          }
-          const dbUser = await storage.getUser(userInfo.id);
-
-          const user = {
-            id: userInfo.id,
-            email,
-            name: userInfo.displayName,
-            firstName: userInfo.givenName,
-            lastName: userInfo.surname,
-            tenantId,
-            role: dbUser?.role || 'user',
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            expires_at: Math.floor(Date.now() / 1000) + (params.expires_in ?? 3599),
-          };
-
-          return done(null, user);
-        } catch (err) {
-          return done(err as Error);
-        }
-      }
-    )
-  );
-
-  passport.serializeUser((user: any, done) => {
-    done(null, user);
-  });
-
-  passport.deserializeUser((user: any, done) => {
-    done(null, user);
-  });
-
-  app.get('/api/login', passport.authenticate('azure'));
-
-  app.get('/login-failed', (req, res) => {
-    // Suppose message comes from Passport or default
-    let message: string | undefined = req.query.message as string | undefined;
-    if (!message) {
-      message = 'Your login attempt was rejected. Please contact your administrator.';
+        )
+      );
     }
 
-    // Redirect with safe encoding
-    res.redirect(`/login-rejected`);
+    passport.authenticate(strategyName, {
+      scope: ['openid', 'profile', 'email', 'offline_access', 'User.Read'],
+      state: domain,
+    })(req, res, next);
   });
 
-  app.get(
-    '/auth/callback',
-    passport.authenticate('azure', {
-      successRedirect: '/',
-      failureRedirect: '/login-failed',
-    })
-  );
+  // Callback route
+  app.get('/auth/callback', (req, res, next) => {
+    const domain = req.query.state as string;
+    const strategyName = domain ? `azure-${domain}` : null;
+    if (!strategyName || !passport._strategies[strategyName]) {
+      return res.redirect('/login-failed');
+    }
 
-  app.get('/api/logout', (req, res) => {
-    req.logout(() => {
-      res.redirect('/');
-    });
+    passport.authenticate(strategyName, { successRedirect: '/', failureRedirect: '/login-failed' })(req, res, next);
   });
+
+  // Logout
+  app.get('/api/logout', (req, res) => req.logout(() => res.redirect('/')));
+
+  // Login failed
+  app.get('/login-failed', (req, res) => {
+    const message = (req.query.message as string) || 'Your login attempt was rejected.';
+    res.redirect(`/login-rejected?message=${encodeURIComponent(message)}`);
+  });
+
+  // Passport serialize/deserialize
+  passport.serializeUser((user: any, done) => done(null, user));
+  passport.deserializeUser((user: any, done) => done(null, user));
 }
 
+// -------------------
+// Auth middleware
+// -------------------
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
-
-  if (!req.isAuthenticated() || !user.expires_at) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) return next();
-
-  if (!user.refresh_token) {
-    return res.redirect('/api/login');
-  }
-
-  try {
-    const config = getOIDCConfig();
-
-    const params = new URLSearchParams({
-      grant_type: 'refresh_token',
-      client_id: config.clientID,
-      client_secret: config.clientSecret,
-      refresh_token: user.refresh_token,
-    });
-
-    const response = await fetch(config.tokenURL, {
-      method: 'POST',
-      body: params,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    });
-
-    if (!response.ok) throw new Error('Token refresh failed');
-
-    const token = await response.json();
-
-    user.access_token = token.access_token;
-    user.refresh_token = token.refresh_token || user.refresh_token;
-    user.expires_at = Math.floor(Date.now() / 1000) + token.expires_in;
-
-    return next();
-  } catch (err) {
-    console.error('Refresh token error:', err);
-    return res.redirect('/api/login');
-  }
+  if (!req.isAuthenticated() || !user?.access_token) return res.status(401).json({ message: 'Unauthorized' });
+  next();
 };
 
-export const isAuthorized = (allowedRoles: string[]): RequestHandler => {
-  return async (req, res, next) => {
+export const isAuthorized =
+  (allowedRoles: string[]): RequestHandler =>
+  async (req, res, next) => {
     try {
-      const userId = (req.user as any).id;
+      const userId = (req.user as any)?.id;
       const user = await storage.getUser(userId);
-
-      if (!user) {
-        return res.status(401).json({ message: 'User not found' });
-      }
-
-      if (!user.role || !allowedRoles.includes(user.role)) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
-
+      if (!user) return res.status(401).json({ message: 'User not found' });
+      if (!allowedRoles.includes(user.role)) return res.status(403).json({ message: 'Access denied' });
       next();
     } catch (err) {
-      console.error('Authorization error:', err);
+      console.error(err);
       res.status(500).json({ message: 'Internal error' });
     }
   };
-};
 
 export const requireTenantAccess: RequestHandler = async (req, res, next) => {
   try {
     const tenantId = req.params.tenantId || req.params.id;
     const user = req.user as any;
+    if (!tenantId || !user) return res.status(400).json({ message: 'Missing tenant or user' });
 
-    if (!tenantId || !user) {
-      return res.status(400).json({ message: 'Invalid request: missing tenant ID or user' });
-    }
-
-    // Check if user has access to this tenant in the DB
     const hasAccess = await storage.checkUserTenantExists(user.id, tenantId);
-    const admin = user.role === 'admin';
-
-    if (!hasAccess && !admin) {
-      console.warn(`Access denied: ${user.email} → tenant ${tenantId}`);
+    if (!hasAccess && user.role !== 'admin')
       return res.status(403).json({ message: 'Forbidden: tenant access denied' });
-    }
-
     next();
   } catch (err) {
-    console.error('Tenant access check error:', err);
+    console.error(err);
     res.status(403).json({ message: 'Forbidden' });
   }
 };
