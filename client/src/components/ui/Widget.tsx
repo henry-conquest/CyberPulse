@@ -59,8 +59,6 @@ const Widget = (props: WidgetProps) => {
   const [toggleUpdating, setToggleUpdating] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(!!apiCall);
   const dispatch = useDispatch();
-  const [editing, setEditing] = useState<boolean>(false);
-
   const handleToggleChange = async (val: boolean) => {
     if (tenantId && widgetId) {
       setToggleUpdating(true);
@@ -71,9 +69,11 @@ const Widget = (props: WidgetProps) => {
   };
 
   const fetchUnsupportedDevices = async () => {
+    setLoading(true);
     const result = await getWidget(id, tenantId);
     setScore(result.customValue);
     dispatch(scoresActions.setCustomScores(result.customValue));
+    setLoading(false);
   };
   useEffect(() => {
     if (id === 'unsupportedDevices') {

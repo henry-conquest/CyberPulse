@@ -82,7 +82,7 @@ const M365Admins = () => {
                 {adminsData.flatMap((roleObj: any) =>
                   roleObj.members.map((member: any) => (
                     <TableRow key={`${roleObj.role}-${member.id}`}>
-                      <TableCell>{`${member.givenName || ''} ${member.surname || ''}`}</TableCell>
+                      <TableCell>{`${member.givenName || member.displayName || ''} ${member.surname || ''}`}</TableCell>
                       <TableCell className="text-center">{roleObj.role}</TableCell>
                     </TableRow>
                   ))

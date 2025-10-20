@@ -606,7 +606,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req: Request, res: Response) => {
-      const { email, firstName, lastName, role, tenantId } = req.body;
+      let { email, firstName, lastName, role, tenantId } = req.body;
+      email = email.toLowerCase();
 
       if (!email || !firstName || !lastName || !role || !tenantId) {
         return res.status(400).json({ message: 'Missing required fields' });
@@ -1274,7 +1275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check access
       const allowedTenants = await storage.getTenantsByUserId(user.id);
-      if (!allowedTenants.some((t) => t.id === tenantId) && user.role !== 'ADMIN') {
+      if (!allowedTenants.some((t) => t.id === tenantId) && user.role !== 'admin') {
         return res.status(403).json({ message: 'Forbidden' });
       }
 
