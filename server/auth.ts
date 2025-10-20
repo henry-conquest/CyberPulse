@@ -83,6 +83,7 @@ export async function setupAuth(app: Express) {
                 }
 
                 const assignments = await assignmentsRes.json();
+                console.log('ASSIGNEMENTS', JSON.stringify(assignments, null, 2));
                 const assigned = assignments.value.some(
                   (a: any) => a.resourceId === process.env.ENTERPRISE_APP_OBJECT_ID
                 );
