@@ -61,11 +61,11 @@ export async function setupAuth(app: Express) {
               const graphRes = await fetch('https://graph.microsoft.com/v1.0/me', {
                 headers: { Authorization: `Bearer ${accessToken}` },
               });
-              if (!graphRes.ok) throw new Error('Failed to fetch profile');
+              if (!graphRes.ok) throw new Error('Failed to fetch Microsoft profile');
               const userInfo = await graphRes.json();
               const email = userInfo.mail || userInfo.userPrincipalName;
 
-              // 2️⃣ Check if user exists in DB
+              // 2️⃣ Check if user exists in DB by email
               const dbUser = await storage.getUserByEmail(email);
               if (!dbUser) {
                 console.warn(`🚫 User ${email} not found in DB`);
@@ -74,7 +74,7 @@ export async function setupAuth(app: Express) {
 
               // 3️⃣ Check if user is assigned to enterprise app
               try {
-                const assignmentsRes = await fetch(`https://graph.microsoft.com/v1.0/me/appRoleAssignments`, {
+                const assignmentsRes = await fetch('https://graph.microsoft.com/v1.0/me/appRoleAssignments', {
                   headers: { Authorization: `Bearer ${accessToken}` },
                 });
                 if (!assignmentsRes.ok) {
@@ -83,12 +83,11 @@ export async function setupAuth(app: Express) {
                 }
 
                 const assignments = await assignmentsRes.json();
-                console.log('ASSIGNEMENTS', JSON.stringify(assignments, null, 2));
-                console.log('id we want to match', tenantApp.clientId);
                 const assigned = assignments.value.some(
                   (a: any) =>
                     a.resourceId === tenantApp.objectId || a.resourceId === process.env.ENTERPRISE_APP_OBJECT_ID
                 );
+
                 if (!assigned) {
                   console.warn(`🚫 User ${email} is not assigned to Enterprise App`);
                   return done(null, false, { message: 'User not assigned to this application' });
@@ -97,9 +96,9 @@ export async function setupAuth(app: Express) {
                 return done(err as Error);
               }
 
-              // 4️⃣ Upsert or update user in DB
+              // 4️⃣ Upsert user using existing DB ID
               await storage.upsertUser({
-                id: userInfo.id,
+                id: dbUser.id, // Use the existing user ID
                 email,
                 firstName: userInfo.givenName,
                 lastName: userInfo.surname,
@@ -107,7 +106,7 @@ export async function setupAuth(app: Express) {
 
               // 5️⃣ Return user object
               const user = {
-                id: userInfo.id,
+                id: dbUser.id,
                 email,
                 name: userInfo.displayName,
                 tenantId: tenantApp.tenantId,
