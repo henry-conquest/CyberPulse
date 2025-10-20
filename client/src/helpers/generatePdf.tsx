@@ -1,5 +1,3 @@
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { MaturityChart } from '@/components/PDF/MaturityChart';
@@ -14,6 +12,8 @@ interface PDFProps {
 }
 
 export const generatePdf = async (props: PDFProps) => {
+  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([import('jspdf'), import('html2canvas')]);
+
   const { tenantName, scoreData, secureScore, scoreHistory } = props;
   const doc = new jsPDF() as any;
   const today = new Date();

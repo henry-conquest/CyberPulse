@@ -67,18 +67,12 @@ const ThreeMonthScoreChart = ({ id, title }: ThreeMonthScoreChartProps) => {
   // Prepare data
   const chartDataValues = useMemo(() => {
     try {
-      console.log('score hist', scoreHistory);
       if (!scoreHistory?.length) return [];
 
       const last3Months = getLastThreeMonthsData(scoreHistory);
       const { maturityResult, secureResult } = splitScoreData(last3Months);
-      console.log('mat res', maturityResult);
-
       const dataSet = id === 'secure' ? secureResult : maturityResult;
-
       const sorted = [...dataSet].sort((a, b) => new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime());
-
-      console.log('sorted', sorted);
 
       setLabels(sorted.map((d) => format(new Date(d.lastUpdated), 'yyyy-MM-01')));
 

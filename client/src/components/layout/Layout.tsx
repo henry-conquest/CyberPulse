@@ -1,5 +1,5 @@
 import React from 'react';
-import logoImg from '../../assets/logo.png';
+import logoImg from '../../assets/logo.webp';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { useAuth } from '@/hooks/useAuth';

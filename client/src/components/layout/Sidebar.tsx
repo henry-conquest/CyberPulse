@@ -17,7 +17,7 @@ import {
   ListCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import logoImg from '../../assets/logo.png';
+import logoImg from '../../assets/logo.webp';
 import { NavItem } from './NavItem/NavItem';
 
 interface SidebarProps {

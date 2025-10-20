@@ -1224,7 +1224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { tenantId, widgetKey } = req.params;
       const { customValue } = req.body;
       const user = req.user as any;
-
+      console.log('user role', user);
       // Only admins should be allowed to change widget scoring
       if (user.role !== UserRoles.ADMIN) {
         return res.status(403).json({ message: 'Forbidden: Admins only' });

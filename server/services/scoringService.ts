@@ -98,6 +98,7 @@ export async function calculateTenantScore(tenantId: string, userId?: string) {
     }
 
     totalScore += score;
+    console.log('widget: ', widget.key, ' score: ', score, ' max available', widget.pointsAvailable);
     maxScore += widget.pointsAvailable ?? (widget.key === 'unsupportedDevices' ? 10 : 0);
   }
 

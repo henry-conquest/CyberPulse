@@ -1,7 +1,5 @@
-import jsPDF from 'jspdf';
 import logoImg from '../assets/logo.png';
 import { computeDataScore, computeDevicesAndInfrastructureScore, computeIdentitiesAndPeopleScore } from './pdfHelper';
-import autoTable from 'jspdf-autotable';
 
 interface PDFProps {
   tenantName: string;
@@ -12,6 +10,8 @@ interface PDFProps {
 }
 
 export const generateTenderInsurerPack = async (props: PDFProps) => {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')]);
+
   const { tenantName, identitiesAndPeopleData, devicesAndInfrastructureData, manualWidgets, customScore } = props;
 
   const { tickCount: identitiesAndPeopleTickCount, widgetBreakdown } = computeIdentitiesAndPeopleScore(

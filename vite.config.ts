@@ -22,5 +22,16 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          chart: ['chart.js', 'react-chartjs-2'],
+          radix: ['@radix-ui/react-accordion', '@radix-ui/react-dialog', '@radix-ui/react-toast'], // etc
+          framer: ['framer-motion'],
+          redux: ['react-redux', '@reduxjs/toolkit'],
+        },
+      },
+    },
   },
 });
