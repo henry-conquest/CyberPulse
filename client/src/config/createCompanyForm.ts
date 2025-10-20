@@ -15,6 +15,11 @@ export const createCompanyFields = [
     type: 'text',
   },
   {
+    id: 'objectId',
+    label: 'Object ID',
+    type: 'text',
+  },
+  {
     id: 'clientId',
     label: 'Client ID',
     type: 'text',

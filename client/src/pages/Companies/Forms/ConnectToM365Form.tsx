@@ -15,6 +15,7 @@ const ConnectToM365Form = (props: any) => {
   const [tenantDomain, setTenantDomain] = useState('');
   const [tenantName, setTenantName] = useState('');
   const [clientId, setClientId] = useState('');
+  const [objectId, setObjectId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
 
   const handleConnect = () => {
@@ -22,6 +23,7 @@ const ConnectToM365Form = (props: any) => {
       tenantDomain,
       tenantName,
       clientId,
+      objectId,
       clientSecret,
     };
 
@@ -77,6 +79,19 @@ const ConnectToM365Form = (props: any) => {
                 />
               </div>
 
+              <div>
+                <label htmlFor="clientId" className="block text-sm font-medium mb-1">
+                  Object ID
+                </label>
+                <input
+                  id="objectId"
+                  type="text"
+                  value={objectId}
+                  onChange={(e) => setObjectId(e.target.value)}
+                  className="w-full p-2 border rounded-md text-sm"
+                  placeholder="Enter your Azure App Registration Client ID"
+                />
+              </div>
               <div>
                 <label htmlFor="clientId" className="block text-sm font-medium mb-1">
                   Client ID

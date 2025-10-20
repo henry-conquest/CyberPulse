@@ -87,7 +87,7 @@ export async function setupAuth(app: Express) {
                 console.log('id we want to match', tenantApp.clientId);
                 const assigned = assignments.value.some(
                   (a: any) =>
-                    a.resourceId === tenantApp.clientId || a.resourceId === process.env.ENTERPRISE_APP_OBJECT_ID
+                    a.resourceId === tenantApp.objectId || a.resourceId === process.env.ENTERPRISE_APP_OBJECT_ID
                 );
                 if (!assigned) {
                   console.warn(`🚫 User ${email} is not assigned to Enterprise App`);

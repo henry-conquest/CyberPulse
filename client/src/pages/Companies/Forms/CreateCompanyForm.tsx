@@ -23,6 +23,7 @@ export const schema = yup.object().shape({
   tenantDomain: yup.string().required('Please enter a tenant domain'),
   tenantId: yup.string().required('Please enter a tenant ID'),
   clientId: yup.string().required('Please enter a client ID'),
+  objectId: yup.string().required('Please enter an object ID'),
   clientSecret: yup.string().required('Please enter a client secret'),
 });
 
