@@ -232,7 +232,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         });
         const members = await roleResponse.json();
-        adminMembers.push({ role: role.displayName, members: members.value });
+        if (role.displayName === 'Global Administrator')
+          adminMembers.push({ role: role.displayName, members: members.value });
       }
 
       return res.json(adminMembers);
