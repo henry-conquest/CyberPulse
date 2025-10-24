@@ -1193,6 +1193,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
 
+  app.post(
+    '/api/tenants/:tenantId/widgets/:widgetId/not-applicable',
+    isAuthenticated,
+    isAuthorized([UserRoles.ADMIN]),
+    asyncHandler(async (req, res) => {
+      const { tenantId, widgetId } = req.params;
+      const { isApplicable } = req.body;
+
+      if (typeof isApplicable !== 'boolean') {
+        return res.status(400).json({ message: "Invalid 'isApplicable' value" });
+      }
+
+      try {
+        await storage.updateTenantWidgetApplicability({
+          tenantId,
+          widgetId,
+          isApplicable,
+        });
+
+        res.status(200).json({ success: true });
+      } catch (error) {
+        console.error('Error updating widget applicability:', error);
+        res.status(500).json({ message: 'Failed to update widget applicability' });
+      }
+    })
+  );
+
   /**
    * POST /api/tenants/:tenantId/scores
    * Trigger a new score calculation for the tenant and store snapshot

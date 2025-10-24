@@ -89,6 +89,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
               onClickParam={onClickParam}
               manualToggle={widget.manual}
               implemented={manualWidget ? manualWidget.isEnabled : false}
+              isApplicable={manualWidget ? manualWidget.isApplicable : true}
               widgetId={manualWidget ? manualWidget.widgetId : ''}
               manualLoading={manLoading}
               tenantId={tenantId}
@@ -141,6 +142,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
               onClickParam={onClickParam}
               manualToggle={widget.manual}
               implemented={manualWidget ? manualWidget.isEnabled : false}
+              isApplicable={manualWidget ? manualWidget.isApplicable : true}
               widgetId={manualWidget ? manualWidget.widgetId : ''}
               manualLoading={manLoading}
               tenantId={tenantId}
@@ -179,6 +181,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
               render={widget.render}
               manualToggle={widget.manual}
               implemented={manualWidget ? manualWidget.isEnabled : false}
+              isApplicable={manualWidget ? manualWidget.isApplicable : true}
               widgetId={manualWidget ? manualWidget.widgetId : ''}
               manualLoading={manLoading}
               tenantId={tenantId}

@@ -62,36 +62,35 @@ export async function calculateTenantScore(tenantId: string, userId?: string) {
   let maxScore = 0;
 
   for (const widget of allWidgets) {
-    if (widget.key === 'patchCompliance') {
-      console.log(`⏭️ Skipping ${widget.key} (not active yet)`);
-      continue;
-    }
+    if (widget.key === 'patchCompliance') continue;
+
     const config = widget.scoringConfig as any;
     let value: any;
+    let score: number = 0;
 
     if (widget.manual) {
       const tenantWidget = manualLookup.get(widget.id);
 
-      // Special case: unsupportedDevices
+      if (tenantWidget?.isApplicable === false) {
+        // N/A widget → assign full points
+        score = widget.pointsAvailable ?? (widget.key === 'unsupportedDevices' ? 10 : 0);
+        totalScore += score;
+        maxScore += score;
+        continue;
+      }
+
+      // Normal manual widget handling
       if (widget.key === 'unsupportedDevices') {
-        value = tenantWidget?.customValue ?? 100; // default 100 if not set
+        value = tenantWidget?.customValue ?? 100;
       } else {
         value = tenantWidget?.isEnabled ?? false;
       }
     } else {
       const fetcher = scoringDataFetchers[widget.key];
-      if (fetcher) {
-        value = await fetcher({ tenantId, userId, accessToken });
-      } else {
-        console.warn(`No fetcher defined for widget ${widget.key}`);
-        value = null;
-      }
+      value = fetcher ? await fetcher({ tenantId, userId, accessToken }) : null;
     }
 
-    let score: number;
-
     if (widget.key === 'unsupportedDevices') {
-      // 1 point per 10%, max 10 points
       score = Math.min(Math.floor((value ?? 100) / 10), 10);
     } else {
       score = Math.round(calculateWidgetScore(widget.scoringType, config, value));

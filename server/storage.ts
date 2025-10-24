@@ -573,6 +573,7 @@ export class DatabaseStorage implements IStorage {
         isEnabled: tenantWidgets.isEnabled,
         lastUpdated: tenantWidgets.lastUpdated,
         widgetName: widgets.key,
+        isApplicable: tenantWidgets.isApplicable,
       })
       .from(tenantWidgets)
       .innerJoin(widgets, eq(tenantWidgets.widgetId, widgets.id))
@@ -625,6 +626,25 @@ export class DatabaseStorage implements IStorage {
       .update(tenantWidgets)
       .set({
         isEnabled,
+        manuallyToggled: true,
+        lastUpdated: new Date(),
+      })
+      .where(and(eq(tenantWidgets.tenantId, tenantId), eq(tenantWidgets.widgetId, widgetId)));
+  }
+
+  async updateTenantWidgetApplicability({
+    tenantId,
+    widgetId,
+    isApplicable,
+  }: {
+    tenantId: string;
+    widgetId: string;
+    isApplicable: boolean;
+  }) {
+    return await db
+      .update(tenantWidgets)
+      .set({
+        isApplicable,
         manuallyToggled: true,
         lastUpdated: new Date(),
       })

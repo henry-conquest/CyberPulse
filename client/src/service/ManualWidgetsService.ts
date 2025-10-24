@@ -24,6 +24,21 @@ export const updateManualWidget = async (tenantId: string, widgetId: string, new
   }
 };
 
+export const toggleNAWidget = async (tenantId: string, widgetId: string, newValue: boolean) => {
+  try {
+    await fetch(`/api/tenants/${tenantId}/widgets/${widgetId}/not-applicable`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ isApplicable: newValue }),
+    });
+  } catch (error) {
+    if (error) throw new Error('Failed to change N/A value for manual widget: ', error);
+  }
+};
+
 import axios from 'axios';
 
 export const updateWidgetScore = async (widgetKey: string, customValue: number, tenantId: string) => {
