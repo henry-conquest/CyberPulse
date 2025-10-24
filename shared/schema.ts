@@ -166,6 +166,7 @@ export const tenantWidgets = pgTable(
     forceManual: boolean('force_manual').default(false),
     lastUpdated: timestamp('last_updated').defaultNow(),
     customValue: uuid('custom_value').default(''),
+    isApplicable: boolean('is_applicable').default(true).notNull(),
   },
   (table) => ({
     uniqueTenantWidget: unique().on(table.tenantId, table.widgetId),

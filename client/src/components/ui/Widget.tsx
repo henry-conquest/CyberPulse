@@ -9,8 +9,8 @@ import {
 } from '@/store/store';
 import { useDispatch } from 'react-redux';
 import { Switch } from '@/components/ui/switch';
-import { BadgeAlert, Check } from 'lucide-react';
-import { getWidget, updateManualWidget, updateWidgetScore } from '@/service/ManualWidgetsService';
+import { BadgeAlert, Check, Slash } from 'lucide-react';
+import { getWidget, toggleNAWidget, updateManualWidget, updateWidgetScore } from '@/service/ManualWidgetsService';
 import RiskScoreChart from '@/pages/CompanyDetails/RiskScoreChart/RiskScoreChart';
 
 interface WidgetProps {
@@ -26,6 +26,7 @@ interface WidgetProps {
   children?: any;
   manualToggle?: boolean;
   implemented?: boolean;
+  isApplicable?: boolean;
   tenantId: string;
   manualLoading?: boolean;
   widgetId?: string;
@@ -47,6 +48,7 @@ const Widget = (props: WidgetProps) => {
     onClickParam,
     manualToggle = false,
     implemented = false,
+    isApplicable = true,
     manualLoading,
     widgetId,
     tenantId,
@@ -172,17 +174,27 @@ const Widget = (props: WidgetProps) => {
       {manualToggle && manualLoading && (
         <div className="w-6 h-6 border-2 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
       )}
-      {manualToggle &&
-        !manualLoading &&
-        (implemented ? (
-          <div className="bg-brand-green rounded-full p-4">
-            <Check className="text-white" size={32} />
-          </div>
-        ) : (
-          <div className="bg-red-500 rounded-full p-4">
-            <BadgeAlert className="text-white" size={32} />
-          </div>
-        ))}
+      {/* Manual toggle icon */}
+      {manualToggle && !manualLoading && (
+        <>
+          {isApplicable ? (
+            implemented ? (
+              <div className="bg-brand-green rounded-full p-4">
+                <Check className="text-white" size={32} />
+              </div>
+            ) : (
+              <div className="bg-red-500 rounded-full p-4">
+                <BadgeAlert className="text-white" size={32} />
+              </div>
+            )
+          ) : (
+            <div className="bg-gray-400 rounded-full p-4">
+              <Slash className="text-white" size={32} />
+            </div>
+          )}
+        </>
+      )}
+
       {/* Not manual toggle widgets */}
       {loading ? (
         <div className="w-6 h-6 border-2 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
@@ -194,12 +206,39 @@ const Widget = (props: WidgetProps) => {
         children
       )}
 
-      {/* Manual Toggle */}
-      <div className="flex items-center justify-between w-full mt-2 text-sm">
+      {/* Manual Toggle + N/A Button */}
+      <div className="flex flex-col w-full mt-2 text-sm space-y-2">
         {manualToggle && !loading && isAdmin && (
           <>
-            <span>Implemented</span>
-            <Switch disabled={toggleUpdating} checked={implemented} onCheckedChange={handleToggleChange} />
+            <div className="flex items-center justify-between">
+              <span>Implemented</span>
+              <Switch
+                disabled={toggleUpdating || !isApplicable}
+                checked={implemented || !isApplicable}
+                onCheckedChange={handleToggleChange}
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              className="border-gray-400 text-gray-600 hover:bg-gray-100 w-full"
+              disabled={toggleUpdating}
+              onClick={async () => {
+                if (tenantId && widgetId) {
+                  setToggleUpdating(true);
+                  try {
+                    await toggleNAWidget(tenantId, widgetId, !isApplicable);
+                    await fetchManualWidgets();
+                  } catch (err) {
+                    console.error('Failed to mark widget as N/A:', err);
+                  } finally {
+                    setToggleUpdating(false);
+                  }
+                }
+              }}
+            >
+              {isApplicable ? 'Mark as N/A' : 'Mark as Applicable'}
+            </Button>
           </>
         )}
       </div>
