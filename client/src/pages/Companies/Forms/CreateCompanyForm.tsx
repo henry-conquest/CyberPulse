@@ -15,7 +15,6 @@ import { connectToM365, createTenant } from '@/service/M365Service';
 import { ExternalLink, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import CompanyFormField from './FormField';
-import { createCompanyFields } from '@/config/createCompanyForm';
 import { toast } from '@/hooks/use-toast';
 
 export const schema = yup.object().shape({
@@ -25,13 +24,33 @@ export const schema = yup.object().shape({
   clientId: yup.string().required('Please enter a client ID'),
   objectId: yup.string().required('Please enter an object ID'),
   clientSecret: yup.string().required('Please enter a client secret'),
+  guaranteesOption: yup
+    .string()
+    .oneOf(['immediate', 'scheduled', 'none'])
+    .required('Please select a guarantees option'),
+  guaranteesStartDate: yup.date().when('guaranteesOption', {
+    is: 'scheduled',
+    then: (schema) => schema.required('Please select a start date'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
 });
+
+export const createCompanyFields = [
+  { id: 'tenantId', label: 'Tenant ID', type: 'text' },
+  { id: 'tenantName', label: 'Tenant Name', type: 'text' },
+  { id: 'tenantDomain', label: 'Tenant Domain', type: 'text' },
+  { id: 'objectId', label: 'Object ID', type: 'text' },
+  { id: 'clientId', label: 'Client ID', type: 'text' },
+  { id: 'clientSecret', label: 'Client Secret', type: 'password' },
+];
 
 const CreateCompanyForm = (props: any) => {
   const { createDialogOpen, setCreateDialogOpen, setM365DialogOpen, setLoading, queryClient, isIntegrationTab } = props;
+
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
     setValue,
     reset,
@@ -39,19 +58,27 @@ const CreateCompanyForm = (props: any) => {
     resolver: yupResolver(schema),
   });
 
-  // clear form errors when the modal is hidden
+  const [loadingLocal, setLoadingLocal] = useState(false);
+
+  // Reset form when dialog closes
   useEffect(() => {
     if (!createDialogOpen) reset();
   }, [createDialogOpen]);
 
-  const [loadingLocal, setLoadingLocal] = useState(false);
+  const guaranteesOption = watch('guaranteesOption');
 
   const handleConnect = async (formData: any) => {
     try {
       setLoading(true);
       setLoadingLocal(true);
+
       await connectToM365(formData);
-      await createTenant(formData);
+
+      await createTenant({
+        ...formData,
+        guaranteesActive: formData.guaranteesOption === 'immediate',
+        guaranteesStartDate: formData.guaranteesOption === 'scheduled' ? formData.guaranteesStartDate : null,
+      });
 
       toast({ title: 'Success', description: 'Tenant connected and created.' });
       await queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
@@ -104,6 +131,33 @@ const CreateCompanyForm = (props: any) => {
               errors={errors}
             />
           ))}
+
+          {/* --- Guarantees Dropdown --- */}
+          <CompanyFormField
+            type="select"
+            id="guaranteesOption"
+            label="Guarantees Option"
+            register={register}
+            setValue={setValue}
+            errors={errors}
+            options={[
+              { value: 'immediate', label: 'Activate Immediately' },
+              { value: 'scheduled', label: 'Activate From Date' },
+              { value: 'none', label: 'Not Active' },
+            ]}
+          />
+
+          {/* Show date picker only if 'scheduled' is selected */}
+          {guaranteesOption === 'scheduled' && (
+            <CompanyFormField
+              type="date"
+              id="guaranteesStartDate"
+              label="Guarantees Start Date"
+              register={register}
+              setValue={setValue}
+              errors={errors}
+            />
+          )}
 
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>

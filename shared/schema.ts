@@ -55,6 +55,9 @@ export const tenants = pgTable('tenants', {
   deletedAt: timestamp('deleted_at')
     .default(sql`null`)
     .$type<Date | null>(),
+  guaranteesActive: boolean('guarantees_active').default(false),
+  guaranteesStartDate: timestamp('guarantees_start_date').$type<Date | null>(),
+  guaranteesDisabled: boolean('guarantees_disabled').default(false),
 });
 
 // User-tenant relationship (for multi-tenant access)

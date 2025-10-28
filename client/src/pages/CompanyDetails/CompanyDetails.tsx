@@ -16,6 +16,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
   const tenant = useSelector((state: any) => state.sessionInfo.selectedClient);
   const user = useSelector((state: any) => state.sessionInfo.user);
   const isAdmin = user?.role === 'admin';
+  const isGuaranteesDisabled = tenant.guaranteesDisabled || (!tenant.guaranteesActive && tenant.guaranteesStartDate);
 
   // Loading state
   if (!tenant) {
@@ -30,7 +31,26 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-20">{tenant?.name}</h1>
       {/* Guarantees */}
-      <GuaranteesModal tenantId={tenantId} />
+      {tenant.guaranteesActive || tenant.guaranteesDisabled || tenant.guaranteesStartDate ? (
+        <>
+          {!tenant.guaranteesActive && tenant.guaranteesStartDate && (
+            <p className="mb-4 text-sm text-gray-600">
+              Guarantees will be activated on{' '}
+              <span className="font-semibold">
+                {new Date(tenant.guaranteesStartDate).toLocaleDateString(undefined, {
+                  weekday: 'short',
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </span>
+              .
+            </p>
+          )}
+          <GuaranteesModal tenantId={tenantId} disabled={isGuaranteesDisabled} />
+        </>
+      ) : null}
+
       {/* Secure Score */}
       <CompanySecureScore tenantId={tenantId} />
       {/* Microsoft secure score */}
