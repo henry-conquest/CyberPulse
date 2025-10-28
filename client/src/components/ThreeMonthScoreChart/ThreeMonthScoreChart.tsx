@@ -21,6 +21,7 @@ import { getLastThreeMonthsData, splitScoreData } from '@/helpers/pdfHelper';
 import { getTenantScoreHistory } from '@/service/TenantService';
 import { scoresActions } from '@/store/store';
 import { Link, useParams } from 'wouter';
+import { Cog } from 'lucide-react';
 
 ChartJS.register(
   LineElement,
@@ -67,18 +68,13 @@ const ThreeMonthScoreChart = ({ id, title }: ThreeMonthScoreChartProps) => {
   // Prepare data
   const chartDataValues = useMemo(() => {
     try {
-      console.log('score hist', scoreHistory);
       if (!scoreHistory?.length) return [];
 
       const last3Months = getLastThreeMonthsData(scoreHistory);
       const { maturityResult, secureResult } = splitScoreData(last3Months);
-      console.log('mat res', maturityResult);
-
       const dataSet = id === 'secure' ? secureResult : maturityResult;
 
       const sorted = [...dataSet].sort((a, b) => new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime());
-
-      console.log('sorted', sorted);
 
       setLabels(sorted.map((d) => format(new Date(d.lastUpdated), 'yyyy-MM-01')));
 
@@ -136,7 +132,12 @@ const ThreeMonthScoreChart = ({ id, title }: ThreeMonthScoreChartProps) => {
       {loading ? (
         <LoadingSpinner />
       ) : chartDataValues.length === 0 ? (
-        <p>No {title} data available.</p>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+          <Cog className="w-24 h-24 text-brand-teal animate-spin-slow mb-4" strokeWidth={1.5} />
+          <p className="text-lg text-gray-600 max-w-md">
+            We’re building up some data — your first trend will be available at the end of the calendar month.
+          </p>
+        </div>
       ) : (
         <Line data={data} options={options} />
       )}

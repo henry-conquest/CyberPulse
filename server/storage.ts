@@ -247,11 +247,13 @@ export class DatabaseStorage implements IStorage {
     return newTenant;
   }
 
-  async restoreTenant(id: string): Promise<void> {
-    await db
-      .update(tenants)
-      .set({ deletedAt: null }) // you can update name if needed
-      .where(eq(tenants.id, id));
+  async restoreTenant(id: string, guaranteesData?: Partial<InsertTenant>): Promise<void> {
+    const updateData: any = { deletedAt: null };
+    if (guaranteesData) {
+      Object.assign(updateData, guaranteesData);
+    }
+
+    await db.update(tenants).set(updateData).where(eq(tenants.id, id));
   }
 
   async getTenant(id: string): Promise<Tenant | undefined> {

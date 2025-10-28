@@ -2,7 +2,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronRight, Shield, X } from 'lucide-react';
+import { MoreVertical } from 'lucide-react';
 import { UserRoles } from '@shared/schema';
 import { useCompanies } from '@/hooks/useCompanies';
 import {
@@ -19,6 +19,13 @@ import CreateCompanyForm from './Forms/CreateCompanyForm';
 import ConnectToM365Form from './Forms/ConnectToM365Form';
 import { useDispatch } from 'react-redux';
 import { sessionInfoActions } from '@/store/store';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import EditGuaranteesForm from './Forms/EditGuaranteesForm';
 
 export default function Companies() {
   const {
@@ -39,6 +46,7 @@ export default function Companies() {
   const [tenantToDelete, setTenantToDelete] = useState<any>(null);
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
+  const [editingTenant, setEditingTenant] = useState<any>(null);
 
   // LOADING STATE
   if (isUserLoading || isTenantsLoading || loading) {
@@ -128,6 +136,22 @@ export default function Companies() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Edit Guarantees Modal */}
+      {editingTenant && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-lg font-bold mb-4">Edit Guarantees for {editingTenant.name}</h2>
+            <EditGuaranteesForm
+              tenant={editingTenant}
+              onSuccess={() => {
+                queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
+                setEditingTenant(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {tenants.map((tenant: any) => {
           return (
@@ -135,28 +159,49 @@ export default function Companies() {
               key={tenant.id}
               className="relative overflow-hidden transition-all duration-200 hover:shadow-md flex flex-col items-center w-[16rem]"
             >
+              {/* --- 3-dot menu in top-right --- */}
               {user?.role === UserRoles.ADMIN && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 h-6 w-6 p-0 text-muted-foreground hover:text-destructive bg-transparent hover:bg-transparent focus:bg-transparent"
-                  onClick={() => {
-                    setTenantToDelete(tenant);
-                    setDeleteModalOpen(true);
-                  }}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+                <div className="absolute top-2 right-2 z-10">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 p-0 text-muted-foreground hover:bg-transparent focus:bg-transparent"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" side="bottom" className="w-40">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setEditingTenant(tenant);
+                        }}
+                      >
+                        Edit guarantees
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => {
+                          setTenantToDelete(tenant);
+                          setDeleteModalOpen(true);
+                        }}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               )}
 
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start w-full">
-                  <CardTitle className="text-lg font-montserrat font-bold text-brand-green mb-2">
-                    {tenant.name}
-                  </CardTitle>
-                </div>
+              {/* --- Header and Title --- */}
+              <CardHeader className="pb-2 w-full">
+                <CardTitle className="text-lg font-montserrat font-bold text-brand-green text-center">
+                  {tenant.name}
+                </CardTitle>
               </CardHeader>
 
+              {/* --- Content --- */}
               <CardContent className="pb-3">
                 <div>
                   <div className="text-sm font-montserrat text-brand-teal text-[16px] font-medium text-secondary-600">
@@ -166,6 +211,7 @@ export default function Companies() {
                 </div>
               </CardContent>
 
+              {/* --- Footer --- */}
               <CardFooter className="px-4 pt-3 pb-4 flex flex-col gap-3 w-full">
                 <Button
                   onClick={() => {

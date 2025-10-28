@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export const getTenants = async () => {
   try {
     const res = await fetch('/api/tenants');
@@ -23,3 +25,24 @@ export const getTenantScoreHistory = async (tenantId: string) => {
     console.log(err);
   }
 };
+
+export interface UpdateGuaranteesPayload {
+  guaranteesOption: 'immediate' | 'scheduled' | 'disabled';
+  startDate?: string;
+}
+
+/**
+ * Updates guarantees settings for a tenant.
+ * @param tenantId Tenant ID to update
+ * @param data Guarantees options
+ * @returns Updated tenant object
+ */
+export async function updateTenantGuarantees(tenantId: string, data: UpdateGuaranteesPayload) {
+  try {
+    const response = await axios.patch(`/api/tenants/${tenantId}/guarantees`, data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Failed to update tenant guarantees:', error);
+    throw new Error(error?.response?.data?.error || 'Failed to update tenant guarantees');
+  }
+}

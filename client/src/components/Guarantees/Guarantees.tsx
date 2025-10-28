@@ -7,9 +7,10 @@ import { navigate } from 'wouter/use-browser-location';
 
 interface GuaranteesPanelProps {
   tenantId: string;
+  disabled: boolean;
 }
 
-const GuaranteesPanel = (props: GuaranteesPanelProps) => {
+const GuaranteesPanel = ({ tenantId, disabled }: GuaranteesPanelProps) => {
   const [open, setOpen] = useState(false);
   const secureScores = useSelector((state: any) => state.devicesAndInfrastructure.secureScores);
   const maturityScore = useSelector((state: any) => state.scores.maturityScore);
@@ -29,19 +30,29 @@ const GuaranteesPanel = (props: GuaranteesPanelProps) => {
 
   return (
     <div className="fixed top-20 right-6 z-50 w-72">
-      <Card className="p-4 shadow-lg rounded-2xl border border-gray-200 bg-white">
+      <Card
+        className={cn(
+          'p-4 shadow-lg rounded-2xl border border-gray-200',
+          disabled ? 'bg-gray-100 cursor-not-allowed opacity-50' : 'bg-white'
+        )}
+      >
         {/* Header row */}
-        <div className="flex items-center justify-between cursor-pointer select-none" onClick={() => setOpen(!open)}>
-          <h2 className="text-lg font-semibold text-brand-teal">Guarantee Tracker</h2>
+        <div
+          className={cn('flex items-center justify-between select-none', disabled && 'pointer-events-none')}
+          onClick={() => !disabled && setOpen(!open)}
+        >
+          <h2 className={cn('text-lg font-semibold', disabled ? 'text-gray-500' : 'text-brand-teal')}>
+            Guarantee Tracker
+          </h2>
           {open ? (
-            <ChevronDown className="w-5 h-5 text-gray-600" />
+            <ChevronDown className={cn('w-5 h-5', disabled ? 'text-gray-400' : 'text-gray-600')} />
           ) : (
-            <ChevronRight className="w-5 h-5 text-gray-600" />
+            <ChevronRight className={cn('w-5 h-5', disabled ? 'text-gray-400' : 'text-gray-600')} />
           )}
         </div>
 
         {/* Collapsible content */}
-        {open && (
+        {open && !disabled && (
           <div className="mt-3">
             {scores.map((score, idx) => (
               <div
@@ -50,10 +61,10 @@ const GuaranteesPanel = (props: GuaranteesPanelProps) => {
                 onClick={() => {
                   switch (score.label) {
                     case 'Secure Score':
-                      navigate(`/guarantees/secure-scores/${props.tenantId}`);
+                      navigate(`/guarantees/secure-scores/${tenantId}`);
                       break;
                     case 'Maturity Rating':
-                      navigate(`/guarantees/maturity-scores/${props.tenantId}`);
+                      navigate(`/guarantees/maturity-scores/${tenantId}`);
                   }
                 }}
               >

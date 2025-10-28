@@ -821,8 +821,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     isAuthorized([UserRoles.ADMIN]),
     asyncHandler(async (req, res) => {
-      const { tenantId: tenId, tenantName: tenName, clientId, clientSecret } = req.body;
+      const {
+        tenantId: tenId,
+        tenantName: tenName,
+        clientId,
+        clientSecret,
+        guaranteesOption,
+        guaranteesStartDate,
+      } = req.body;
 
+      let guaranteesActive = false;
+      let guaranteesDisabled = false;
+      let startDate: Date | null = null;
+
+      if (guaranteesOption === 'immediate') {
+        guaranteesActive = true;
+      } else if (guaranteesOption === 'scheduled') {
+        guaranteesActive = false;
+        startDate = new Date(guaranteesStartDate);
+      } else if (guaranteesOption === 'none') {
+        guaranteesDisabled = true;
+      }
       // 🔐 Step 1: Verify Microsoft 365 tenant
       try {
         const authority = `https://login.microsoftonline.com/${tenId}`;
@@ -856,17 +875,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const orgInfo = org.value[0];
         const validatedData = insertTenantSchema.parse({
-          id: orgInfo.id, // use verified tenant ID
-          name: orgInfo.displayName || tenName, // prefer MS name
+          id: orgInfo.id,
+          name: orgInfo.displayName || tenName,
+          guaranteesActive,
+          guaranteesStartDate: startDate,
+          guaranteesDisabled,
         });
-
         // Step 2: Check if tenant with same ID already exists
         const existingTenantById = await storage.getTenant(validatedData.id);
         let tenant: any;
 
         if (existingTenantById) {
           if (existingTenantById.deletedAt) {
-            await storage.restoreTenant(validatedData.id);
+            await storage.restoreTenant(validatedData.id, {
+              guaranteesActive,
+              guaranteesStartDate: startDate,
+              guaranteesDisabled,
+            });
             console.log(`Restored soft-deleted tenant: ${validatedData.id}`);
             tenant = await storage.getTenant(validatedData.id);
           } else {
@@ -890,6 +915,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Microsoft 365 tenant verification failed:', error);
         return res.status(500).json({ error: 'Failed to verify Microsoft 365 tenant.' });
       }
+    })
+  );
+
+  app.patch(
+    '/api/tenants/:id/guarantees',
+    isAuthenticated,
+    isAuthorized([UserRoles.ADMIN]),
+    asyncHandler(async (req, res) => {
+      const { guaranteesOption, startDate } = req.body;
+      const id = req.params.id;
+
+      let guaranteesActive = false;
+      let guaranteesDisabled = false;
+      let guaranteesStartDate: Date | null = null;
+
+      if (guaranteesOption === 'immediate') guaranteesActive = true;
+      else if (guaranteesOption === 'scheduled') guaranteesStartDate = new Date(startDate);
+      else if (guaranteesOption === 'disabled') guaranteesDisabled = true;
+
+      const updatedTenant = await storage.updateTenant(id, {
+        guaranteesActive,
+        guaranteesDisabled,
+        guaranteesStartDate,
+      });
+
+      res.json(updatedTenant);
     })
   );
 
@@ -1450,6 +1501,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (err) {
         console.error('Error running daily scores:', err);
         res.status(500).json({ error: 'Failed to run daily scores' });
+      }
+    })
+  );
+
+  app.post(
+    '/api/tenants/activate-guarantees',
+    asyncHandler(async (req, res) => {
+      const secret = req.headers['x-cron-secret'];
+      if (secret !== process.env.GUARANTEES_CRON_SECRET) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
+      try {
+        // Find tenants where guaranteesStartDate is today or earlier
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+        const tenantsToActivate = await db
+          .select()
+          .from(tenants)
+          .where(sql`deleted_at IS NULL AND guarantees_start_date IS NOT NULL AND guarantees_start_date <= ${today}`);
+
+        const updatedTenants = [];
+
+        for (const tenant of tenantsToActivate) {
+          try {
+            await db
+              .update(tenants)
+              .set({
+                guaranteesActive: true,
+                guaranteesDisabled: false,
+                guaranteesStartDate: null,
+                updatedAt: new Date(),
+              })
+              .where(eq(tenants.id, tenant.id));
+
+            updatedTenants.push(tenant.id);
+          } catch (err) {
+            console.error(`Failed to update guarantees for tenant ${tenant.id}:`, err);
+          }
+        }
+
+        res.status(200).json({ updated: updatedTenants.length, tenantIds: updatedTenants });
+      } catch (err) {
+        console.error('Error activating guarantees:', err);
+        res.status(500).json({ error: 'Failed to activate guarantees' });
       }
     })
   );
