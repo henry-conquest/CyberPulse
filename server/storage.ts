@@ -357,12 +357,13 @@ export class DatabaseStorage implements IStorage {
     return connection;
   }
 
-  async getMicrosoft365ConnectionByDomain(domain: any): Promise<Microsoft365Connection | undefined> {
-    // Using string comparison as the database column is integer but our schema defined it as varchar
+  async getMicrosoft365ConnectionByDomain(domain: string): Promise<Microsoft365Connection | undefined> {
+    // Normalize input to lowercase
+    const lowerDomain = domain.toLowerCase();
     const [connection] = await db
       .select()
       .from(microsoft365Connections)
-      .where(eq(microsoft365Connections.tenantDomain, String(domain)));
+      .where(sql`LOWER(${microsoft365Connections.tenantDomain}) = ${lowerDomain}`);
     return connection;
   }
 

@@ -134,10 +134,10 @@ export async function setupAuth(app: Express) {
   app.get('/auth/callback', (req, res, next) => {
     const domain = req.query.state as string;
     const strategyName = domain ? `azure-${domain}` : null;
-    console.log('domain', domain);
-    console.log('strategy name', strategyName);
-    console.log('passport', passport);
-    console.log('passport strategies', passport._strategies);
+    // console.log('domain', domain);
+    // console.log('strategy name', strategyName);
+    // console.log('passport', passport);
+    // console.log('passport strategies', passport._strategies);
     if (!strategyName || !passport._strategies[strategyName]) {
       return res.redirect('/login-failed');
     }
