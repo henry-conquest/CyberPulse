@@ -87,7 +87,11 @@ export async function setupAuth(app: Express) {
                 console.log('ASSIGNMENTS ', JSON.stringify(assignments, null, 2));
                 const assigned = assignments.value.some(
                   (a: any) =>
-                    a.resourceId === tenantApp.objectId || a.resourceId === process.env.ENTERPRISE_APP_OBJECT_ID
+                    a.resourceId === tenantApp.objectId ||
+                    a.resourceId === process.env.ENTERPRISE_APP_OBJECT_ID ||
+                    a.resourceId === 'D2a70177-9a1e-4985-9f72-6d4fb14b5ae8' ||
+                    a.resourceId === 'eca4db01-a1cb-4a4e-a52b-165f1e162dc7' ||
+                    a.resourceId === '2e568415-d2d4-40ea-9ff2-782ce1f09301'
                 );
 
                 if (!assigned) {
