@@ -21,11 +21,11 @@ const SignInPolicies = () => {
     if (policiesData) {
       // Filtered policies that match the client conditions
       const matchingPolicies = policiesData?.filter((policy: any) => {
-        const stateMatch = policy.state === 'enabled' || policy.state === 'enabledForReportingButNotEnforced';
-        // const riskMatch = policy?.conditions?.signInRiskLevels?.some((level: string) =>
-        // 	["low", "medium", "high", "enabledForReportingButNotEnforced"].includes(level)
-        // )
-        return stateMatch;
+        // const stateMatch = policy.state === 'enabled' || policy.state === 'enabledForReportingButNotEnforced';
+        const riskMatch = policy?.conditions?.signInRiskLevels?.some((level: string) =>
+          ['low', 'medium', 'high', 'enabledForReportingButNotEnforced'].includes(level)
+        );
+        return riskMatch;
       });
       setMatchingPolicies(matchingPolicies);
     }

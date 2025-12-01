@@ -16,7 +16,7 @@ const CompanyDetails = (props: CompanyDetailsProps) => {
   const tenant = useSelector((state: any) => state.sessionInfo.selectedClient);
   const user = useSelector((state: any) => state.sessionInfo.user);
   const isAdmin = user?.role === 'admin';
-  const isGuaranteesDisabled = tenant.guaranteesDisabled || (!tenant.guaranteesActive && tenant.guaranteesStartDate);
+  const isGuaranteesDisabled = tenant?.guaranteesDisabled || (!tenant?.guaranteesActive && tenant?.guaranteesStartDate);
 
   // Loading state
   if (!tenant) {

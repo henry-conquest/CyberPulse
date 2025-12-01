@@ -1,4 +1,4 @@
-import { storage } from "./storage";
+import { storage } from './storage';
 
 export async function refreshMicrosoftAccessToken(refreshToken: string, tenantId: string) {
   const params = new URLSearchParams();
@@ -11,7 +11,7 @@ export async function refreshMicrosoftAccessToken(refreshToken: string, tenantId
   const response = await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString()
+    body: params.toString(),
   });
 
   if (!response.ok) {
@@ -23,10 +23,9 @@ export async function refreshMicrosoftAccessToken(refreshToken: string, tenantId
   return {
     accessToken: tokens.access_token,
     refreshToken: tokens.refresh_token ?? refreshToken, // fallback to old if not returned
-    expiresIn: tokens.expires_in
+    expiresIn: tokens.expires_in,
   };
 }
-
 
 // tokenManager.ts
 
@@ -48,7 +47,7 @@ export async function getTenantAccessTokenFromDB(tenantId: string): Promise<stri
   const response = await fetch(authority, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params
+    body: params,
   });
 
   if (!response.ok) {
@@ -86,7 +85,7 @@ export async function getValidMicrosoftAccessToken(userId: string, tenantId: str
   return token.accessToken;
 }
 
-type PhishResistanceLevel = true | false | "partial";
+type PhishResistanceLevel = true | false | 'partial';
 
 interface AuthMethodMeta {
   displayName: string;
@@ -95,14 +94,14 @@ interface AuthMethodMeta {
 
 interface AuthMethod {
   id: string;
-  state: "enabled" | "disabled";
+  state: 'enabled' | 'disabled';
   [key: string]: any;
 }
 
 interface EvaluatedMethod {
   id: string;
   displayName: string;
-  state: "enabled" | "disabled";
+  state: 'enabled' | 'disabled';
   isPhishResistant: PhishResistanceLevel;
   recommendation: string;
 }
@@ -112,14 +111,14 @@ interface GraphResponse {
 }
 
 const methodMeta: Record<string, AuthMethodMeta> = {
-  Fido2: { displayName: "FIDO2 Security Key", isPhishResistant: true },
-  MicrosoftAuthenticator: { displayName: "Microsoft Authenticator", isPhishResistant: "partial" },
-  TemporaryAccessPass: { displayName: "Temporary Access Pass", isPhishResistant: true },
-  X509Certificate: { displayName: "X.509 Certificate", isPhishResistant: true },
-  SoftwareOath: { displayName: "Software OATH (TOTP)", isPhishResistant: false },
-  Sms: { displayName: "SMS", isPhishResistant: false },
-  Voice: { displayName: "Voice", isPhishResistant: false },
-  Email: { displayName: "Email OTP", isPhishResistant: false }
+  Fido2: { displayName: 'FIDO2 Security Key', isPhishResistant: true },
+  MicrosoftAuthenticator: { displayName: 'Microsoft Authenticator', isPhishResistant: 'partial' },
+  TemporaryAccessPass: { displayName: 'Temporary Access Pass', isPhishResistant: true },
+  X509Certificate: { displayName: 'X.509 Certificate', isPhishResistant: true },
+  SoftwareOath: { displayName: 'Software OATH (TOTP)', isPhishResistant: false },
+  Sms: { displayName: 'SMS', isPhishResistant: false },
+  Voice: { displayName: 'Voice', isPhishResistant: false },
+  Email: { displayName: 'Email OTP', isPhishResistant: false },
 };
 
 export interface GroupedEvaluation {
@@ -140,29 +139,52 @@ export const evaluatePhishMethodsGrouped = (data: GraphResponse): GroupedEvaluat
   data.authenticationMethodConfigurations.forEach((method) => {
     const meta = methodMeta[method.id] || {
       displayName: method.id,
-      isPhishResistant: false
+      isPhishResistant: false,
     };
 
     const { id, state } = method;
 
-    let recommendation = "OK";
-    if (!meta.isPhishResistant && state === "enabled") {
-      recommendation = "Disable this method";
-      grouped.toDisable.push({ id, displayName: meta.displayName, state, isPhishResistant: meta.isPhishResistant, recommendation });
-    } else if (meta.isPhishResistant === true && state === "disabled") {
-      recommendation = "Enable this method";
-      grouped.toEnable.push({ id, displayName: meta.displayName, state, isPhishResistant: meta.isPhishResistant, recommendation });
-    } else if (meta.isPhishResistant === "partial") {
-      recommendation = "Enhance with number matching";
-      grouped.enhance.push({ id, displayName: meta.displayName, state, isPhishResistant: meta.isPhishResistant, recommendation });
+    let recommendation = 'OK';
+    if (!meta.isPhishResistant && state === 'enabled') {
+      recommendation = 'Disable this method';
+      grouped.toDisable.push({
+        id,
+        displayName: meta.displayName,
+        state,
+        isPhishResistant: meta.isPhishResistant,
+        recommendation,
+      });
+    } else if (meta.isPhishResistant === true && state === 'disabled') {
+      recommendation = 'Enable this method';
+      grouped.toEnable.push({
+        id,
+        displayName: meta.displayName,
+        state,
+        isPhishResistant: meta.isPhishResistant,
+        recommendation,
+      });
+    } else if (meta.isPhishResistant === 'partial') {
+      recommendation = 'Enhance with number matching';
+      grouped.enhance.push({
+        id,
+        displayName: meta.displayName,
+        state,
+        isPhishResistant: meta.isPhishResistant,
+        recommendation,
+      });
     } else {
-      grouped.correct.push({ id, displayName: meta.displayName, state, isPhishResistant: meta.isPhishResistant, recommendation });
+      grouped.correct.push({
+        id,
+        displayName: meta.displayName,
+        state,
+        isPhishResistant: meta.isPhishResistant,
+        recommendation,
+      });
     }
   });
 
   return grouped;
 };
-
 
 export const parseJwt = (token: string): any => {
   try {
@@ -170,11 +192,10 @@ export const parseJwt = (token: string): any => {
     const decoded = Buffer.from(base64, 'base64').toString('utf8');
     return JSON.parse(decoded);
   } catch (err) {
-    console.error("Failed to parse JWT", err);
+    console.error('Failed to parse JWT', err);
     return {};
   }
-}
-
+};
 
 // shared helper
 export const fetchSecureScores = async (tenantId: string) => {
@@ -187,8 +208,8 @@ export const fetchSecureScores = async (tenantId: string) => {
   const response = await fetch('https://graph.microsoft.com/v1.0/security/secureScores?$top=500', {
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
-    }
+      'Content-Type': 'application/json',
+    },
   });
 
   if (!response.ok) {
@@ -196,7 +217,7 @@ export const fetchSecureScores = async (tenantId: string) => {
   }
 
   return response.json();
-}
+};
 
 export const transformCategoryScores = (data: any, category: string) => {
   const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000;
@@ -209,23 +230,17 @@ export const transformCategoryScores = (data: any, category: string) => {
 
   // Transform: for each day, get average score for the requested category
   const categoryScores = scoresFromLastTwoYears.map((entry: any) => {
-    const controls = entry.controlScores?.filter(
-      (c: any) => c.controlCategory === category
-    ) || [];
+    const controls = entry.controlScores?.filter((c: any) => c.controlCategory === category) || [];
 
     const avgScore =
-      controls.reduce((sum: number, c: any) => sum + (c.scoreInPercentage || 0), 0) /
-      (controls.length || 1);
+      controls.reduce((sum: number, c: any) => sum + (c.scoreInPercentage || 0), 0) / (controls.length || 1);
 
     return {
       date: entry.createdDateTime,
-      percentage: parseFloat(avgScore.toFixed(2))
+      percentage: parseFloat(avgScore.toFixed(2)),
     };
   });
 
   // Sort by date ascending (oldest first)
-  return categoryScores.sort(
-    (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-}
-
+  return categoryScores.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+};
