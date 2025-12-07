@@ -6,8 +6,10 @@ import {
   evaluatePhishMethodsGrouped,
   fetchSecureScores,
   getTenantAccessTokenFromDB,
+  returnExampleData,
   transformCategoryScores,
 } from './helper';
+// import { fakeScoreHistory } from './fakeData/fakeData.ts';
 import { z } from 'zod';
 import { gt, and, desc, eq, sql } from 'drizzle-orm';
 import {
@@ -26,6 +28,14 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import 'isomorphic-fetch';
 import { saveTenantDailyScores } from './services/scoringService';
 import { db } from './db';
+import {
+  fakeCompliancePolicies,
+  fakeLocationData,
+  fakeNoEncryptionData,
+  fakePhishData,
+  fakeScoreHistory,
+  fakeSecureScores,
+} from './fakeData/fakeData';
 
 // Helper to check if user has access to a tenant
 async function hasTenantAccess(userId: string, tenantId: string): Promise<boolean> {
@@ -278,6 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const tenantId = req.params.tenantId;
+      if (tenantId === 'exampleId') return res.status(200).json(fakeLocationData);
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = allowedTenants.map((t) => t.id);
@@ -311,6 +322,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const tenantId = req.params.tenantId;
+      if (tenantId === 'exampleId') {
+        return res.status(200).json(fakePhishData);
+      }
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = allowedTenants.map((t) => t.id);
@@ -345,6 +359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const tenantId = req.params.tenantId;
+      if (tenantId === 'exampleId') return res.status(200).json(fakeNoEncryptionData);
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = allowedTenants.map((t) => t.id);
@@ -399,6 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const tenantId = req.params.tenantId;
+      if (tenantId === 'exampleId') return res.status(200).json(fakeCompliancePolicies);
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = allowedTenants.map((t) => t.id);
@@ -436,6 +452,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const tenantId = req.params.tenantId;
+      if (tenantId === 'exampleId') {
+        return res.status(200).json(fakeSecureScores);
+      }
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = allowedTenants.map((t) => t.id);
@@ -508,6 +527,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const tenantId = req.params.tenantId;
+      if (tenantId === 'exampleId') {
+        return res.status(200).json(fakeSecureScores);
+      }
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = allowedTenants.map((t) => t.id);
@@ -528,6 +550,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const tenantId = req.params.tenantId;
+      if (tenantId === 'exampleId') {
+        return res.status(200).json(fakeSecureScores);
+      }
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = allowedTenants.map((t) => t.id);
@@ -548,6 +573,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const tenantId = req.params.tenantId;
+      if (tenantId === 'exampleId') {
+        return res.status(200).json(fakeSecureScores);
+      }
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = allowedTenants.map((t) => t.id);
@@ -1280,6 +1308,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     asyncHandler(async (req, res) => {
       const { tenantId } = req.params;
       const user = req.user as any;
+      if (tenantId === 'exampleId') {
+        const fakeData = returnExampleData('scores');
+        return res.status(200).json(fakeData);
+      }
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = allowedTenants.map((t) => t.id);
@@ -1404,6 +1436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     asyncHandler(async (req, res) => {
       const user = req.user as any;
       const tenantId = req.params.tenantId;
+      if (tenantId === 'exampleId') return res.status(200).json(fakeScoreHistory);
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
       const allowedTenantIds = allowedTenants.map((t) => t.id);
@@ -1440,6 +1473,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     '/api/score-history/:tenantId',
     asyncHandler(async (req, res) => {
       const { tenantId } = req.params;
+      if (tenantId === 'exampleId') {
+        return res.status(200).json(fakeScoreHistory);
+      }
       const user = req.user as any;
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);

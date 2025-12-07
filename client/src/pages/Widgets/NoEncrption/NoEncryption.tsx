@@ -77,31 +77,35 @@ const NoEncryptionDetails = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-1/6">Device Name</TableHead>
-                  <TableHead className="w-1/6">Platform</TableHead>
-                  <TableHead className="w-1/6">OS Version</TableHead>
-                  <TableHead className="w-1/6">Compliant</TableHead>
-                  <TableHead className="w-1/6">Last Sync</TableHead>
-                  <TableHead className="w-1/6">Encryption Status</TableHead>
+                  <TableHead className="w-1/8">Device Name</TableHead>
+                  <TableHead className="w-1/8">User</TableHead>
+                  <TableHead className="w-1/8">Platform</TableHead>
+                  <TableHead className="w-1/8">OS Version</TableHead>
+                  <TableHead className="w-1/8">Compliant</TableHead>
+                  <TableHead className="w-1/8">Last Sync</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {devices.map((device: any) => (
-                  <TableRow key={device.lastSyncDateTime || device.deviceName}>
-                    <TableCell>{device.deviceName || 'Unknown'}</TableCell>
-                    <TableCell>{device.os || 'Unknown'}</TableCell>
-                    <TableCell>{device.osVersion || 'Unknown'}</TableCell>
-                    <TableCell className={device.isCompliant ? 'text-green-600' : 'text-red-600'}>
-                      {device.isCompliant ? 'Yes' : 'No'}
-                    </TableCell>
-                    <TableCell>
-                      {device.lastSyncDateTime
-                        ? format(new Date(device.lastSyncDateTime), 'MMM d, yyyy h:mm a')
-                        : 'Unknown'}
-                    </TableCell>
-                    <TableCell className="text-red-600">{device.encryptionStatus || 'Not Encrypted'}</TableCell>
-                  </TableRow>
-                ))}
+                {devices.map((device: any, index: number) => {
+                  const compliance = getComplianceDisplay(device.complianceState);
+                  return (
+                    <TableRow key={device.lastSyncDateTime || device.deviceName || index}>
+                      <TableCell>{device.deviceName || 'Unknown'}</TableCell>
+                      <TableCell>{device.user || 'N/A'}</TableCell>
+                      <TableCell>{device.os || 'Unknown'}</TableCell>
+                      <TableCell>{device.osVersion || 'Unknown'}</TableCell>
+
+                      {/* Compliance State Logic (Updated) */}
+                      <TableCell className={compliance.className}>{compliance.text}</TableCell>
+
+                      <TableCell>
+                        {device.lastSyncDateTime
+                          ? format(new Date(device.lastSyncDateTime), 'MMM d, yyyy h:mm a')
+                          : 'Unknown'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
@@ -112,3 +116,17 @@ const NoEncryptionDetails = () => {
 };
 
 export default NoEncryptionDetails;
+
+const getComplianceDisplay = (state: string) => {
+  const lowerState = state?.toLowerCase();
+
+  switch (lowerState) {
+    case 'compliant':
+      return { text: 'Yes', className: 'text-green-600 font-medium' };
+    case 'noncompliant':
+      return { text: 'No', className: 'text-red-600 font-semibold' };
+    case 'unknown':
+    default:
+      return { text: 'Unknown', className: 'text-yellow-600 font-medium' }; // Warning color for Unknown
+  }
+};

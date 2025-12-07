@@ -244,3 +244,16 @@ export const transformCategoryScores = (data: any, category: string) => {
   // Sort by date ascending (oldest first)
   return categoryScores.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 };
+
+export const returnExampleData = (type: string) => {
+  switch (type) {
+    case 'scores':
+      return {
+        tenantId: 'exampleId',
+        totalScore: 198,
+        maxScore: 200,
+      };
+    default:
+      return {};
+  }
+};

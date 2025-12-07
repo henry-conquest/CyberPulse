@@ -73,7 +73,7 @@ export const computeDevicesAndInfrastructureScore = (
   widgetBreakdown.push({ name: 'Missing Device Encryption', tick: encryptionTick });
 
   // Compliance Policies
-  const compliancePoliciesTick = devicesAndInfrastructureData.compliancePolicies.value.length;
+  const compliancePoliciesTick = devicesAndInfrastructureData.compliancePolicies?.value?.length;
   if (compliancePoliciesTick) tickCount++;
   widgetBreakdown.push({ name: 'Compliance Policies', tick: compliancePoliciesTick });
 

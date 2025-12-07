@@ -66,6 +66,9 @@ const PhishResistantMFA = () => {
     return <ErrorResponseMessage tenantId={tenantId} text="Microsoft MFA Recommendations" />;
   }
 
+  const thereAreRecommendations =
+    groupedData.toEnable.length > 0 || groupedData.toDisable.length > 0 || groupedData.enhance.length > 0;
+
   return (
     <>
       <div className="flex justify-between align-center ml-6 mr-6 mt-4 mb-12">
@@ -78,40 +81,42 @@ const PhishResistantMFA = () => {
         <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
       </div>
       <h1 className="text-3xl font-bold font-montserrat text-brand-teal mb-10 ml-6">Microsoft MFA Recommendations</h1>
-      <Card className="ml-auto mr-auto mb-12 flex-col w-[80%]">
-        <CardHeader>
-          <CardTitle>Recommendations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-1/4">Authentication Method</TableHead>
-                <TableHead className="w-1/4">Status</TableHead>
-                <TableHead className="w-1/4">Phish Resistant</TableHead>
-                <TableHead className="w-1/4">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[
-                ...(groupedData?.toEnable ?? []),
-                ...(groupedData?.toDisable ?? []),
-                ...(groupedData?.enhance ?? []),
-              ].map((method) => {
-                const { text, className } = getPhishResistantStatus(method.isPhishResistant);
-                return (
-                  <TableRow key={method.id}>
-                    <TableCell className="w-1/4">{method.displayName}</TableCell>
-                    <TableCell className={`w-1/4 ${getStateClass(method.state)}`}>{method.state}</TableCell>
-                    <TableCell className={`w-1/4 ${className}`}>{text}</TableCell>
-                    <TableCell className="w-1/4">{method.recommendation || '-'}</TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {thereAreRecommendations && (
+        <Card className="ml-auto mr-auto mb-12 flex-col w-[80%]">
+          <CardHeader>
+            <CardTitle>Recommendations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-1/4">Authentication Method</TableHead>
+                  <TableHead className="w-1/4">Status</TableHead>
+                  <TableHead className="w-1/4">Phish Resistant</TableHead>
+                  <TableHead className="w-1/4">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[
+                  ...(groupedData?.toEnable ?? []),
+                  ...(groupedData?.toDisable ?? []),
+                  ...(groupedData?.enhance ?? []),
+                ].map((method) => {
+                  const { text, className } = getPhishResistantStatus(method.isPhishResistant);
+                  return (
+                    <TableRow key={method.id}>
+                      <TableCell className="w-1/4">{method.displayName}</TableCell>
+                      <TableCell className={`w-1/4 ${getStateClass(method.state)}`}>{method.state}</TableCell>
+                      <TableCell className={`w-1/4 ${className}`}>{text}</TableCell>
+                      <TableCell className="w-1/4">{method.recommendation || '-'}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="ml-auto mr-auto mb-6 flex-col w-[80%]">
         <CardHeader>

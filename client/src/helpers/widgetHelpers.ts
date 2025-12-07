@@ -1,5 +1,5 @@
 export const calculateRiskySignIn = (data: any) => {
-  const policies = data.value || [];
+  const policies = data?.value || [];
   const allowedRiskLevels = ['high', 'medium', 'low'];
 
   const matchingPolicy = policies.find((policy: any) => {

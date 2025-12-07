@@ -85,7 +85,7 @@ export const identitiesAndPeopleWidgets = [
     title: 'Risky Sign In Policies',
     hideButton: false,
     render: (riskySignInPoliciesExist: any) => {
-      return riskySignInPoliciesExist.exists ? (
+      return riskySignInPoliciesExist?.exists ? (
         <div className="bg-red-500 rounded-full p-4">
           <BadgeAlert className="text-white" size={32} />
         </div>

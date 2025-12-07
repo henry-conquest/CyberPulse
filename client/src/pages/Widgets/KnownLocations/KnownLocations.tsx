@@ -8,6 +8,24 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'wouter';
 
+const EmptyLocationsContent = () => (
+  <div className="p-6">
+    <div className="bg-white border-dashed border-2 border-gray-300 rounded-2xl p-10 text-center shadow-sm">
+      <div className="text-4xl mb-4" role="img" aria-label="No data icon">
+        🗺️
+      </div>
+      <h3 className="text-xl font-semibold text-gray-700 mb-2">No Trusted Locations Found</h3>
+      <p className="text-gray-500">
+        This tenant does not have any **IP-based** or **Country-based** Named Locations configured in Microsoft Entra ID
+        (Azure AD) Conditional Access policies.
+      </p>
+      <p className="text-gray-500 mt-1">
+        To improve security visibility, consider defining trusted locations for this tenant.
+      </p>
+    </div>
+  </div>
+);
+
 const KnownLocations = () => {
   const knownLocationData = useSelector((state: any) => state?.identitiesAndPeople?.knownLocations);
   const userId = useSelector((state: any) => state?.sessionInfo?.user?.id);
@@ -40,6 +58,9 @@ const KnownLocations = () => {
     return <LoadingSpinner />;
   }
 
+  const locationsValue = knownLocationData?.value || [];
+  const isEmpty = locationsValue.length === 0;
+
   return (
     <>
       <div className="flex justify-between align-center ml-6 mr-6 mt-4">
@@ -49,59 +70,69 @@ const KnownLocations = () => {
         >
           ← Back
         </Link>
-        <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
+        {/* Only show last updated if data is not empty */}
+        {!isEmpty && (
+          <span className="text-secondary-600">Last updated: {format(new Date(), "MMMM d, yyyy 'at' h:mm a")}</span>
+        )}
       </div>
       <h1 className="text-brand-teal text-2xl font-bold mt-6 ml-6">Microsoft 365 Trusted Locations</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-        {knownLocationData?.value?.map((location: any) => (
-          <div
-            key={location.id}
-            className="bg-white border border-gray-200 rounded-2xl shadow-md p-5 flex flex-col space-y-3"
-          >
-            <h2 className="text-xl font-semibold text-brand-green">{location.displayName}</h2>
 
-            <span className="inline-block text-xs uppercase bg-gray-100 text-gray-700 px-2 py-1 rounded-full w-max">
-              {location['@odata.type'].includes('countryNamedLocation') ? 'Country-Based' : 'IP-Based'}
-            </span>
+      {/* Renders the Empty State Content */}
+      {isEmpty && <EmptyLocationsContent />}
 
-            {location.countriesAndRegions && (
-              <div>
-                <p className="text-sm font-medium text-gray-600">Countries:</p>
-                <ul className="list-disc list-inside text-sm text-gray-800">
-                  {location.countriesAndRegions.map((country: string) => (
-                    <li key={country}>{country}</li>
-                  ))}
-                </ul>
+      {/* Renders the List of Locations */}
+      {!isEmpty && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+          {locationsValue.map((location: any) => (
+            <div
+              key={location.id}
+              className="bg-white border border-gray-200 rounded-2xl shadow-md p-5 flex flex-col space-y-3"
+            >
+              <h2 className="text-xl font-semibold text-brand-green">{location.displayName}</h2>
+
+              <span className="inline-block text-xs uppercase bg-gray-100 text-gray-700 px-2 py-1 rounded-full w-max">
+                {location['@odata.type'].includes('countryNamedLocation') ? 'Country-Based' : 'IP-Based'}
+              </span>
+
+              {location.countriesAndRegions && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Countries:</p>
+                  <ul className="list-disc list-inside text-sm text-gray-800">
+                    {location.countriesAndRegions.map((country: string) => (
+                      <li key={country}>{country}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {location.ipRanges && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600">IP Ranges:</p>
+                  <ul className="list-disc list-inside text-sm text-gray-800">
+                    {location.ipRanges.map((ip: any, index: number) => (
+                      <li key={index}>{ip.cidrAddress}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {'isTrusted' in location && (
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Trusted:</p>
+                  <span className={`text-sm font-semibold ${location.isTrusted ? 'text-green-600' : 'text-red-600'}`}>
+                    {location.isTrusted ? 'Yes' : 'No'}
+                  </span>
+                </div>
+              )}
+
+              <div className="text-xs text-gray-500">
+                <p>Created: {new Date(location.createdDateTime).toLocaleString()}</p>
+                <p>Modified: {new Date(location.modifiedDateTime).toLocaleString()}</p>
               </div>
-            )}
-
-            {location.ipRanges && (
-              <div>
-                <p className="text-sm font-medium text-gray-600">IP Ranges:</p>
-                <ul className="list-disc list-inside text-sm text-gray-800">
-                  {location.ipRanges.map((ip: any, index: number) => (
-                    <li key={index}>{ip.cidrAddress}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {'isTrusted' in location && (
-              <div>
-                <p className="text-sm font-medium text-gray-600">Trusted:</p>
-                <span className={`text-sm font-semibold ${location.isTrusted ? 'text-green-600' : 'text-red-600'}`}>
-                  {location.isTrusted ? 'Yes' : 'No'}
-                </span>
-              </div>
-            )}
-
-            <div className="text-xs text-gray-500">
-              <p>Created: {new Date(location.createdDateTime).toLocaleString()}</p>
-              <p>Modified: {new Date(location.modifiedDateTime).toLocaleString()}</p>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </>
   );
 };
