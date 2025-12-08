@@ -19,12 +19,13 @@ const SignInPolicies = () => {
 
   useEffect(() => {
     if (policiesData) {
-      // Filtered policies that match the client conditions
+      const allowedRiskLevels = ['low', 'medium', 'high'];
+      // Filtered policies are those that satisfy the client's requirement for "protection"
       const matchingPolicies = policiesData?.filter((policy: any) => {
         // const stateMatch = policy.state === 'enabled' || policy.state === 'enabledForReportingButNotEnforced';
-        const riskMatch = policy?.conditions?.signInRiskLevels?.some((level: string) =>
-          ['low', 'medium', 'high', 'enabledForReportingButNotEnforced'].includes(level)
-        );
+        // Check if the policy targets any of the sign-in risk levels
+        const policyRiskLevels = policy?.conditions?.signInRiskLevels || [];
+        const riskMatch = policyRiskLevels.some((level: string) => allowedRiskLevels.includes(level.toLowerCase()));
         return riskMatch;
       });
       setMatchingPolicies(matchingPolicies);

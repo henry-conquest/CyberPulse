@@ -1315,3 +1315,48 @@ export const fakeCompliancePolicies = {
     },
   ],
 };
+
+export const fakeRiskySignInData = {
+  '@odata.context': 'https://graph.microsoft.com/v1.0/$metadata#identity/conditionalAccess/policies',
+  value: [
+    {
+      id: 'mock-policy-1',
+      displayName: 'CA Policy: Block Risky Sign-ins (High/Medium)',
+      createdDateTime: '2025-11-01T10:00:00Z',
+      modifiedDateTime: '2025-12-05T15:30:00Z',
+      state: 'enabled',
+      conditions: {
+        userRiskLevels: [],
+        signInRiskLevels: ['medium', 'high'],
+        clientAppTypes: ['all'],
+        locations: null,
+      },
+    },
+    {
+      id: 'mock-policy-2',
+      displayName: 'CA Policy: MFA for All Users on Reporting',
+      createdDateTime: '2025-10-15T08:00:00Z',
+      modifiedDateTime: '2025-11-20T11:00:00Z',
+      state: 'enabledForReportingButNotEnforced',
+      conditions: {
+        userRiskLevels: [],
+        signInRiskLevels: ['low'],
+        clientAppTypes: ['all'],
+        locations: null,
+      },
+    },
+    {
+      id: 'mock-policy-3',
+      displayName: 'CA Policy: Legacy Auth Block',
+      createdDateTime: '2025-09-01T00:00:00Z',
+      modifiedDateTime: '2025-09-01T00:00:00Z',
+      state: 'enabled',
+      conditions: {
+        userRiskLevels: [],
+        signInRiskLevels: [],
+        clientAppTypes: ['other'],
+        locations: null,
+      },
+    },
+  ],
+};

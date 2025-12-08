@@ -85,13 +85,14 @@ export const identitiesAndPeopleWidgets = [
     title: 'Risky Sign In Policies',
     hideButton: false,
     render: (riskySignInPoliciesExist: any) => {
+      // The logic is inverted: tick if a protecting policy *exists*
       return riskySignInPoliciesExist?.exists ? (
-        <div className="bg-red-500 rounded-full p-4">
-          <BadgeAlert className="text-white" size={32} />
-        </div>
-      ) : (
         <div className="bg-brand-green rounded-full p-4">
           <Check className="text-white w-6 h-6" />
+        </div>
+      ) : (
+        <div className="bg-red-500 rounded-full p-4">
+          <BadgeAlert className="text-white" size={32} />
         </div>
       );
     },

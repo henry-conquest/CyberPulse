@@ -9,7 +9,6 @@ import {
   returnExampleData,
   transformCategoryScores,
 } from './helper';
-// import { fakeScoreHistory } from './fakeData/fakeData.ts';
 import { z } from 'zod';
 import { gt, and, desc, eq, sql } from 'drizzle-orm';
 import {
@@ -33,6 +32,7 @@ import {
   fakeLocationData,
   fakeNoEncryptionData,
   fakePhishData,
+  fakeRiskySignInData,
   fakeScoreHistory,
   fakeSecureScores,
 } from './fakeData/fakeData';
@@ -257,6 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const tenantId = req.params.tenantId;
+      if (tenantId === 'exampleId') return res.status(200).json(fakeRiskySignInData);
 
       // --- Tenant scoping ---
       const allowedTenants = await storage.getTenantsByUserId(user.id);
