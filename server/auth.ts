@@ -39,7 +39,7 @@ export async function setupAuth(app: Express) {
   app.get('/api/login', async (req, res, next) => {
     const domain = req.query.domain as string;
     if (!domain) return res.status(400).send('Missing domain');
-
+    console.log('domain attempted to login with: ', domain);
     const tenantApp = await storage.getMicrosoft365ConnectionByDomain(domain);
     if (!tenantApp) return res.redirect(`/login-rejected?message=Unknown tenant domain`);
 

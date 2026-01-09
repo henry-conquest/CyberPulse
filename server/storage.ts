@@ -36,6 +36,7 @@ import {
 import { db } from './db';
 import { eq, and, inArray, desc, asc, sql, like, or, isNull } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
+import { getDomainVariants } from './helper';
 
 // Interface for storage operations
 export interface IStorage {
@@ -358,12 +359,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMicrosoft365ConnectionByDomain(domain: string): Promise<Microsoft365Connection | undefined> {
-    // Normalize input to lowercase
-    const lowerDomain = domain.toLowerCase();
+    const variants = getDomainVariants(domain);
+    console.log('variants', variants);
     const [connection] = await db
       .select()
       .from(microsoft365Connections)
-      .where(sql`LOWER(${microsoft365Connections.tenantDomain}) = ${lowerDomain}`);
+      .where(sql`LOWER(${microsoft365Connections.tenantDomain}) IN (${sql.join(variants, sql`, `)})`);
     return connection;
   }
 

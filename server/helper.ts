@@ -257,3 +257,20 @@ export const returnExampleData = (type: string) => {
       return {};
   }
 };
+
+export function getDomainVariants(domain: string): string[] {
+  const lower = domain.toLowerCase().trim();
+
+  if (lower.endsWith('.co.uk')) {
+    const base = lower.replace(/\.co\.uk$/, '');
+    return [`${base}.co.uk`, `${base}.com`];
+  }
+
+  if (lower.endsWith('.com')) {
+    const base = lower.replace(/\.com$/, '');
+    return [`${base}.com`, `${base}.co.uk`];
+  }
+
+  // Fallback: only check the given domain
+  return [lower];
+}

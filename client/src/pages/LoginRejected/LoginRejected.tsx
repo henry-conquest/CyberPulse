@@ -19,13 +19,33 @@ const LoginRejected = () => {
     return parts.length === 2 ? parts[1] : '';
   };
 
+  const params = new URLSearchParams(window.location.search);
+  const errorMessage = params.get('message');
+
+  const getFriendlyMessage = (message: string | null) => {
+    if (!message) {
+      return 'Sorry, your login attempt was rejected. Please enter your email to try again.';
+    }
+
+    switch (message) {
+      case 'Unknown tenant domain':
+        return (
+          'We couldn’t find an organisation associated with your email domain. ' +
+          'Please check your email address or contact your administrator.'
+        );
+
+      default:
+        return 'Sorry, your login attempt was rejected. Please try again.';
+    }
+  };
+
   return (
     <div className="flex h-screen flex-col items-center justify-center text-center">
       <img src={logoImg} className="w-[30rem] h-auto" />
       <h1 className="mb-5 mt-[-11px] text-3xl font-montserrat text-brand-green">Cyber Risk Management</h1>
 
       <div className="mb-4 rounded-md border border-red-500 bg-red-50 px-4 py-2 text-red-700">
-        Sorry, your login attempt was rejected. Please enter your email to try again.
+        {getFriendlyMessage(errorMessage)}
       </div>
 
       <input

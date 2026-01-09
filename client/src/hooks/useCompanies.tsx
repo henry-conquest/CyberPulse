@@ -8,10 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from './useAuth';
 
 export const useCompanies = () => {
-  const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
   const [m365DialogOpen, setM365DialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const queryClient = useQueryClient();
   const { user, isLoading: isUserLoading } = useAuth();
   const [loading, setLoading] = useState(false);
 
@@ -69,7 +67,6 @@ export const useCompanies = () => {
   return {
     m365DialogOpen,
     createDialogOpen,
-    setSelectedTenantId,
     tenants,
     isTenantsLoading,
     user,
