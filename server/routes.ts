@@ -385,12 +385,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const result = await response.json();
-
       const unencryptedDevices = result.value.filter((device: any) => device.isEncrypted === false);
+      const filteredUnencryptedDevices = unencryptedDevices.filter(
+        (device: any) => device.managedDeviceOwnerType !== 'unknown'
+      );
 
       const responseData = {
-        count: unencryptedDevices.length,
-        devices: unencryptedDevices.map((device: any) => ({
+        count: filteredUnencryptedDevices.length,
+        devices: filteredUnencryptedDevices.map((device: any) => ({
           deviceName: device.deviceName,
           user: device.userPrincipalName,
           os: device.operatingSystem,
