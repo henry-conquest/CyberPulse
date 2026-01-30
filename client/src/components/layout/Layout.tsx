@@ -47,6 +47,8 @@ export default function Layout({ children }: LayoutProps) {
 
         <form onSubmit={handleLogin} className="flex flex-col items-center space-y-4 w-[20rem]">
           <input
+            name="email"
+            autoComplete="email"
             type="email"
             placeholder="Enter your email"
             value={email}
