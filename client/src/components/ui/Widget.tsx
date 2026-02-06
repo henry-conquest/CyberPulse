@@ -12,6 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { BadgeAlert, Check, Slash } from 'lucide-react';
 import { getWidget, toggleNAWidget, updateManualWidget, updateWidgetScore } from '@/service/ManualWidgetsService';
 import RiskScoreChart from '@/pages/CompanyDetails/RiskScoreChart/RiskScoreChart';
+import { createAuditLog } from '@/service/Audit';
+import { useAuth } from '@/hooks/useAuth';
 
 interface WidgetProps {
   id: string;
@@ -57,6 +59,7 @@ const Widget = (props: WidgetProps) => {
   } = props;
 
   const [data, setData] = useState<any>(null);
+  const { user } = useAuth();
   const [score, setScore] = useState(0);
   const [toggleUpdating, setToggleUpdating] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(!!apiCall);
@@ -64,9 +67,18 @@ const Widget = (props: WidgetProps) => {
   const handleToggleChange = async (val: boolean) => {
     if (tenantId && widgetId) {
       setToggleUpdating(true);
+      const previousState = implemented;
       await updateManualWidget(tenantId, widgetId, val);
       await fetchManualWidgets();
       setToggleUpdating(false);
+      if (user && user.email) {
+        createAuditLog({
+          userId: user?.id,
+          action: 'update_widget',
+          details: `Toggled the ${title} widget from ${previousState ? 'Implemented' : 'Not Implemented'} to ${val ? 'Implemented' : 'Not Implemented'} for tenant ID ${tenantId}`,
+          email: user.email,
+        });
+      }
     }
   };
 
@@ -228,6 +240,15 @@ const Widget = (props: WidgetProps) => {
                   setToggleUpdating(true);
                   try {
                     await toggleNAWidget(tenantId, widgetId, !isApplicable);
+                    const newNAValue = !isApplicable;
+                    if (user && user.email) {
+                      createAuditLog({
+                        userId: user?.id,
+                        action: 'update_widget',
+                        details: `Marked the ${title} widget as ${!newNAValue ? 'applicable' : 'not applicable'} for tenant ID ${tenantId}`,
+                        email: user.email,
+                      });
+                    }
                     await fetchManualWidgets();
                   } catch (err) {
                     console.error('Failed to mark widget as N/A:', err);

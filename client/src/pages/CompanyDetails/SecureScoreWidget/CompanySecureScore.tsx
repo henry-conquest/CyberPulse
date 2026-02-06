@@ -7,6 +7,7 @@ import { scoresActions } from '@/store/store';
 import { navigate } from 'wouter/use-browser-location';
 import { generatePdf } from '@/helpers/generatePdf';
 import { generateTenderInsurerPack } from '@/helpers/generateTenderInsurerPdf';
+import { createAuditLog } from '@/service/Audit';
 
 interface CompanySecureScoreProps {
   tenantId: string;
@@ -27,6 +28,39 @@ const CompanySecureScore = ({ tenantId }: CompanySecureScoreProps) => {
   const secureScores = useSelector((state: any) => state.devicesAndInfrastructure.secureScores);
   const customScore = useSelector((state: any) => state.scores.customScores);
   const secureScore = secureScores?.[secureScores.length - 1]?.percentage ?? null;
+  const user = useSelector((state: any) => state.sessionInfo.user);
+
+  const generateTenderInsurerPackClickHandler = () => {
+    const { id, email } = user;
+    generateTenderInsurerPack({
+      tenantName: selectedTenant.name,
+      identitiesAndPeopleData,
+      devicesAndInfrastructureData,
+      manualWidgets,
+      customScore,
+    });
+    createAuditLog({
+      userId: id,
+      email,
+      details: `Downloaded the tender insurer pack for tenant ID ${selectedTenant.id}`,
+      action: 'download_insurer_pack',
+    });
+  };
+  const generateExecutiveReportClickHandler = () => {
+    const { id, email } = user;
+    generatePdf({
+      tenantName: selectedTenant.name,
+      scoreData,
+      secureScore,
+      scoreHistory,
+    });
+    createAuditLog({
+      userId: id,
+      email,
+      details: `Downloaded the executive report pdf for tenant ID ${selectedTenant.id}`,
+      action: 'download_executive_report',
+    });
+  };
 
   useEffect(() => {
     const fetchScore = async () => {
@@ -82,29 +116,14 @@ const CompanySecureScore = ({ tenantId }: CompanySecureScoreProps) => {
         <div data-testid="secure-score-bottom" className="flex justify-around font-montserrat">
           <Button
             disabled={loading}
-            onClick={() =>
-              generatePdf({
-                tenantName: selectedTenant.name,
-                scoreData,
-                secureScore,
-                scoreHistory,
-              })
-            }
+            onClick={generateExecutiveReportClickHandler}
             className="bg-brand-teal mr-10 hover:bg-brand-teal/90"
           >
             Download Executive Report
           </Button>
           <Button
             disabled={loading}
-            onClick={() =>
-              generateTenderInsurerPack({
-                tenantName: selectedTenant.name,
-                identitiesAndPeopleData,
-                devicesAndInfrastructureData,
-                manualWidgets,
-                customScore,
-              })
-            }
+            onClick={generateTenderInsurerPackClickHandler}
             className="bg-brand-teal hover:bg-brand-teal/90"
           >
             Download Tender / Insurer Pack

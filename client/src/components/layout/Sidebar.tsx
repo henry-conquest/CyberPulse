@@ -15,6 +15,7 @@ import {
   Home,
   BriefcaseBusiness,
   ListCheck,
+  LogsIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logoImg from '../../assets/logo.png';
@@ -80,6 +81,11 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           >
             {isAdmin ? 'Clients' : 'Home'}
           </NavItem>
+          {isAdmin && (
+            <NavItem href="/audit" icon={<LogsIcon />} isActive={location === '/audit'}>
+              Audit
+            </NavItem>
+          )}
 
           {/* <NavItem
             href="/global-recommendations"
