@@ -149,11 +149,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: (req.user as any).id,
         action: 'invite_user',
         details: `Invited ${email} to tenant ${tenantId} with role ${role}`,
+        email: (req.user as any).email,
       });
 
       res.status(201).json({ message: 'User invited successfully' });
     })
   );
+
+  app.post('/api/audit', isAuthenticated, async (req, res) => {
+    const { userId, action, details, email } = req.body;
+    if (!userId || !action || !details || !email) {
+      return res.status(400).json({ message: 'Could not create audit log, missing parameters' });
+    }
+    // Audit log
+    await storage.createAuditLog({
+      id: crypto.randomUUID(),
+      userId,
+      action,
+      details,
+      email,
+    });
+
+    res.status(201).json({ message: 'Audit log created successfully' });
+  });
+
+  app.get('/api/audit-logs', isAuthenticated, isAuthorized([UserRoles.ADMIN]), async (req, res) => {
+    try {
+      const auditLogs = await storage.getAllAuditLogs();
+      return res.status(200).json({ auditLogs });
+    } catch (error) {
+      res.status(500).json({
+        error: `Failed to get audit logs ${error}`,
+      });
+    }
+  });
 
   app.delete('/api/invites', isAuthenticated, isAuthorized([UserRoles.ADMIN]), async (req, res) => {
     try {
@@ -674,6 +703,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: (req.user as any).id,
         action: 'create_user',
         details: `Created user ${email} in tenant ${tenantId} with role ${role}`,
+        email: (req.user as any).email,
       });
 
       res.status(201).json({ message: 'User account created successfully', user });
@@ -733,6 +763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId,
           action: 'delete_microsoft365_connection',
           details: `Deleted Microsoft 365 connection for tenant: ${connection.tenantName || connection.tenantId}`,
+          email: (req.user as any).email,
         });
 
         res.json({
@@ -782,6 +813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: (req.user as any).id,
         action: 'update_user_tenants',
         details: `Updated tenants for user ${userId}: [${tenantIds.join(', ')}]`,
+        email: (req.user as any).email,
       });
 
       res.status(200).json({ message: 'Tenant access updated successfully' });
@@ -826,6 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: (req.user as any).id,
         action: 'update_user_role',
         details: `Updated role for user ${userId} to ${role}`,
+        email: (req.user as any).email,
       });
 
       res.json(user);
@@ -939,6 +972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tenantId: tenant.id,
           action: 'create_tenant',
           details: `Created tenant: ${tenant.name}`,
+          email: (req.user as any).email,
         });
 
         res.status(201).json(tenant);
@@ -1016,6 +1050,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tenantId: tenant.id,
         action: 'update_tenant',
         details: `Updated tenant: ${tenant.name}`,
+        email: (req.user as any).email,
       });
 
       res.json(tenant);
@@ -1043,6 +1078,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: (req.user as any).id,
         action: 'delete_tenant',
         details: `Deleted tenant: ${tenant.name}`,
+        email: (req.user as any).email,
       });
 
       res.status(204).send();
@@ -1099,6 +1135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tenantId,
         action: 'add_user_to_tenant',
         details: `Added user ${userId} to tenant ID ${tenantId}`,
+        email: (req.user as any).email,
       });
 
       res.status(201).json(userTenant);
@@ -1122,6 +1159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tenantId,
         action: 'remove_user_from_tenant',
         details: `Removed user ${userId} from tenant ID ${tenantId}`,
+        email: (req.user as any).email,
       });
 
       res.status(204).send();
@@ -1184,6 +1222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tenantId,
           action: 'update_microsoft365_connection',
           details: `Updated Microsoft 365 connection for tenant ID ${tenantId}`,
+          email: (req.user as any).email,
         });
       } else {
         // Create a new connection
@@ -1196,6 +1235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           tenantId,
           action: 'create_microsoft365_connection',
           details: `Created Microsoft 365 connection for tenant ID ${tenantId}`,
+          email: (req.user as any).email,
         });
       }
 

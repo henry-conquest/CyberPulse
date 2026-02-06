@@ -2,6 +2,7 @@ import { Menu, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { createAuditLog } from '@/service/Audit';
 
 interface TopBarProps {
   toggleSidebar: () => void;
@@ -10,6 +11,17 @@ interface TopBarProps {
 export default function TopBar({ toggleSidebar }: TopBarProps) {
   const { user } = useAuth();
   const now = new Date();
+
+  const onLogout = async () => {
+    if (user && user.email) {
+      createAuditLog({
+        userId: user?.id,
+        action: 'logout',
+        details: `Logged out of the system`,
+        email: user.email,
+      });
+    }
+  };
 
   return (
     <header className="bg-white shadow-sm z-10">
@@ -39,7 +51,7 @@ export default function TopBar({ toggleSidebar }: TopBarProps) {
           <div className="border-l border-secondary-200 h-6 mx-2"></div>
 
           <Button variant="ghost" size="sm" asChild>
-            <a href="/api/logout" className="text-secondary-600 hover:text-secondary-900">
+            <a onClick={onLogout} href="/api/logout" className="text-secondary-600 hover:text-secondary-900">
               Log out
             </a>
           </Button>

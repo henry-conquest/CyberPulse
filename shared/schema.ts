@@ -229,6 +229,7 @@ export const auditLogs = pgTable('audit_logs', {
   tenantId: varchar('tenant_id'),
   action: varchar('action').notNull(),
   details: text('details'),
+  email: text('email'),
   entityType: varchar('entity_type'),
   entityId: varchar('entity_id'),
   timestamp: timestamp('timestamp').defaultNow(),

@@ -120,7 +120,13 @@ export async function setupAuth(app: Express) {
                 refresh_token: refreshToken,
                 role: dbUser.role,
               };
-
+              await storage.createAuditLog({
+                id: crypto.randomUUID(),
+                userId: user.id,
+                action: 'logged_in',
+                details: `Logged into the system`,
+                email: user.email,
+              });
               return done(null, user);
             } catch (err) {
               return done(err as Error);

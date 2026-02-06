@@ -20,6 +20,7 @@ import SignInPolicies from './pages/Widgets/SignInPolicies';
 import ScoreChart from './pages/Widgets/SecureScores';
 import LoginRejected from './pages/LoginRejected/LoginRejected';
 import ThreeMonthScoreChart from './components/ThreeMonthScoreChart/ThreeMonthScoreChart';
+import LogsPage from './pages/Logs/Logs';
 
 function ProtectedRoute({
   component: Component,
@@ -109,6 +110,8 @@ function Router() {
         path="guarantees/secure-scores/:tenantId"
         component={() => <ProtectedRoute component={ThreeMonthScoreChart} id="secure" title="Secure Score" />}
       />
+
+      <Route path={'/audit'} component={() => <ProtectedRoute component={LogsPage} id="audit" title="Audit" />} />
 
       {/* Fallback to 404 */}
       <Route component={NotFound} />

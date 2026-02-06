@@ -554,6 +554,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(auditLogs).where(eq(auditLogs.tenantId, tenantId)).orderBy(desc(auditLogs.timestamp));
   }
 
+  async getAllAuditLogs(): Promise<AuditLog[]> {
+    return await db.select().from(auditLogs).orderBy(desc(auditLogs.timestamp));
+  }
+
   async getAuditLogsByUserId(userId: string): Promise<AuditLog[]> {
     return await db.select().from(auditLogs).where(eq(auditLogs.userId, userId)).orderBy(desc(auditLogs.timestamp));
   }

@@ -3,7 +3,7 @@ import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { MoreVertical } from 'lucide-react';
-import { UserRoles } from '@shared/schema';
+import { Tenant, UserRoles } from '@shared/schema';
 import { useCompanies } from '@/hooks/useCompanies';
 import {
   AlertDialog,
@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useState } from 'react';
+import { SyntheticEvent, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import CreateCompanyForm from './Forms/CreateCompanyForm';
 import ConnectToM365Form from './Forms/ConnectToM365Form';
@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import EditGuaranteesForm from './Forms/EditGuaranteesForm';
+import { Input } from '@/components/ui/input';
 
 export default function Companies() {
   const {
@@ -47,6 +48,15 @@ export default function Companies() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const [editingTenant, setEditingTenant] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter tenants based on search query
+  const filteredTenants =
+    tenants?.filter((tenant: Tenant) => tenant.name.toLowerCase().includes(searchQuery.toLowerCase())) || [];
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
 
   // LOADING STATE
   if (isUserLoading || isTenantsLoading || loading) {
@@ -80,10 +90,6 @@ export default function Companies() {
       </div>
     );
   }
-
-  const today = new Date();
-  // const currentQuarter = Math.floor(today.getMonth() / 3) + 1;
-  // const currentYear = today.getFullYear();
 
   // COMPANIES VIEW
   return (
@@ -153,7 +159,17 @@ export default function Companies() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tenants.map((tenant: any) => {
+        <div className="col-span-full flex-center mb-4">
+          {user?.role === UserRoles.ADMIN && (
+            <Input
+              placeholder="Search tenants..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="max-w-xs h-9 text-sm"
+            />
+          )}
+        </div>{' '}
+        {filteredTenants.map((tenant: any) => {
           return (
             <Card
               key={tenant.id}
